@@ -3,6 +3,9 @@ from django.db import models
 # Create your models here.
 from django.contrib.auth.models import AbstractUser,Permission,Group
 from django.db import models
+from django.utils import timezone
+import random
+import string
 
 class User(AbstractUser):
     is_customer = models.BooleanField(default=False)
@@ -89,3 +92,25 @@ class ServiceProviderProfile(models.Model):
 
     def __str__(self):
         return self.full_name
+
+
+class OTP(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    otp_code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    def generate_otp_code(self):
+        """Generate a random OTP code."""
+        return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            self.otp_code = self.generate_otp_code()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"OTP for {self.user.username} - Expires at {self.expires_at}"
