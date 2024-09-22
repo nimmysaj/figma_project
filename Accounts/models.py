@@ -1,8 +1,6 @@
+from django.conf import settings
 from django.db import models
-
-# Create your models here.
-from django.contrib.auth.models import AbstractUser,Permission,Group
-from django.db import models
+from django.contrib.auth.models import AbstractUser, Permission, Group
 from django.utils import timezone
 import random
 import string
@@ -10,33 +8,34 @@ import string
 class User(AbstractUser):
     is_customer = models.BooleanField(default=False)
     is_service_provider = models.BooleanField(default=False)
+    email = models.EmailField(unique=True)
 
     # Any other fields common to both roles
-    phone_number = models.CharField(max_length=15)
-    
+    phone_number = models.CharField(max_length=15, blank=True, null=True)  # Allow blank/nullable phone number
+
     groups = models.ManyToManyField(
         Group,
-        related_name='app1_user_groups',  # Add a unique related_name
+        related_name='app1_user_groups',
         blank=True,
         help_text='The groups this user belongs to.',
         verbose_name='groups',
     )
 
-    # Override user_permissions field with a unique related_name
     user_permissions = models.ManyToManyField(
         Permission,
         verbose_name='user permissions',
         blank=True,
-        related_name='app1_user_permissions'  # Add a unique related_name
+        related_name='app1_user_permissions',
     )
 
     def __str__(self):
         return self.username
+    
+
 
 class CustomerProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='customer_profile')
-    
-    # Customer-specific fields
+
     GENDER_CHOICES = [
         ('M', 'Male'),
         ('F', 'Female'),
@@ -59,8 +58,7 @@ class CustomerProfile(models.Model):
 
 class ServiceProviderProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='service_provider_profile')
-    
-    # Service provider-specific fields
+
     GENDER_CHOICES = [
         ('M', 'Male'),
         ('F', 'Female'),
@@ -84,9 +82,9 @@ class ServiceProviderProfile(models.Model):
     state = models.CharField(max_length=255)
 
     address_proof_document = models.CharField(max_length=255, blank=True, null=True)  
-    id_number = models.CharField(max_length=50, blank=True, null=True)  # ID number field
-    address_proof_file = models.FileField(upload_to='address_proofs/', blank=True, null=True)  # File upload for address proof
-    payout_required = models.CharField(max_length=10, choices=PAYOUT_FREQUENCY_CHOICES)  # Payout frequency field
+    id_number = models.CharField(max_length=50, blank=True, null=True)
+    address_proof_file = models.FileField(upload_to='address_proofs/', blank=True, null=True)
+    payout_required = models.CharField(max_length=10, choices=PAYOUT_FREQUENCY_CHOICES)
 
     accepted_terms = models.BooleanField(default=False)
 
@@ -95,22 +93,23 @@ class ServiceProviderProfile(models.Model):
 
 
 class OTP(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    otp_code = models.CharField(max_length=6)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)  # Reference custom user model
+    otp_code = models.CharField(max_length=6, blank=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
 
+
     def is_expired(self):
         return timezone.now() > self.expires_at
-
+    
     def generate_otp_code(self):
-        """Generate a random OTP code."""
-        return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-
-    def save(self, *args, **kwargs):
+        return str(random.randint(1000,9999))
+    
+    def save(self,*args, **kwargs):
         if not self.pk:
-            self.otp_code = self.generate_otp_code()
+            self.otp_code=self.generate_otp_code()
+            self.expires_at=timezone.now() + timezone.timedelta(minutes=5)
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"OTP for {self.user.username} - Expires at {self.expires_at}"
+        return f"Otp for {self.user.username}- Expires at {self.expires_at}"
