@@ -114,3 +114,60 @@ class OTP(models.Model):
 
     def __str__(self):
         return f"OTP for {self.user.username} - Expires at {self.expires_at}"
+
+
+
+class Service_type(models.Model):
+    name = models.CharField(max_length=255)
+    details = models.TextField()
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return self.name  
+       
+class Collar(models.Model):
+    name = models.CharField(max_length=255)
+    lead_quantity = models.IntegerField()
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return self.name  
+            
+class Category(models.Model):
+    title = models.CharField(max_length=50)
+    image = models.ImageField(upload_to='category_images/', null=True, blank=True, validators=[validate_file_size])  
+    description = models.TextField()
+    status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')])
+
+    def __str__(self):
+        return self.name 
+
+class Subcategory(models.Model):
+    title = models.CharField(max_length=50)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE,related_name='category')
+    image = models.ImageField(upload_to='subcategory_images/', null=True, blank=True, validators=[validate_file_size])  
+    description = models.TextField() 
+    service_type = models.ForeignKey(Service_type, on_delete=models.CASCADE,related_name='service_type')
+    collar = models.ForeignKey(Collar, on_delete=models.CASCADE,related_name='collar') 
+    status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')]) 
+
+    def __str__(self):
+        return self.name   
+
+    def basic_amount(self):
+        basic_amount = self.service_type.amount + self.collar.amount
+        return basic_amount         
+    
+class ServiceRegister(models.Model):
+    service_provider = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE, related_name='services')
+    title = models.CharField(max_length=50)
+    description = models.TextField()
+    gstcode = models.CharField(max_length=50)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE,related_name='category')    
+    subcategory = models.ForeignKey(Subcategory, on_delete=models.CASCADE,related_name='subcategory') 
+    license = models.FileField(upload_to='service_license/', blank=True, null=True, validators=[validate_file_size])
+    image = models.ImageField(upload_to='service_images/', null=True, blank=True, validators=[validate_file_size])
+    accepted_terms = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.title  
