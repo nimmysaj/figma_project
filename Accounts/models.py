@@ -10,6 +10,7 @@ import string
 class User(AbstractUser):
     is_customer = models.BooleanField(default=False)
     is_service_provider = models.BooleanField(default=False)
+    
 
     # Any other fields common to both roles
     phone_number = models.CharField(max_length=15)
