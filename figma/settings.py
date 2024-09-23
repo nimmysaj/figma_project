@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     'customer',
     'service_provider',
     'rest_framework',
-    ''
+    'rest_framework_simplejwt'
     
 ]
 
