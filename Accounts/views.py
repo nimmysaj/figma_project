@@ -1,3 +1,11 @@
+from rest_framework.views import APIView
+from django.shortcuts import render
+from .models import User
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
+from rest_framework.response import Response
+
 from rest_framework import generics, status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -7,7 +15,29 @@ from rest_framework.response import Response
 from .models import User, OTP
 from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, NewPasswordSerializer
 from django.utils import timezone
-import random
+
+
+# Create your views here.
+
+class LoginView(APIView):
+    def post(self,request):
+        try:
+            user=User.objects.get(username=request.data.get('username'),password=request.data.get('password'))
+            refresh=RefreshToken.for_user(user)
+            access=refresh.access_token
+            return Response({
+            'message':"login successful",
+            'refresh':str(refresh),
+            'access':str(access)
+            
+            },status=status.HTTP_200_OK)
+        except User.DoesNotExist :
+            return Response({'message':"invalid"},status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+
 
 class ForgotPasswordView(generics.GenericAPIView):
     serializer_class = ForgotPasswordSerializer
