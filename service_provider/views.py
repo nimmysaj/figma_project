@@ -34,30 +34,9 @@ class RegisterView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class OTPVerificationView(APIView):
-    def post(self, request, *args, **kwargs):
+    def post(self, request):
         serializer = OTPVerificationSerializer(data=request.data)
-        
         if serializer.is_valid():
-            email = serializer.validated_data['email']
-            otp_code = serializer.validated_data['otp_code']
-
-            try:
-                user = User.objects.get(email=email)
-                otp = OTP.objects.get(user=user, otp_code=otp_code)
-
-                if otp.is_expired():
-                    return Response({'error': 'OTP has expired.'}, status=status.HTTP_400_BAD_REQUEST)
-
-                user.is_active = True
-                user.save()
-                otp.delete()  # Delete the OTP after successful verification
-                return Response({'message': 'OTP verified successfully. User activated.'}, status=status.HTTP_200_OK)
-
-            except OTP.DoesNotExist:
-                return Response({'error': 'Invalid OTP.'}, status=status.HTTP_400_BAD_REQUEST)
-
-            except User.DoesNotExist:
-                return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
-
+            serializer.verify_otp()
+            return Response({"detail": "OTP verified, user activated."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
