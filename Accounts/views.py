@@ -1,17 +1,11 @@
 from rest_framework.views import APIView
 from django.shortcuts import render
-from .models import User
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
+from rest_framework.permissions import IsAuthenticated,AllowAny
+from rest_framework import status,generics
 from rest_framework.response import Response
-
-from rest_framework import generics, status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.exceptions import InvalidToken
-from rest_framework.response import Response
 from .models import User, OTP
 from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, NewPasswordSerializer
 from django.utils import timezone
