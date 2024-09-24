@@ -19,7 +19,7 @@ from django.conf import settings
 
 class ServiceProviderLoginView(generics.GenericAPIView):
     serializer_class = ServiceProviderLoginSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_class = [permissions.AllowAny]
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -27,10 +27,13 @@ class ServiceProviderLoginView(generics.GenericAPIView):
         user = serializer.validated_data['user']
         refresh = RefreshToken.for_user(user)
         return Response({
+            'message':'Login Successful',
+            'username': user.username,
+            'email':user.email,
             'refresh':str(refresh),
             'access':str(refresh.access_token),
         })
-    
+
 class ServiceProviderPasswordResetView(generics.GenericAPIView):
     serializer_class = ServiceProviderPasswordResetSerializer
     permission_classes = [permissions.AllowAny]

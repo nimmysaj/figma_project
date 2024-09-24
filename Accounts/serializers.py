@@ -3,12 +3,18 @@ from rest_framework import serializers
 from .models import User, ServiceProviderProfile
 
 class ServiceProviderLoginSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    password = serializers.CharField()
+    username = serializers.CharField(required=True)
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(write_only=True)
+    
 
     def validate(self, attrs):
         username = attrs.get('username')
+        email = attrs.get('email')
         password = attrs.get('password')
+
+        if not User.objects.filter(email=email, is_service_provider=True).exists():
+            raise serializers.ValidationError("Email is not registered as a service provider.")
 
         user = authenticate(username=username, password=password)
         if user is None or not user.is_service_provider:
@@ -25,8 +31,8 @@ class ServiceProviderPasswordResetSerializer(serializers.Serializer):
         return value
     
 class SetNewPasswordSerializer(serializers.Serializer):
-    new_password = serializers.CharField(required=True)
-    confirm_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True, write_only=True)
+    confirm_password = serializers.CharField(required=True, write_only=True)
 
     def validate(self, attrs):
         if attrs['new_password'] != attrs['confirm_password']:
