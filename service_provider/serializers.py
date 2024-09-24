@@ -6,8 +6,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 
 class ServiceProviderRegistrationSerializer(serializers.ModelSerializer):
-    confirm_password = serializers.CharField(write_only=True)
-    
+    confirm_password = serializers.CharField(write_only=True)    
     class Meta:
         model = User
         fields = ['username', 'email', 'phone_number', 'password', 'confirm_password']
