@@ -40,8 +40,9 @@ INSTALLED_APPS = [
     'Accounts',
     'customer',
     'service_provider',
-]
+    'rest_framework',  
 
+]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
