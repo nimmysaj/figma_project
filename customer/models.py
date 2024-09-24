@@ -8,9 +8,11 @@ import random
 import string
 
 class User(AbstractUser):
-    is_customer = models.BooleanField(default=False)
+    username = None
+    is_customer = models.BooleanField(default=True)
     is_service_provider = models.BooleanField(default=False)
     email=models.EmailField(unique=True)
+    confirm_password=models.CharField(max_length=8)
 
     # Any other fields common to both roles
     phone_number = models.CharField(max_length=15)
@@ -32,7 +34,10 @@ class User(AbstractUser):
     )
 
     def __str__(self):
-        return self.username
+        return self.email
+    
+USERNAME_FIELD = 'email'
+REQUIRED_FIELD = []
 
 class CustomerProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='customer_profile')
@@ -114,4 +119,4 @@ class OTP(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"OTP for {self.user.username} - Expires at {self.expires_at}"
+        return f"OTP for {self.user.email} - Expires at {self.expires_at}"

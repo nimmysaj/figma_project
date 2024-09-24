@@ -7,36 +7,58 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 class UserSerializer(serializers.ModelSerializer):
 
+    confirm_password = serializers.CharField(write_only=True)
+
     class Meta:
 
         model = User
-        fields = ['id','username','email','password','phone_number','is_customer','is_service_provider']
+        fields = ['id','email','password','confirm_password']
 
 
-    def create(self, validated_data):
+        def create(self, validated_data):
 
-        user=User.objects.create_user(
-            username=validated_data['username'],
-            email=validated_data['email'],
-            phone_number=validated_data['phone_number'],
-            password=validated_data['password'],
-            is_customer=validated_data['is_customer'],
-            is_service_provider=validated_data['is_service_provider'],
-        )
+            if validated_data['password'] != validated_data.pop('confirm_password'):
+                raise serializers.ValidationError({"password":"Password must match"})
+            
+            user = User(email=validated_data['email'])
+            user.set_password(validated_data['password'])
+            user.save()
 
-        otp_instance=OTP.objects.create(user=user,expires_at=timezone.now() + timezone.timedelta(minutes=5))
 
-        send_mail(
 
-            subject="One Time Password for Verification",
-            message=f"Your OTP code is {otp_instance.otp_code}. It will expire at {otp_instance.expires_at}.",
-            from_email="figmaproject24@gmail.com",
-            recipient_list=[user.email],
+            otp = OTP(user=user, expires_at=timezone.now() + timezone.timedelta(minutes=5))
+            otp.save()  # Save the OTP to the database
+            self.send_otp(user.email, otp.otp_code)  # Function to send OTP (you'll implement this)
 
-        )
+            return user
 
-        return user
+            
+
     
+
+        def send_otp(self, email, otp_code):
+
+            send_mail(
+                subject="One Time Password for Verification",
+                message=f"Your OTP code is {otp_code}.it will expires in 5 minutes.",
+                from_email="figmaproject886@gmail.com",
+                recipient_list=[email],
+                fail_silently=False,
+            )
+
+            # print(f"OTP {otp_code} send to email")
+        
+        def validate_email(self, value):
+
+                if User.objects.filter(email=value).exists():
+                    raise serializers.ValidationError("Email is already exists")
+                return value
+
+
+
+
+
+
 class OTPSerializer(serializers.Serializer):
 
     email = serializers.EmailField(required=True)

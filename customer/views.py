@@ -11,22 +11,19 @@ from customer.models import User,OTP
 
 class UserRegistrationView(generics.CreateAPIView):
 
-    queryset = User
     serializer_class = UserSerializer
-    permission_classes = [AllowAny]
 
-    def create(self,request,*args,**kwargs):
-
+    def post(self,request,*args,**kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()  # This will generate and send OTP
-        return Response({"message":"User registered successfully. OTP has been sent to your email"},status=status.HTTP_201_CREATED)
-
+        serializer.save()
+        return Response({"message":"User Registered Successfully! OTP sent to your email."}, status=status.HTTP_201_CREATED)
+    
    
-class OTPVerifyView(generics.CreateAPIView):
+class OTPVerifyView(generics.GenericAPIView):
 
     serializer_class = OTPSerializer
-    permission_classes = [AllowAny]
+    # permission_classes = [AllowAny]
 
     def post(self,request,*args,**kwargs):
 
