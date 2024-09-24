@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Category, SubCategory, Service, ServiceProvider
+from Accounts.models import Category
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:

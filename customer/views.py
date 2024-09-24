@@ -8,4 +8,6 @@ from Accounts.models import Category
 class GetCategoriesView(APIView):
     serializer_class = CategorySerializer
     def get(self,request):
-        return Category.objects.filter(status='Active')
+        output=Category.objects.filter(status='Active')
+        serial=self.serializer_class(output,many=True)
+        return Response(serial.data,status=status.HTTP_200_OK)
