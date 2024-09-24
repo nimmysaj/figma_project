@@ -20,7 +20,7 @@ class LoginView(APIView):
             'access':str(access)
             
             },status=status.HTTP_200_OK)
-        except user.DoesNotExist :
+        except User.DoesNotExist :
             return Response({'message':"invalid"},status=status.HTTP_400_BAD_REQUEST)
 
 
