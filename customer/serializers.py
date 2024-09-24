@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, OTP
+from Accounts.models import User, OTP
 
 class ForgotPasswordSerializer(serializers.ModelSerializer):
     class Meta:
