@@ -7,7 +7,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken
 from Accounts.models import User, OTP
-from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, NewPasswordSerializer
+from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, NewPasswordSerializer,LoginSerializer
 from django.utils import timezone
 
 
@@ -15,8 +15,9 @@ from django.utils import timezone
 
 class LoginView(APIView):
     def post(self,request):
-        try:
-            user=User.objects.get(username=request.data.get('username'),password=request.data.get('password'))
+        serializer=LoginSerializer(data=request.data)
+        if serializer.is_valid():
+            user= serializer.validated_data['user']
             refresh=RefreshToken.for_user(user)
             access=refresh.access_token
             return Response({
@@ -24,8 +25,8 @@ class LoginView(APIView):
                 'refresh':str(refresh),
                 'access':str(access)
             }, status=status.HTTP_200_OK)
-        except User.DoesNotExist :
-            return Response({'message':"invalid"},status=status.HTTP_400_BAD_REQUEST)
+        else :
+            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
 class ForgotPasswordView(generics.GenericAPIView):
     serializer_class = ForgotPasswordSerializer
