@@ -23,7 +23,7 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError('Invalid password')
 
         # Check user role
-        if user.role != 'is_customer':
+        if not user.is_customer:
             raise serializers.ValidationError('You are not allowed to log in')
 
         data['user'] = user
