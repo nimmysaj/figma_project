@@ -16,15 +16,15 @@ class LoginSerializer(serializers.Serializer):
             user = User.objects.filter(phone_number=email_or_phone).first()
 
         if not user:
-            raise serializers.ValidationError(_('Invalid credentials'))
+            raise serializers.ValidationError('Invalid credentials')
 
         # Check if password is valid
         if not user.check_password(password):
-            raise serializers.ValidationError(_('Invalid password'))
+            raise serializers.ValidationError('Invalid password')
 
         # Check user role
         if user.role != 'is_customer':
-            raise serializers.ValidationError(_('You are not allowed to log in'))
+            raise serializers.ValidationError('You are not allowed to log in')
 
         data['user'] = user
         return data
@@ -49,5 +49,3 @@ class NewPasswordSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
-class LoginSerializer(serializers.Serializer):
-    pass

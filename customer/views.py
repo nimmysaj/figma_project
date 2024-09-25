@@ -20,6 +20,8 @@ class LoginView(APIView):
     def post(self,request):
         serializer=LoginSerializer(data=request.data)
         if serializer.is_valid():
+            # print(serializer.validated_data)
+            # return Response({'aa':"hehe"},status=status.HTTP_400_BAD_REQUEST)
             user= serializer.validated_data['user']
             refresh=RefreshToken.for_user(user)
             access=refresh.access_token
