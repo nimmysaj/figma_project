@@ -21,3 +21,5 @@ class NewPasswordSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
+class LoginSerializer(serializers.Serializer):
+    pass
