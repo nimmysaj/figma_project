@@ -20,7 +20,7 @@ import service_provider.urls
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('home/', include('service_provider.urls'))  # Include service_provider URLs
+    path('api/', include('service_provider.urls'))  # Include service_provider URLs
 ]
 
 

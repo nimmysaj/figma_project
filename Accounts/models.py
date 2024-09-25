@@ -114,3 +114,4 @@ class OTP(models.Model):
 
     def __str__(self):
         return f"OTP for {self.user.username} - Expires at {self.expires_at}"
+ 
