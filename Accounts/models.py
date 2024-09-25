@@ -7,7 +7,7 @@ from django.utils import timezone
 import random
 from django.core.validators import RegexValidator
 import phonenumbers
-from qaz import settings
+from figma import settings
 
 # Create your models here.
 phone_regex = RegexValidator(
