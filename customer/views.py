@@ -16,6 +16,7 @@ from django.utils import timezone
 # Create your views here.
 
 class LoginView(APIView):
+    permission_classes=[AllowAny]
     def post(self,request):
         serializer=LoginSerializer(data=request.data)
         if serializer.is_valid():

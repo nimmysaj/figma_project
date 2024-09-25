@@ -1,6 +1,34 @@
 from rest_framework import serializers
 from Accounts.models import User, OTP
 
+class LoginSerializer(serializers.Serializer):
+    email_or_phone = serializers.CharField(required=True)
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        email_or_phone = data.get('email_or_phone')
+        password = data.get('password')
+
+        # Check if email_or_phone is email or phone number
+        if '@' in email_or_phone:
+            user = User.objects.filter(email=email_or_phone).first()
+        else:
+            user = User.objects.filter(phone_number=email_or_phone).first()
+
+        if not user:
+            raise serializers.ValidationError(_('Invalid credentials'))
+
+        # Check if password is valid
+        if not user.check_password(password):
+            raise serializers.ValidationError(_('Invalid password'))
+
+        # Check user role
+        if user.role != 'is_customer':
+            raise serializers.ValidationError(_('You are not allowed to log in'))
+
+        data['user'] = user
+        return data
+
 class ForgotPasswordSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
