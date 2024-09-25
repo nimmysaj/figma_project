@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from app1.models import Country_Codes
+from Accounts.models import Country_Codes
 import phonenumbers
 import pycountry
 
