@@ -1,21 +1,24 @@
 from rest_framework import generics
 from .models import CustomerProfile
 from .serializers import CustomerProfileSerializer
+from rest_framework.permissions import AllowAny
 
-# Create Profile View
+# Create a new customer profile (POST)
 class CustomerProfileCreateView(generics.CreateAPIView):
     queryset = CustomerProfile.objects.all()
     serializer_class = CustomerProfileSerializer
-   # permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [AllowAny]
+    # permission_classes = [permissions.IsAuthenticated]
 
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-# View and Update Profile View
-class CustomerProfileDetailView(generics.RetrieveUpdateAPIView):
+# List all customer profiles (GET)
+class CustomerProfileListView(generics.ListAPIView):
     queryset = CustomerProfile.objects.all()
     serializer_class = CustomerProfileSerializer
-   # permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [AllowAny]
+    # permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        return CustomerProfile.objects.filter(user=self.request.user)
+# Retrieve, Update (PUT or PATCH) and Delete (DELETE) a specific customer profile (GET, PUT, PATCH, DELETE)
+class CustomerProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = CustomerProfile.objects.all()
+    serializer_class = CustomerProfileSerializer
+    permission_classes = [AllowAny]
