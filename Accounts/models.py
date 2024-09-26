@@ -7,7 +7,7 @@ from django.utils import timezone
 import random
 from django.core.validators import RegexValidator
 import phonenumbers
-from figma import settings
+from django.conf import settings
 
 # Create your models here.
 phone_regex = RegexValidator(
@@ -335,6 +335,8 @@ class OTP(models.Model):
 class Service_Type(models.Model):
     name = models.CharField(max_length=255)
     details = models.TextField()
+    amount = models.DecimalField(max_digits=10, decimal_places=2,null=True,blank=True)
+    curreny=models.CharField(max_length=10,null=True,blank=True)
 
     def __str__(self):
         return self.name  
@@ -342,8 +344,7 @@ class Service_Type(models.Model):
 class Collar(models.Model):
     name = models.CharField(max_length=255)
     lead_quantity = models.IntegerField()
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    currency = models.CharField(max_length=50)
+    amount = models.CharField(max_length=50)
 
     def __str__(self):
         return self.name  
@@ -363,7 +364,6 @@ class Subcategory(models.Model):
     image = models.ImageField(upload_to='subcategory-images/', null=True, blank=True, validators=[validate_file_size])  
     description = models.TextField() 
     service_type = models.ForeignKey(Service_Type, on_delete=models.PROTECT,related_name='service_type')
-    collar = models.ForeignKey(Collar, on_delete=models.PROTECT,related_name='collar') 
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')]) 
 
     def __str__(self):
@@ -375,18 +375,34 @@ class Subcategory(models.Model):
     
 class ServiceRegister(models.Model):
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE, related_name='services')
-    title = models.CharField(max_length=50,db_index=True)
+    collar = models.ForeignKey(Collar, on_delete=models.CASCADE, related_name='collars', blank=True, null=True)
+    title = models.CharField(max_length=50)
     description = models.TextField()
     gstcode = models.CharField(max_length=50)
-    category = models.ForeignKey(Category, on_delete=models.PROTECT,related_name='serviceregister_category')    
-    subcategory = models.ForeignKey(Subcategory, on_delete=models.PROTECT,related_name='serviceregister_subcategory') 
-    license = models.FileField(upload_to='service-license/', blank=True, null=True, validators=[validate_file_size])
-    image = models.ImageField(upload_to='service-images/', null=True, blank=True, validators=[validate_file_size])
-    status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')],default='Active')
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='service_requests')
+    subcategory = models.ForeignKey(Subcategory, on_delete=models.CASCADE, related_name='service_requests')
+    license = models.FileField(upload_to='service_license/', blank=True, null=True)
+    image = models.ImageField(upload_to='service_images/', null=True, blank=True)
     accepted_terms = models.BooleanField(default=False)
+    available_lead_balance = models.IntegerField(default=0)
 
     def __str__(self):
-        return self.title  
+        return self.title
+
+    def update_lead_balance(self, extra_leads):
+        """Update available lead balance by adding extra leads from collars."""
+        if self.collar:
+            self.available_lead_balance = self.available_lead_balance +  self.collar.lead_quantity + extra_leads
+            self.save()
+            return self.available_lead_balance
+        return 0
+
+    def save(self, *args, **kwargs):
+        # Check the service type of the related subcategory
+        if self.subcategory and self.subcategory.service_type.name == "Daily Work":
+            # Set collar as 'Infinite' for daily work service type
+            self.collar = None  # We can either leave collar as None or handle the logic elsewhere.
+        super(ServiceRegister, self).save(*args, **kwargs)  
 
 class PaymentRequest(models.Model):
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.PROTECT,related_name='from_paymentrequest')
