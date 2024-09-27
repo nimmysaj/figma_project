@@ -51,10 +51,43 @@ class LoginSerializer(serializers.Serializer):
         data['user'] = user
         return data
 
-class ForgotPasswordSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['email']  # Assuming the User model has an email field
+class ForgotPasswordSerializer(serializers.Serializer):
+    email_or_phone = serializers.CharField(required=True)
+    email_validator = EmailValidator()
+
+    def validate_email_or_phone(self, value):
+        
+        if '@' in value:
+            # Validate email format using EmailValidator
+            self.email_validator(value)  # Validate email
+        else:
+            # Validate phone number format using RegexValidator
+            try:
+                phone_regex(value)  # Validate phone number
+            except ValidationError:
+                raise serializers.ValidationError("Invalid phone number format.")
+        return value
+    
+    def validate(self, data):
+        email_or_phone = data.get('email_or_phone')
+
+        # Check if email_or_phone is email or phone number
+        if '@' in email_or_phone:
+            user = User.objects.filter(email=email_or_phone).first()
+        else:
+            user = User.objects.filter(phone_number=email_or_phone).first()
+
+        if not user:
+            raise serializers.ValidationError('Invalid credentials')
+
+        
+
+        # Check user role
+        if not user.is_customer:
+            raise serializers.ValidationError('Not a customer account')
+
+        data['user'] = user
+        return data
 
 class VerifyOTPSerializer(serializers.ModelSerializer):
     class Meta:

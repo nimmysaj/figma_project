@@ -20,8 +20,6 @@ class LoginView(APIView):
     def post(self,request):
         serializer=LoginSerializer(data=request.data)
         if serializer.is_valid():
-            # print(serializer.validated_data)
-            # return Response({'aa':"hehe"},status=status.HTTP_400_BAD_REQUEST)
             user= serializer.validated_data['user']
             refresh=RefreshToken.for_user(user)
             access=refresh.access_token
@@ -37,15 +35,15 @@ class ForgotPasswordView(generics.GenericAPIView):
     serializer_class = ForgotPasswordSerializer
     permission_classes=[AllowAny]
     def post(self, request):
-        email = request.data.get('email')
-        try:
-            user = User.objects.get(email=email)
+        serializer=self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            user= serializer.validated_data['user']
             otp = OTP.objects.create(user=user, expires_at=timezone.now() + timezone.timedelta(minutes=5))
+            #otp sending code goes here
             print(otp.otp_code)
-            # Send OTP via email/SMS (implement sending logic)
             return Response({"message": "OTP sent."}, status=status.HTTP_200_OK)
-        except User.DoesNotExist:
-            return Response({"error": "User does not exist."}, status=status.HTTP_404_NOT_FOUND)
+        else :
+            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
 class VerifyOTPView(generics.GenericAPIView):
     serializer_class = VerifyOTPSerializer
