@@ -1,10 +1,32 @@
 from rest_framework import serializers
 from Accounts.models import User, OTP
 import re
+from django.core.validators import RegexValidator,EmailValidator
+from django.core.exceptions import ValidationError
+
+phone_regex = RegexValidator(
+    regex=r'^\d{9,15}$',  
+    message="Phone number must be between 9 and 15 digits."
+)
 
 class LoginSerializer(serializers.Serializer):
     email_or_phone = serializers.CharField(required=True)
     password = serializers.CharField(write_only=True)
+    email_validator = EmailValidator()
+
+    def validate_email_or_phone(self, value):
+        
+        if '@' in value:
+            # Validate email format using EmailValidator
+            self.email_validator(value)  # Validate email
+        else:
+            # Validate phone number format using RegexValidator
+            try:
+                phone_regex(value)  # Validate phone number
+            except ValidationError:
+                raise serializers.ValidationError("Invalid phone number format.")
+        return value
+    
     def validate(self, data):
         email_or_phone = data.get('email_or_phone')
         password = data.get('password')
