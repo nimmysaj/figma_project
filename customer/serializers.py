@@ -1,10 +1,10 @@
 from rest_framework import serializers
 from Accounts.models import User, OTP
+import re
 
 class LoginSerializer(serializers.Serializer):
     email_or_phone = serializers.CharField(required=True)
     password = serializers.CharField(write_only=True)
-
     def validate(self, data):
         email_or_phone = data.get('email_or_phone')
         password = data.get('password')
@@ -43,7 +43,28 @@ class NewPasswordSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['password']
+    def validate_password(self, value):
+        # Enforce minimum length (e.g., 8 characters)
+        if len(value) < 8:
+            raise serializers.ValidationError("Password must be at least 8 characters long.")
 
+        # Ensure the password contains at least one uppercase letter
+        if not re.search(r'[A-Z]', value):
+            raise serializers.ValidationError("Password must contain at least one uppercase letter.")
+
+        # Ensure the password contains at least one lowercase letter
+        if not re.search(r'[a-z]', value):
+            raise serializers.ValidationError("Password must contain at least one lowercase letter.")
+
+        # Ensure the password contains at least one digit
+        if not re.search(r'\d', value):
+            raise serializers.ValidationError("Password must contain at least one digit.")
+
+        # Ensure the password contains at least one special character
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', value):
+            raise serializers.ValidationError("Password must contain at least one special character.")
+        return value
+    
     def update(self, instance, validated_data):
         instance.set_password(validated_data['password'])
         instance.save()
