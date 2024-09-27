@@ -23,34 +23,6 @@ class UserSerializer(serializers.ModelSerializer):
             'is_dealer'
         ]
 
-# class ServiceProviderSerializer(serializers.ModelSerializer):
-#     """
-#     Serializer for the ServiceProvider model.
-#     The `user` field is represented using the UserSerializer.
-#     """
-#     user = UserSerializer()  # Nested serializer to include user details
-
-#     class Meta:
-#         model = ServiceProvider
-#         fields = [
-#             'user',  # Nested UserSerializer
-#             'profile_image',
-#             'date_of_birth',
-#             'gender',
-#             'dealer',
-#             'franchisee',
-#             'address_proof_document',
-#             'id_number',
-#             'address_proof_file',
-#             'payout_required',
-#             'status',
-#             'verification_by_dealer',
-#             'accepted_terms',
-#         ]
-
-
-
-
 class ServiceProviderSerialzer(serializers.ModelSerializer):
     user = UserSerializer()
 
@@ -60,10 +32,8 @@ class ServiceProviderSerialzer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         # Extract the nested user data from the validated data
-        user_data = validated_data.pop('user')  # Use pop() to extract user data safely
-        # Create a new User instance
-        user = User.objects.create(**user_data)  # Create the user
-        # Create the ServiceProvider instance with the created user
+        user_data = validated_data.pop('user')  
+        user = User.objects.create(**user_data) 
         service_provider = ServiceProvider.objects.create(user=user, **validated_data)
         return service_provider
     
@@ -77,23 +47,12 @@ class ServiceProviderSerialzer(serializers.ModelSerializer):
 
         # If user data is provided, update the related User instance
         if user_data:
-            user = instance.user  # Get the associated User object
+            user = instance.user 
             for attr, value in user_data.items():
                 setattr(user, attr, value)
-            user.save()  # Save User changes
+            user.save() 
 
         # Save the ServiceProvider instance with updated data
         instance.save()
         return instance
 
-#     # def update(self, instance, validated_data):
-#     #     user_data = validated_data.pop('user', None)  # Extract user data
-#     #     # Update the user
-#     #     for attr, value in user_data.items():
-#     #         setattr(instance.user, attr, value)
-#     #     instance.user.save()  # Save the user instance
-#     #     # Update the service provider instance
-#     #     for attr, value in validated_data.items():
-#     #         setattr(instance, attr, value)
-#     #     instance.save()  # Save the service provider instance
-#     #     return instance
