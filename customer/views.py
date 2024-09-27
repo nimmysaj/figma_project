@@ -8,15 +8,9 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken
-from Accounts.models import User, OTP
-from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, NewPasswordSerializer,LoginSerializer
+from Accounts.models import User, OTP,Category,Subcategory
+from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, NewPasswordSerializer,LoginSerializer,CategorySerializer,SubcategorySerialzer
 from django.utils import timezone
-
-from rest_framework.views import APIView
-from rest_framework import status,generics
-from rest_framework.response import Response
-from .serialzers import CategorySerializer,SubcategorySerialzer
-from Accounts.models import Category,Subcategory
 
 class GetCategoriesView(APIView):
     serializer_class = CategorySerializer
