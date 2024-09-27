@@ -1,10 +1,8 @@
 import re
 from django.contrib.auth.models import Permission,Group
 from django.db import models
-
-# Create your models here.
-from django.contrib.auth.models import AbstractUser,Permission,Group
-from django.db import models
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.forms import ValidationError
 from django.utils import timezone
 import random
 from django.core.validators import RegexValidator
