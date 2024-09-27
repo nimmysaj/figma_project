@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,6 +42,8 @@ INSTALLED_APPS = [
     'Accounts',
     'customer',
     'service_provider',
+    'rest_framework',
+    'rest_framework_simplejwt',
 ]
 
 MIDDLEWARE = [
@@ -124,3 +128,38 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+}
+# Add JWT token expiration settings (optional)
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': 'your-secret-key-here',  # Replace with a secure key
+}
+
+AUTH_USER_MODEL = 'Accounts.User'  
+
+# Email backend settings (for sending OTPs)
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'  # Replace with your email host
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = 'Youremailaddress'  
+# EMAIL_HOST_PASSWORD = 'Youremailpassword'  
+
+
+#Twilio settings
+# TWILIO_ACCOUNT_SID = 'youraccountsid '
+# TWILIO_AUTH_TOKEN = 'youraccountauthtoken'
+# TWILIO_PHONE_NUMBER = 'your_twilio_phone_number'
+
