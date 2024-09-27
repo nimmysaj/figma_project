@@ -13,3 +13,4 @@ migrations/
 # IDEs
 .vscode/
 .idea/
+*.swp
