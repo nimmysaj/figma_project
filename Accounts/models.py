@@ -117,7 +117,7 @@ class User(AbstractBaseUser):
 
     watsapp = models.CharField(max_length=15, blank=True, null=True)
     email = models.EmailField(unique=True, null=True, blank=True)
-    phone_number = models.CharField(max_length=15, unique=True, null=True, blank=True)
+    phone_number = models.CharField(max_length=15, unique=True, validators=[phone_regex], null=True, blank=True)
     country_code = models.ForeignKey('Country_Codes', on_delete=models.SET_NULL, null=True, blank=True)
 
     USERNAME_FIELD = 'email'  

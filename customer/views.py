@@ -12,28 +12,36 @@ from Accounts.models import User, OTP,Category,Subcategory
 from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, NewPasswordSerializer,LoginSerializer,CategorySerializer,SubcategorySerialzer
 from django.utils import timezone
 
+from rest_framework.permissions import IsAuthenticated
+
 class GetCategoriesView(APIView):
     serializer_class = CategorySerializer
-    def get(self,request):
+    permission_classes = [IsAuthenticated]  # Require authentication
+
+    def get(self, request):
         try:
-            output=Category.objects.filter(status='Active')
-            serial=self.serializer_class(output,many=True)
-            return Response(serial.data,status=status.HTTP_200_OK)
+            output = Category.objects.filter(status='Active')
+            serial = self.serializer_class(output, many=True)
+            return Response(serial.data, status=status.HTTP_200_OK)
         except Category.DoesNotExist:
-            return Response({'message':'Category Does not Exist'},status=status.HTTP_404_NOT_FOUND)
+            return Response({'message': 'Category Does not Exist'}, status=status.HTTP_404_NOT_FOUND)
+
 class GetSubcategoryView(APIView):
-    serializer_class=CategorySerializer
-    def get(self,request):
-        Category_id=request.data.get('Category_id')
+    serializer_class = CategorySerializer
+    permission_classes = [IsAuthenticated]  # Require authentication
+
+    def get(self, request):
+        Category_id = request.data.get('Category_id')
         try:
-            category=Category.objects.get(id=Category_id)
-            output=Subcategory.objects.filter(status='Active',category=category)
-            serial=self.serializer_class(output,many=True)
-            return Response(serial.data,status=status.HTTP_200_OK)
+            category = Category.objects.get(id=Category_id)
+            output = Subcategory.objects.filter(status='Active', category=category)
+            serial = self.serializer_class(output, many=True)
+            return Response(serial.data, status=status.HTTP_200_OK)
         except Category.DoesNotExist:
-            return Response({'message':'Category Does not Exist'},status=status.HTTP_404_NOT_FOUND)
+            return Response({'message': 'Category Does not Exist'}, status=status.HTTP_404_NOT_FOUND)
         except Subcategory.DoesNotExist:
-            return Response({'message':'Subcategory Does not Exist'},status=status.HTTP_404_NOT_FOUND)
+            return Response({'message': 'Subcategory Does not Exist'}, status=status.HTTP_404_NOT_FOUND)
+
    
 
 class LoginView(APIView):
