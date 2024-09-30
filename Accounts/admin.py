@@ -1,4 +1,5 @@
 from django.contrib import admin
+from .models import ServiceRequest, Invoice
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import Category, Collar, Dealer, Franchise_Type, Franchisee, Service_Type, ServiceProvider, ServiceRegister, Subcategory, User,Country_Codes
 # Register your models here.
@@ -98,3 +99,17 @@ class ServiceProviderAdmin(admin.ModelAdmin):
     # Optionally, you can make `list_filter` for easy filtering
     list_filter = ('status', 'payout_required', 'verification_by_dealer')
 
+
+
+
+@admin.register(ServiceRequest)
+class ServiceRequestAdmin(admin.ModelAdmin):
+    list_display = ('customer', 'service_provider', 'service', 'work_status', 'acceptance_status', 'request_date', 'availability_from', 'availability_to')
+    search_fields = ('customer__full_name', 'service_provider__full_name', 'service__title')
+    list_filter = ('work_status', 'acceptance_status', 'request_date')
+
+@admin.register(Invoice)
+class InvoiceAdmin(admin.ModelAdmin):
+    list_display = ('invoice_number', 'invoice_type', 'service_request', 'sender', 'receiver', 'price', 'total_amount', 'payment_status', 'invoice_date', 'due_date')
+    search_fields = ('invoice_number', 'sender__full_name', 'receiver__full_name')
+    list_filter = ('invoice_type', 'payment_status', 'invoice_date')
