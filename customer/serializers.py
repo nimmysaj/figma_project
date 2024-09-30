@@ -4,7 +4,7 @@ import re
 from django.core.validators import RegexValidator,EmailValidator
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
-from Accounts.models import Category,Subcategory
+from Accounts.models import Category,Subcategory,ServiceProvider
 
 phone_regex = RegexValidator(
     regex=r'^\d{9,15}$',  
@@ -129,12 +129,20 @@ class NewPasswordSerializer(serializers.ModelSerializer):
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['id', 'title', 'image' , 'description' , 'status']
-class SubcategorySerialzer(serializers.ModelSerializer):
-    class Meta:
-        model=Subcategory
-        fields=['id','title','category','image','description','service_type','collar','status']
+        fields = ['id', 'title', 'image', 'description', 'status']
 
+ 
+class SubcategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subcategory
+        fields = ['id', 'title', 'category', 'image', 'description', 'service_type', 'collar', 'status']
+
+
+
+class ServiceProviderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ServiceProvider
+        fields = ['id', 'full_name', 'address', 'gender', 'date_of_birth', 'district', 'state', 'payout_required']
 class UserSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(validators=[phone_regex])
 

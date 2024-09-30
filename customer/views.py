@@ -8,39 +8,43 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken
-from Accounts.models import User, OTP,Category,Subcategory
-from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, NewPasswordSerializer,LoginSerializer,CategorySerializer,SubcategorySerialzer
+from Accounts.models import User, OTP,Category,Subcategory,ServiceProvider,ServiceRegister
+from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, NewPasswordSerializer,LoginSerializer,CategorySerializer,SubcategorySerializer,ServiceProviderSerializer
 from django.utils import timezone
+from rest_framework import viewsets
+from rest_framework.decorators import action
 
-from rest_framework.permissions import IsAuthenticated
-
-class GetCategoriesView(APIView):
+class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [IsAuthenticated]  # Require authentication
+    permission_classes = [IsAuthenticated]  # Requires JWT authentication to access
+    
+    # Custom action to fetch subcategories by category ID
+    @action(detail=True, methods=['get'])
+    def subcategories(self, request, pk=None):
+        category = self.get_object()
+        subcategories = Subcategory.objects.filter(category=category)
+        serializer = SubcategorySerializer(subcategories, many=True)
+        return Response(serializer.data)
 
-    def get(self, request):
-        try:
-            output = Category.objects.filter(status='Active')
-            serial = self.serializer_class(output, many=True)
-            return Response(serial.data, status=status.HTTP_200_OK)
-        except Category.DoesNotExist:
-            return Response({'message': 'Category Does not Exist'}, status=status.HTTP_404_NOT_FOUND)
+class SubcategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Subcategory.objects.all()
+    serializer_class = SubcategorySerializer
+    permission_classes = [IsAuthenticated]
 
-class GetSubcategoryView(APIView):
-    serializer_class = CategorySerializer
-    permission_classes = [IsAuthenticated]  # Require authentication
-
-    def get(self, request):
-        Category_id = request.data.get('Category_id')
-        try:
-            category = Category.objects.get(id=Category_id)
-            output = Subcategory.objects.filter(status='Active', category=category)
-            serial = self.serializer_class(output, many=True)
-            return Response(serial.data, status=status.HTTP_200_OK)
-        except Category.DoesNotExist:
-            return Response({'message': 'Category Does not Exist'}, status=status.HTTP_404_NOT_FOUND)
-        except Subcategory.DoesNotExist:
-            return Response({'message': 'Subcategory Does not Exist'}, status=status.HTTP_404_NOT_FOUND)
+    # Custom action to fetch service providers by subcategory ID
+    @action(detail=True, methods=['get'])
+    def service_providers(self, request, pk=None):
+        subcategory = self.get_object()
+        
+        # Fetch service registers related to this subcategory
+        service_registers = ServiceRegister.objects.filter(subcategory=subcategory)
+        
+        # Extract the service providers from the service registers
+        service_providers = ServiceProvider.objects.filter(services__in=service_registers)
+        
+        serializer = ServiceProviderSerializer(service_providers, many=True)
+        return Response(serializer.data)
 
    
 
