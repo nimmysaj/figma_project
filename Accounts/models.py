@@ -97,7 +97,7 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser):
     # Role-based fields
-    is_customer = models.BooleanField(default=True)
+    is_customer = models.BooleanField(default=False)
     is_service_provider = models.BooleanField(default=False)
     is_franchisee = models.BooleanField(default=False)
     is_dealer = models.BooleanField(default=False)
@@ -140,10 +140,6 @@ class User(AbstractBaseUser):
         blank=True,
         related_name='app1_user_permissions'  # Add a unique related_name
     )
-         
-
-    def __str__(self):
-        return self.email
     
     def __str__(self):
         return self.email if self.email else self.phone_number
@@ -182,7 +178,7 @@ class Franchisee(models.Model):
     def save(self, *args, **kwargs):
         if not self.custom_id:
             # Generate the custom ID format
-            self.custom_id = f'FR{self.id}'  # Format: FR{id}
+            self.custom_id = f'FR{self.user.id}'  # Format: FR{id}
 
         super(Franchisee, self).save(*args, **kwargs)
 
@@ -217,7 +213,7 @@ class Dealer(models.Model):
             franchisee_id = f'FR{self.franchisee.id}'  # Franchisee ID with prefix FR
             
             # Combine to form the custom ID
-            self.custom_id = f'D{self.id}{franchisee_id}'  # Format: D{id}FR{id}
+            self.custom_id = f'D{self.user.id}{franchisee_id}'  # Format: D{id}FR{id}
 
         super(Dealer, self).save(*args, **kwargs)
 
@@ -246,6 +242,7 @@ class ServiceProvider(models.Model):
     profile_image = models.ImageField(upload_to='s-profile-images/', null=True, blank=True, validators=[validate_file_size])
     date_of_birth = models.DateField(null=True, blank=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
+    about = models.TextField()
 
     dealer = models.ForeignKey(Dealer, on_delete=models.PROTECT)
     franchisee = models.ForeignKey(Franchisee, on_delete=models.PROTECT)
@@ -329,12 +326,13 @@ class OTP(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"OTP for {self.user.username} - Expires at {self.expires_at}"
+        return f"OTP for {self.user.email or self.user.phone_number} - Expires at {self.expires_at}"
     
 
 class Service_Type(models.Model):
     name = models.CharField(max_length=255)
     details = models.TextField()
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
         return self.name  
@@ -363,23 +361,19 @@ class Subcategory(models.Model):
     image = models.ImageField(upload_to='subcategory-images/', null=True, blank=True, validators=[validate_file_size])  
     description = models.TextField() 
     service_type = models.ForeignKey(Service_Type, on_delete=models.PROTECT,related_name='service_type')
-    collar = models.ForeignKey(Collar, on_delete=models.PROTECT,related_name='collar') 
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')]) 
 
     def __str__(self):
         return self.title  
 
-    def basic_amount(self):
-        basic_amount = self.service_type.amount + self.collar.amount
-        return basic_amount         
-    
 class ServiceRegister(models.Model):
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE, related_name='services')
-    title = models.CharField(max_length=50,db_index=True)
     description = models.TextField()
     gstcode = models.CharField(max_length=50)
     category = models.ForeignKey(Category, on_delete=models.PROTECT,related_name='serviceregister_category')    
     subcategory = models.ForeignKey(Subcategory, on_delete=models.PROTECT,related_name='serviceregister_subcategory') 
+    collar = models.ForeignKey(Collar, on_delete=models.PROTECT,related_name='collar') 
+    amount_forthis_service = models.DecimalField(max_digits=10, decimal_places=2)
     license = models.FileField(upload_to='service-license/', blank=True, null=True, validators=[validate_file_size])
     image = models.ImageField(upload_to='service-images/', null=True, blank=True, validators=[validate_file_size])
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')],default='Active')
@@ -387,6 +381,22 @@ class ServiceRegister(models.Model):
 
     def __str__(self):
         return self.title  
+    
+    def basic_amount(self):
+        # Get the base amount from the subcategory's service_type amount
+        basic_amount = self.subcategory.service_type.amount
+
+        # Only add collar amount if the subcategory is 'one time lead' and collar is not None
+        if self.subcategory == 'one_time_lead' and self.collar:
+            basic_amount += self.collar.amount
+
+        return basic_amount
+    
+    def save(self, *args, **kwargs):
+        # If subcategory is not 'one_time_lead', set collar to None
+        if self.subcategory != 'one_time_lead':
+            self.collar = None
+        super().save(*args, **kwargs)
 
 class PaymentRequest(models.Model):
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.PROTECT,related_name='from_paymentrequest')
@@ -492,7 +502,16 @@ class Invoice(models.Model):
             return f"Invoice for Service Request {self.service_request} - {self.payment_status}"
         else:
             return f"Invoice from {self.sender} to {self.receiver} - {self.payment_status}"
+        
+    def mark_paid(self):
+        """Method to mark the invoice as paid."""
+        self.payment_status = 'paid'
+        self.save()
 
+    def cancel_invoice(self):
+        """Method to cancel the invoice."""
+        self.payment_status = 'cancelled'
+        self.save()
 
 class Payment(models.Model):
 
