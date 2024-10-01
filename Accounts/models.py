@@ -559,3 +559,73 @@ class Complaint(models.Model):
         self.status = 'rejected'
         self.resolution_notes = rejection_reason
         self.save()
+
+
+from django.db import models
+from django.conf import settings
+from django.utils import timezone
+
+
+class RazorPay_Payment(models.Model):
+    PAYMENT_METHOD_CHOICES = [
+        ('razorpay', 'Razorpay'),
+        ('bank_transfer', 'Bank Transfer'),
+    ]
+
+    PAYMENT_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+    ]
+
+    TRANSACTION_TYPE_CHOICES = [
+        ('user_to_service_provider', 'User to Service Provider'),
+        ('service_provider_to_dealer', 'Service Provider to Dealer'),
+    ]
+
+    # Basic Payment Details
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default='INR')
+    description = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # Sender and Receiver
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='payment_requests_as_sender')
+    service_provider = models.ForeignKey('ServiceProvider', on_delete=models.PROTECT, related_name='payment_requests_received', null=True)
+    dealer = models.ForeignKey('Dealer', on_delete=models.PROTECT, related_name='payment_requests_received', null=True)
+
+    # Transaction Type
+    transaction_type = models.CharField(max_length=30, choices=TRANSACTION_TYPE_CHOICES)
+
+    # Payment Method & Bank Details
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES)
+    account_holder_name = models.CharField(max_length=50, blank=True, null=True)
+    bank_name = models.CharField(max_length=50, blank=True, null=True)
+    bank_branch = models.CharField(max_length=50, blank=True, null=True)
+    account_number = models.CharField(max_length=50, blank=True, null=True)
+    ifsc_code = models.CharField(max_length=50, blank=True, null=True)
+
+    # Razorpay-specific fields
+    razorpay_order_id = models.CharField(max_length=255, blank=True, null=True)
+    razorpay_payment_id = models.CharField(max_length=255, blank=True, null=True)
+    razorpay_signature = models.CharField(max_length=255, blank=True, null=True)
+
+    # Status Tracking
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
+    payment_date = models.DateTimeField(default=timezone.now, blank=True, null=True)
+
+    def __str__(self):
+        return f"Payment Request of {self.amount} from {self.sender} to {self.service_provider or self.dealer}"
+
+    def mark_completed(self, razorpay_payment_id=None):
+        """Mark the payment as completed and save the Razorpay payment ID."""
+        self.payment_status = 'completed'
+        if razorpay_payment_id:
+            self.razorpay_payment_id = razorpay_payment_id
+        self.payment_date = timezone.now()
+        self.save()
+
+    def mark_failed(self):
+        """Mark the payment as failed."""
+        self.payment_status = 'failed'
+        self.save()
