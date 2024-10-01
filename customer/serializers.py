@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate
-from app1.models import Customer
+from Accounts.models import Customer
 from django.contrib.auth.password_validation import validate_password
 
 User = get_user_model()
