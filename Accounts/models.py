@@ -561,10 +561,6 @@ class Complaint(models.Model):
         self.save()
 
 
-from django.db import models
-from django.conf import settings
-from django.utils import timezone
-
 
 class RazorPay_Payment(models.Model):
     PAYMENT_METHOD_CHOICES = [
