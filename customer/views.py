@@ -8,7 +8,7 @@ from django.utils.http import urlsafe_base64_encode
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import smart_bytes
 from .serializers import CustomerPasswordForgotSerializer, CustomerSerializer,RegisterSerializer,SetNewPasswordSerializer
-from accounts.models import OTP, Customer, User
+from Accounts.models import OTP, Customer, User
 from rest_framework import status, permissions,generics,viewsets
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import update_last_login
