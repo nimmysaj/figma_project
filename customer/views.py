@@ -10,10 +10,14 @@ from django.utils.encoding import smart_bytes
 from .serializers import CustomerPasswordForgotSerializer, CustomerSerializer,RegisterSerializer,SetNewPasswordSerializer
 from Accounts.models import OTP, Customer, User
 from rest_framework import status, permissions,generics,viewsets
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.exceptions import PermissionDenied
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from rest_framework_simplejwt.backends import TokenBackend
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from django.contrib.auth.models import update_last_login
 from django.core.mail import send_mail
 from .serializers import CustomerLoginSerializer
+
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -154,7 +158,39 @@ class CustomerPasswordForgotView(generics.GenericAPIView):
 
 
 class CustomerViewSet(viewsets.ModelViewSet):
-    permission_class =[IsAuthenticated]
-    queryset =Customer.objects.all()
+    permission_class = [IsAuthenticated]
+    queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Override the retrieve method to ensure a user can only access their own profile.
+        """
+        # Get the user ID from the URL (pk) and the logged-in user's ID
+        pk = kwargs.get('pk')
+        auth_header = request.headers.get('Authorization')
+
+        # Extract the token from the Authorization header
+        if auth_header and auth_header.startswith('Bearer '):
+            access_token = AccessToken(auth_header.split(' ')[1])
+        else:
+            raise PermissionDenied("No valid access token provided.")
+
+        logged_in_user_id = int(access_token['user_id'])
+
+        # Check if the logged-in user's ID matches the pk in the URL
+        if int(pk) != logged_in_user_id:
+            raise PermissionDenied("You do not have permission to access this profile.")
+
+        try:
+            customer = Customer.objects.get(user_id=request.user.id)
+        except Customer.DoesNotExist:
+            return Response({"detail": "Customer profile not found.", 'id': pk}, status=403)
+
+        # If the user is accessing their own profile, proceed with the normal retrieve process
+        # customer = self.get_object()  # Get the customer object
+        serializer = self.get_serializer(customer)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
     
