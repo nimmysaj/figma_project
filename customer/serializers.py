@@ -142,7 +142,7 @@ class SubcategorySerializer(serializers.ModelSerializer):
 class ServiceProviderSerializer(serializers.ModelSerializer):
     class Meta:
         model = ServiceProvider
-        fields = ['id', 'full_name', 'address', 'gender', 'date_of_birth', 'district', 'state', 'payout_required']
+        fields = ['id', 'gender', 'date_of_birth', 'payout_required']
 class UserSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(validators=[phone_regex])
 

@@ -94,6 +94,20 @@ class VerifyOTPView(generics.GenericAPIView):
             }, status=status.HTTP_200_OK)
         except OTP.DoesNotExist:
             return Response({"error": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
+        
+class ResendOTP(generics.GenericAPIView):
+    serializer_class = ForgotPasswordSerializer
+    permission_classes=[AllowAny]
+    def post(self, request):
+        serializer=self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            user= serializer.validated_data['user']
+            otp = OTP.objects.get(user=user)
+            #otp sending code goes here
+            print(otp.otp_code)
+            return Response({"message": "OTP resent."}, status=status.HTTP_200_OK)
+        else :
+            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
 class NewPasswordView(generics.UpdateAPIView):
     serializer_class = NewPasswordSerializer
