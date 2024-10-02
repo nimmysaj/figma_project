@@ -1,7 +1,17 @@
 from rest_framework import serializers
-from .models import CustomerProfile
+from .models import Customer
 
-class CustomerProfileSerializer(serializers.ModelSerializer):
+class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
-        model = CustomerProfile
-        fields = ['id', 'full_name', 'email', 'phone', 'gender', 'date_of_birth', 'address', 'house_name', 'landmark', 'pin_code', 'district', 'state']
+        model = Customer
+        fields = ['profile_image', 'full_name', 'address', 'date_of_birth', 'gender', 'house_name', 'landmark', 'pin_code', 'district', 'state']
+        read_only_fields = ['custom_id', 'status']
+
+    def create(self, validated_data):
+        # Retrieve the user from the context
+        user = self.context.get('user')  # Get user from context (or handle accordingly)
+        
+        # Create the Customer instance with user and other validated data
+        customer = Customer.objects.create(user=user, **validated_data)
+        
+        return customer

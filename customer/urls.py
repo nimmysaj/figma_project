@@ -1,10 +1,15 @@
 from django.urls import path
-from .views import CustomerProfileCreateView, CustomerProfileListView, CustomerProfileDetailView
+from .views import (
+    CustomerProfileCreateView, 
+    CustomerProfileDetailView, 
+    CustomerProfileListView, 
+)
 
 urlpatterns = [
-    path('profile/create/', CustomerProfileCreateView.as_view(), name='customer-create'),
-    path('profile/list/', CustomerProfileListView.as_view(), name='customer-list'),
-    path('profile/<int:pk>/', CustomerProfileDetailView.as_view(), name='customer-detail'),
+    # Customer profile endpoints
+    path('create/', CustomerProfileCreateView.as_view(), name='create_customer_profile'),
+    path('<int:pk>/edit/', CustomerProfileDetailView.as_view(), name='edit_customer_profile'),
+    path('<int:pk>/', CustomerProfileListView.as_view(), name='view_customer_profile'),
 ]
 
 

@@ -1,12 +1,12 @@
 import re
 from django.contrib.auth.models import Permission,Group
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, User
 from django.forms import ValidationError
 from django.utils import timezone
 import random
 from django.core.validators import RegexValidator
-import phonenumbers
+# import phonenumbers
 from figma import settings
 
 # Create your models here.
@@ -277,7 +277,8 @@ class ServiceProvider(models.Model):
         return self.custom_id
 
 class Customer(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='customer')
+     # Commenting out user field for now
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     custom_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)  # Custom ID field
     
     # Customer-specific fields
@@ -288,6 +289,10 @@ class Customer(models.Model):
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')])
 
     def save(self, *args, **kwargs):
+        # if isinstance(self.user, AnonymousUser):
+        #     # Create or get a default user for anonymous customers
+        #     self.user, _ = User.objects.get_or_create(username='default_user')
+
         if not self.custom_id:
             # Find the last existing custom ID
             last_custom_id = Customer.objects.order_by('custom_id').last()
@@ -456,106 +461,106 @@ class ServiceRequest(models.Model):
         if self.availability_from >= self.availability_to:
             raise ValidationError('Availability "from" time must be before "to" time.')    
 
-class Invoice(models.Model):
-    INVOICE_TYPE_CHOICES = [
-        ('service_request', 'Service Request'),
-        ('dealer_payment', 'Dealer Payment'),
-        ('provider_payment', 'Service Provider Payment'),
-    ]
+# class Invoice(models.Model):
+#     INVOICE_TYPE_CHOICES = [
+#         ('service_request', 'Service Request'),
+#         ('dealer_payment', 'Dealer Payment'),
+#         ('provider_payment', 'Service Provider Payment'),
+#     ]
     
-    invoice_number = models.IntegerField()
+#     invoice_number = models.IntegerField()
 
-    #invoice_type: This field determines whether the invoice is related to a Service Request payment (service_request), a Dealer Payment (dealer_payment), or a Service Provider Payment (provider_payment).
-    invoice_type = models.CharField(max_length=20, choices=INVOICE_TYPE_CHOICES)
+#     #invoice_type: This field determines whether the invoice is related to a Service Request payment (service_request), a Dealer Payment (dealer_payment), or a Service Provider Payment (provider_payment).
+#     invoice_type = models.CharField(max_length=20, choices=INVOICE_TYPE_CHOICES)
     
-    #A foreign key that links to a ServiceRequest model, which is populated if the payment is related to a customer requesting a service.
-    service_request = models.ForeignKey(ServiceRequest, on_delete=models.SET_NULL, null=True, blank=True,related_name='invoices')
+#     #A foreign key that links to a ServiceRequest model, which is populated if the payment is related to a customer requesting a service.
+#     service_request = models.ForeignKey(ServiceRequest, on_delete=models.SET_NULL, null=True, blank=True,related_name='invoices')
 
-    # Sender (user who is paying) and receiver (user receiving payment)
-    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_invoices')
-    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_invoices')
+#     # Sender (user who is paying) and receiver (user receiving payment)
+#     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_invoices')
+#     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_invoices')
     
-    quantity = models.IntegerField(null=True, blank=True)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    payment_status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('paid', 'Paid'), ('cancelled', 'Cancelled')], default='pending')
+#     quantity = models.IntegerField(null=True, blank=True)
+#     price = models.DecimalField(max_digits=10, decimal_places=2)
+#     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+#     payment_status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('paid', 'Paid'), ('cancelled', 'Cancelled')], default='pending')
 
-    invoice_date = models.DateTimeField(auto_now_add=True)
-    due_date = models.DateTimeField(null=True, blank=True)
+#     invoice_date = models.DateTimeField(auto_now_add=True)
+#     due_date = models.DateTimeField(null=True, blank=True)
     
-    appointment_date = models.DateTimeField()
-    additional_requirements = models.TextField(null=True, blank=True)
-    accepted_terms = models.BooleanField(default=False)
+#     appointment_date = models.DateTimeField()
+#     additional_requirements = models.TextField(null=True, blank=True)
+#     accepted_terms = models.BooleanField(default=False)
 
-    def __str__(self):
-        if self.service_request:
-            return f"Invoice for Service Request {self.service_request} - {self.payment_status}"
-        else:
-            return f"Invoice from {self.sender} to {self.receiver} - {self.payment_status}"
-
-
-class Payment(models.Model):
-
-    PAYMENT_STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('completed', 'Completed'),
-        ('failed', 'Failed'),
-    ]
-
-    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='payments')
-    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_payments')  # User who sends the payment
-    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_payments')  # User who receives the payment
-    transaction_id = models.CharField(max_length=15)
-    amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
-    payment_method = models.CharField(max_length=50, choices=PAYMENT_METHOD_CHOICES)
-    payment_date = models.DateTimeField(default=timezone.now)
-    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
-
-    def __str__(self):
-        return f"Payment of {self.amount_paid} by {self.sender} to {self.receiver}"
-
-    def mark_completed(self):
-        self.payment_status = 'completed'
-        self.save()
-
-    def mark_failed(self):
-        self.payment_status = 'failed'
-        self.save()
+#     def __str__(self):
+#         if self.service_request:
+#             return f"Invoice for Service Request {self.service_request} - {self.payment_status}"
+#         else:
+#             return f"Invoice from {self.sender} to {self.receiver} - {self.payment_status}"
 
 
-class Complaint(models.Model):
-    STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('in_progress', 'In Progress'),
-        ('resolved', 'Resolved'),
-        ('rejected', 'Rejected'),
-    ]
+# class Payment(models.Model):
+
+#     PAYMENT_STATUS_CHOICES = [
+#         ('pending', 'Pending'),
+#         ('completed', 'Completed'),
+#         ('failed', 'Failed'),
+#     ]
+
+#     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='payments')
+#     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_payments')  # User who sends the payment
+#     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_payments')  # User who receives the payment
+#     transaction_id = models.CharField(max_length=15)
+#     amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
+#     payment_method = models.CharField(max_length=50, choices=PAYMENT_METHOD_CHOICES)
+#     payment_date = models.DateTimeField(default=timezone.now)
+#     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
+
+#     def __str__(self):
+#         return f"Payment of {self.amount_paid} by {self.sender} to {self.receiver}"
+
+#     def mark_completed(self):
+#         self.payment_status = 'completed'
+#         self.save()
+
+#     def mark_failed(self):
+#         self.payment_status = 'failed'
+#         self.save()
+
+
+# class Complaint(models.Model):
+#     STATUS_CHOICES = [
+#         ('pending', 'Pending'),
+#         ('in_progress', 'In Progress'),
+#         ('resolved', 'Resolved'),
+#         ('rejected', 'Rejected'),
+#     ]
     
-    customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_compliant')  
-    service_provider = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_compliant')  
-    service_request = models.ForeignKey(ServiceRequest, on_delete=models.SET_NULL, null=True, blank=True, related_name='complaints')  # Optional link to service request
-    subject = models.CharField(max_length=255)
-    description = models.TextField()
-    images = models.ImageField(upload_to='complaint/', null=True, blank=True, validators=[validate_file_size])
-    submitted_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    resolved_at = models.DateTimeField(null=True, blank=True)
-    resolution_notes = models.TextField(null=True, blank=True)
+#     customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_compliant')  
+#     service_provider = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_compliant')  
+#     service_request = models.ForeignKey(ServiceRequest, on_delete=models.SET_NULL, null=True, blank=True, related_name='complaints')  # Optional link to service request
+#     subject = models.CharField(max_length=255)
+#     description = models.TextField()
+#     images = models.ImageField(upload_to='complaint/', null=True, blank=True, validators=[validate_file_size])
+#     submitted_at = models.DateTimeField(auto_now_add=True)
+#     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+#     resolved_at = models.DateTimeField(null=True, blank=True)
+#     resolution_notes = models.TextField(null=True, blank=True)
 
-    def __str__(self):
-        return f"Complaint by {self.customer} - {self.subject} ({self.status})"
+#     def __str__(self):
+#         return f"Complaint by {self.customer} - {self.subject} ({self.status})"
     
-    def mark_as_resolved(self, resolution_notes=''):
-        self.status = 'resolved'
-        self.resolved_at = timezone.now()
-        self.resolution_notes = resolution_notes
-        self.save()
+#     def mark_as_resolved(self, resolution_notes=''):
+#         self.status = 'resolved'
+#         self.resolved_at = timezone.now()
+#         self.resolution_notes = resolution_notes
+#         self.save()
 
-    def mark_as_in_progress(self):
-        self.status = 'in_progress'
-        self.save()
+#     def mark_as_in_progress(self):
+#         self.status = 'in_progress'
+#         self.save()
 
-    def reject(self, rejection_reason=''):
-        self.status = 'rejected'
-        self.resolution_notes = rejection_reason
-        self.save()
+#     def reject(self, rejection_reason=''):
+#         self.status = 'rejected'
+#         self.resolution_notes = rejection_reason
+#         self.save()
