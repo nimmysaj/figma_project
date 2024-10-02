@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import ServiceRequest, Invoice
+from .models import Complaint, ServiceRequest, Invoice
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import Category, Collar, Dealer, Franchise_Type, Franchisee, Service_Type, ServiceProvider, ServiceRegister, Subcategory, User,Country_Codes
 # Register your models here.
@@ -25,7 +25,7 @@ admin.site.register(Country_Codes)
 
 
 class ServiceRegisterAdmin(admin.ModelAdmin):
-    list_display = ('id', 'service_provider', 'title', 'description', 'gstcode', 
+    list_display = ('id', 'service_provider',  'description', 'gstcode', 
                     'category', 'subcategory', 'license', 'image', 'accepted_terms', 'collar','available_lead_balance')
 
 # Register the model with the custom admin class
@@ -113,3 +113,22 @@ class InvoiceAdmin(admin.ModelAdmin):
     list_display = ('invoice_number', 'invoice_type', 'service_request', 'sender', 'receiver', 'price', 'total_amount', 'payment_status', 'invoice_date', 'due_date')
     search_fields = ('invoice_number', 'sender__full_name', 'receiver__full_name')
     list_filter = ('invoice_type', 'payment_status', 'invoice_date')
+
+class ComplaintAdmin(admin.ModelAdmin):
+    # Fields to be displayed in the admin list view
+    list_display = ('id', 'customer', 'service_provider', 'subject', 'status', 'submitted_at', 'resolved_at')
+    
+    # Fields to be searchable
+    search_fields = ('subject', 'customer__username', 'service_provider__username', 'description')
+    
+    # Filters for the admin list view
+    list_filter = ('status', 'submitted_at', 'resolved_at', 'service_provider')
+
+    # Optional: Making 'subject' and 'status' editable in the list view
+    list_editable = ('status',)
+
+    # Ordering the list by submission date
+    ordering = ('-submitted_at',)
+
+# Registering the Complaint model with the custom admin class
+admin.site.register(Complaint, ComplaintAdmin)

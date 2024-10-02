@@ -387,7 +387,8 @@ class ServiceRegister(models.Model):
     available_lead_balance = models.IntegerField(default=0)
 
     def __str__(self):
-        return self.title
+        # Display both the service provider and the subcategory for better clarity
+        return f"{self.service_provider.user} - {self.subcategory.title}"
 
     def update_lead_balance(self, extra_leads):
         """Update available lead balance by adding extra leads from collars."""

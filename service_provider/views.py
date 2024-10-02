@@ -1,9 +1,12 @@
+from django.utils import timezone
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from Accounts.models import Service_Type, Collar, Category, Subcategory, ServiceRegister
-from .serializers import  ServiceRegisterSerializer
+from Accounts.models import Complaint, Service_Type, Collar, Category, Subcategory, ServiceRegister
+from .serializers import  ComplaintSerializer, ServiceRegisterSerializer
 from django.shortcuts import get_object_or_404
+from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 
 class ServiceRegisterViewSet(viewsets.ViewSet):
     # permission_classes = [IsAuthenticated]
@@ -37,3 +40,43 @@ class ServiceRegisterViewSet(viewsets.ViewSet):
         instance = get_object_or_404(ServiceRegister, pk=pk)
         instance.delete()
         return Response({"message": "Service Register deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+    
+
+class ComplaintViewSet(viewsets.ModelViewSet):
+    queryset = Complaint.objects.all()
+    serializer_class = ComplaintSerializer
+    # permission_classes = [IsAuthenticated]
+
+    # Custom action for service provider to accept or reject a complaint
+    @action(detail=True, methods=['post'])
+    def update_status(self, request, pk=None):
+        complaint = self.get_object()
+        user = request.user
+        print(user)
+
+        # Check if the requesting user is the service provider for this complaint
+        # if complaint.service_provider != user:
+        #     raise PermissionDenied("You do not have permission to update the status of this complaint.")
+
+        # Get the new status and reason from the request data
+        new_status = request.data.get('status')
+        reason = request.data.get('resolution_notes')
+
+        # Ensure valid status update
+        if new_status not in ['in_progress', 'resolved', 'rejected']:
+            return Response({'detail': 'Invalid status provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Update the complaint status and reason
+        complaint.status = new_status
+        complaint.resolution_notes = reason
+
+        if new_status == 'resolved':
+            complaint.resolved_at = timezone.now()  # Set resolved time if resolved
+
+        complaint.save()
+
+        # Return success response with the updated details
+        return Response({
+            'detail': f'Complaint status updated to {new_status}.',
+            'reason': reason
+        }, status=status.HTTP_200_OK)
