@@ -10,6 +10,9 @@ migrations/
 # Environment variables
 .env
 
+#venv
+figmaenv/
+
 # IDEs
 .vscode/
 .idea/

@@ -1,6 +1,19 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User,Country_Codes
+from .models import (
+    User,
+    Country_Codes, 
+    ServiceProvider, 
+    Franchisee, 
+    Dealer, 
+    Franchise_Type, 
+    ServiceRequest, 
+    ServiceRegister,
+    Invoice,
+    Category,
+    Subcategory,
+    Service_Type,
+    Collar)
 # Register your models here.
 
 class UserAdmin(BaseUserAdmin):
@@ -19,5 +32,16 @@ class UserAdmin(BaseUserAdmin):
     search_fields = ('email',)
     ordering = ('email',)
 
-admin.site.register(User, UserAdmin)
+admin.site.register(User)
 admin.site.register(Country_Codes)
+admin.site.register(ServiceProvider)
+admin.site.register(Franchisee)
+admin.site.register(Dealer)
+admin.site.register(Franchise_Type)
+admin.site.register(ServiceRequest)
+admin.site.register(ServiceRegister)
+admin.site.register(Category)
+admin.site.register(Subcategory)
+admin.site.register(Service_Type)
+admin.site.register(Collar)
+admin.site.register(Invoice)

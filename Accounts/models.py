@@ -1,4 +1,5 @@
 import re
+import uuid
 from django.contrib.auth.models import Permission,Group
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
@@ -274,8 +275,8 @@ class ServiceProvider(models.Model):
 
 
     def __str__(self):
-        return self.custom_id
-
+        # return self.custom_id
+        return self.user.email
 class Customer(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='customer')
     custom_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)  # Custom ID field
@@ -378,7 +379,9 @@ class ServiceRegister(models.Model):
     title = models.CharField(max_length=50,db_index=True)
     description = models.TextField()
     gstcode = models.CharField(max_length=50)
-    category = models.ForeignKey(Category, on_delete=models.PROTECT,related_name='serviceregister_category')    
+    category = models.ForeignKey(Category, on_delete=models.PROTECT,related_name='serviceregister_category')   
+    collar = models.ForeignKey(Collar, on_delete=models.PROTECT,related_name='service_register_collars') 
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
     subcategory = models.ForeignKey(Subcategory, on_delete=models.PROTECT,related_name='serviceregister_subcategory') 
     license = models.FileField(upload_to='service-license/', blank=True, null=True, validators=[validate_file_size])
     image = models.ImageField(upload_to='service-images/', null=True, blank=True, validators=[validate_file_size])
@@ -437,8 +440,9 @@ class ServiceRequest(models.Model):
         ('cancelled', 'Cancelled'),
     ]
 
-    customer = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_servicerequest')
-    service_provider = models.ForeignKey(User, on_delete=models.PROTECT,related_name='to_servicerequest')
+    booking_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)  # Custom ID field
+    customer = models.ForeignKey(User, on_delete=models.PROTECT,related_name='to_servicerequest')
+    service_provider = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_servicerequest')
     service = models.ForeignKey(ServiceRegister, on_delete=models.PROTECT,related_name='servicerequest')
     work_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     acceptance_status = models.CharField(max_length=20,choices=[('accept', 'accept'), ('decline', 'decline'),('pending', 'pending')],default='pending')
@@ -448,8 +452,19 @@ class ServiceRequest(models.Model):
     additional_notes = models.TextField(blank=True, null=True)
     image = models.ImageField(upload_to='service_request/', null=True, blank=True, validators=[validate_file_size])
 
+    def save(self, *args, **kwargs):
+        if not self.booking_id:
+            # Generate a unique booking ID using UUID or a custom method
+            self.booking_id = self.generate_booking_id()
+        super(ServiceRequest, self).save(*args, **kwargs)
+
+    def generate_booking_id(self):
+        # You can customize the booking ID generation logic
+        return f'BI-{uuid.uuid4().hex[:8].upper()}'
+
     def __str__(self):
-        return f"Request by {self.customer.full_name} for {self.service.title} ({self.acceptance_status})"
+        # return f"Request by {self.customer.full_name} for {self.service.title} ({self.acceptance_status})"
+        return f"Request by {self.customer.full_name} to {self.service_provider} ({self.acceptance_status})"
 
     def clean(self):
         # Ensure the availability_from is before availability_to
@@ -482,10 +497,22 @@ class Invoice(models.Model):
 
     invoice_date = models.DateTimeField(auto_now_add=True)
     due_date = models.DateTimeField(null=True, blank=True)
-    
+
     appointment_date = models.DateTimeField()
     additional_requirements = models.TextField(null=True, blank=True)
     accepted_terms = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        if not self.invoice_number:
+            # Generate a new unique invoice number by finding the max value
+            last_invoice = Invoice.objects.all().order_by('invoice_number').last()
+            if last_invoice:
+                self.invoice_number = last_invoice.invoice_number + 1
+            else:
+                self.invoice_number = 1000  # Starting invoice number if none exists
+        self.total_amount = self.quantity * self.price
+        super(Invoice, self).save(*args, **kwargs)
+
 
     def __str__(self):
         if self.service_request:
