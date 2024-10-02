@@ -7,7 +7,7 @@ from .utils import send_otp_via_email, send_otp_via_phone
 from django.utils.http import urlsafe_base64_encode
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import smart_bytes
-from .serializers import CustomerPasswordForgotSerializer, CustomerSerializer,RegisterSerializer,SetNewPasswordSerializer
+from .serializers import CustomerPasswordForgotSerializer, CustomerSerializer,RegisterSerializer,SetNewPasswordSerializer,ResendOTPSerializer
 from Accounts.models import OTP, Customer, User
 from rest_framework import status, permissions,generics,viewsets
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -15,6 +15,23 @@ from django.contrib.auth.models import update_last_login
 from django.core.mail import send_mail
 from .serializers import CustomerLoginSerializer
 
+
+class ResendOTPView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = ResendOTPSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.get_user()
+
+            # Resend OTP via email or phone
+            if user.email:
+                send_otp_via_email(user)
+            elif user.phone_number:
+                send_otp_via_phone(user)
+
+            return Response({'message': 'OTP resent successfully.'}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 

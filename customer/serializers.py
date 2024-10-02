@@ -8,6 +8,32 @@ from django.contrib.auth.password_validation import validate_password
 
 User = get_user_model()
 
+
+class ResendOTPSerializer(serializers.Serializer):
+    email_or_phone = serializers.CharField(required=True)
+
+    def validate(self, data):
+        email_or_phone = data.get('email_or_phone')
+
+        # Check if the user exists with either email or phone
+        if '@' in email_or_phone:
+            if not User.objects.filter(email=email_or_phone).exists():
+                raise serializers.ValidationError("User with this email does not exist.")
+        else:
+            if not User.objects.filter(phone_number=email_or_phone).exists():
+                raise serializers.ValidationError("User with this phone number does not exist.")
+
+        return data
+
+    def get_user(self):
+        email_or_phone = self.validated_data['email_or_phone']
+        if '@' in email_or_phone:
+            return User.objects.get(email=email_or_phone)
+        else:
+            return User.objects.get(phone_number=email_or_phone)
+
+
+
 class RegisterSerializer(serializers.ModelSerializer):
     email_or_phone = serializers.CharField(required=True)
     password = serializers.CharField(write_only=True, min_length=8)
