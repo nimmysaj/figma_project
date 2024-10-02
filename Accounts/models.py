@@ -224,6 +224,7 @@ class Dealer(models.Model):
 class ServiceProvider(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='service_provider')
     custom_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)  # Custom ID field
+    about = models.TextField(default="No about info available") #added about field
 
     # Service provider-specific fields
     PAYOUT_FREQUENCY_CHOICES = [

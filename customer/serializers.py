@@ -214,3 +214,35 @@ class CustomerSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
+
+
+# serializers.py for service provider profile view
+from rest_framework import serializers
+from Accounts.models import ServiceProvider, CustomerReview, ServiceRequest
+
+class CustomerReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomerReview
+        fields = ['customer', 'rating', 'image', 'comment', 'created_at']
+
+class ServiceProviderProfileSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(source='user.full_name')
+    address = serializers.CharField(source='user.address')
+    landmark = serializers.CharField(source='user.landmark')
+    pin_code = serializers.CharField(source='user.pin_code')
+    district = serializers.CharField(source='user.district')
+    state = serializers.CharField(source='user.state.name')
+    about = serializers.CharField()
+    work_history_completed = serializers.SerializerMethodField()  
+    services = serializers.StringRelatedField(many=True)  
+    reviews = CustomerReviewSerializer(many=True, source='user.to_review')  
+   
+    
+
+    class Meta:
+        model = ServiceProvider
+        fields = ['custom_id', 'full_name', 'address', 'landmark', 'pin_code', 'district', 'state', 'about','work_history_completed','services', 'reviews' ]
+
+    def get_work_history_completed(self, obj):
+        return ServiceRequest.objects.filter(service_provider=obj.user, work_status='completed').count()
+

@@ -9,6 +9,7 @@ migrations/
 
 # Environment variables
 .env
+venv
 
 # IDEs
 .vscode/

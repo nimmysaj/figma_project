@@ -157,4 +157,29 @@ class CustomerViewSet(viewsets.ModelViewSet):
     permission_class =[IsAuthenticated]
     queryset =Customer.objects.all()
     serializer_class = CustomerSerializer
+
+
+
+
+#views for service provider profile view
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import AllowAny
+from Accounts.models import ServiceProvider
+from .serializers import ServiceProviderProfileSerializer
+
+class ServiceProviderProfileView(APIView):
+    permission_classes = [AllowAny]  
+
+    def get(self, request, id):  
+        try:
+            service_provider = ServiceProvider.objects.get(id=id)
+            serializer = ServiceProviderProfileSerializer(service_provider)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except ServiceProvider.DoesNotExist:
+            return Response({"detail": "Service Provider not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
     
