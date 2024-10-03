@@ -9,6 +9,7 @@ router.register(r'subcategories', SubcategoryViewSet, basename='subcategory')
 
 urlpatterns = [
     path('forgot-password/', ForgotPasswordView.as_view(), name='forgot-password'),
+    path('resend-otp/', ResendOTP.as_view(), name='resend-otp'),
     path('verify-otp/', VerifyOTPView.as_view(), name='verify-otp'),
     path('new-password/', NewPasswordView.as_view(), name='new-password'),
     path('login/', LoginView.as_view(), name='login'),
