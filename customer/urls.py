@@ -1,7 +1,7 @@
 from django.urls import path,include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
-from .views import ForgotPasswordView, VerifyOTPView, NewPasswordView,LoginView,CategoryViewSet,SubcategoryViewSet,SubcategoryServiceProviders
+from .views import ForgotPasswordView, VerifyOTPView, NewPasswordView,LoginView,CategoryViewSet,SubcategoryViewSet,SubcategoryServiceProviders,ResendOTP
 
 router = DefaultRouter()
 router.register(r'categories', CategoryViewSet, basename='category')
