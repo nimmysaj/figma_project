@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import User, Country_Codes, Category, Subcategory, Service_Type, \
     Collar, ServiceProvider, Dealer, Franchisee, Franchise_Type, \
-    ServiceRegister, ServiceRequest, Customer, ServiceProvider
+    ServiceRegister, ServiceRequest, Customer
 # Register your models here.
 
 class UserAdmin(BaseUserAdmin):
