@@ -4,7 +4,8 @@ import re
 from django.core.validators import RegexValidator,EmailValidator
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
-from Accounts.models import Category,Subcategory,ServiceProvider
+from Accounts.models import Category,Subcategory,ServiceProvider,CustomerReview,ServiceRegister
+from django.db.models import Avg
 
 phone_regex = RegexValidator(
     regex=r'^\d{9,15}$',  
@@ -126,23 +127,30 @@ class NewPasswordSerializer(serializers.ModelSerializer):
         instance.set_password(validated_data['password'])
         instance.save()
         return instance
+        
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['id', 'title', 'image', 'description', 'status']
+        fields = ['id', 'title', 'description', 'status']
 
  
 class SubcategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Subcategory
-        fields = ['id', 'title', 'category', 'image', 'description', 'service_type', 'collar', 'status']
+        fields = ['id', 'title', 'category', 'description', 'service_type', 'status']
 
-
-
+       
 class ServiceProviderSerializer(serializers.ModelSerializer):
+    # This will fetch the amount from ServiceRegister and average rating from CustomerReview
+    amount_forthis_service = serializers.DecimalField(source='services.amount_forthis_service', max_digits=10, decimal_places=2)
+    rating = serializers.FloatField()
+
     class Meta:
         model = ServiceProvider
-        fields = ['id', 'full_name', 'address', 'gender', 'date_of_birth', 'district', 'state', 'payout_required']
+        fields = ['user__full_name', 'amount_forthis_service', 'rating']  # Fields to return
+
+
+
 class UserSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(validators=[phone_regex])
 

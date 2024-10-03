@@ -13,40 +13,53 @@ from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, NewPassw
 from django.utils import timezone
 from rest_framework import viewsets
 from rest_framework.decorators import action
+from django.db.models import Avg
+
+
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Category.objects.all()
+    queryset = Category.objects.filter(status='active')  # Only active categories
     serializer_class = CategorySerializer
-    permission_classes = [IsAuthenticated]  # Requires JWT authentication to access
-    
-    # Custom action to fetch subcategories by category ID
+    permission_classes = [IsAuthenticated]
+
     @action(detail=True, methods=['get'])
     def subcategories(self, request, pk=None):
         category = self.get_object()
-        subcategories = Subcategory.objects.filter(category=category)
+        # Fetch only active subcategories
+        subcategories = Subcategory.objects.filter(category=category, status='active')
         serializer = SubcategorySerializer(subcategories, many=True)
         return Response(serializer.data)
 
+
+
 class SubcategoryViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Subcategory.objects.all()
+    queryset = Subcategory.objects.filter(status='active')  # Only active subcategories
     serializer_class = SubcategorySerializer
     permission_classes = [IsAuthenticated]
 
-    # Custom action to fetch service providers by subcategory ID
-    @action(detail=True, methods=['get'])
-    def service_providers(self, request, pk=None):
-        subcategory = self.get_object()
-        
-        # Fetch service registers related to this subcategory
-        service_registers = ServiceRegister.objects.filter(subcategory=subcategory)
-        
-        # Extract the service providers from the service registers
-        service_providers = ServiceProvider.objects.filter(services__in=service_registers)
-        
-        serializer = ServiceProviderSerializer(service_providers, many=True)
-        return Response(serializer.data)
-
    
+
+class SubcategoryServiceProviders(APIView):
+    def get(self, request, subcategory_id):
+        # Fetch the active service providers linked to the specific subcategory
+        service_providers = ServiceProvider.objects.filter(
+            status='Active',
+            verification_by_dealer='APPROVED',
+            services__subcategory_id=subcategory_id,  # Filtering by subcategory_id
+            services__status='Active'
+        ).annotate(
+            rating=Avg('user__to_review__rating')  # Correctly referencing the CustomerReview through the User model
+        ).values(
+            'user__full_name',  # Service provider's name
+            'services__amount_forthis_service',  # Service amount
+            'rating'  # Average rating
+        )
+
+        # Return the response
+        return Response(service_providers)
+
+
+
 
 class LoginView(APIView):
     permission_classes=[AllowAny]
