@@ -18,7 +18,7 @@ from django.db.models import Avg
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Category.objects.filter(status='active')  # Only active categories
+    queryset = Category.objects.filter(status='Active')  # Only active categories
     serializer_class = CategorySerializer
     permission_classes = [IsAuthenticated]
 
@@ -33,7 +33,7 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class SubcategoryViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Subcategory.objects.filter(status='active')  # Only active subcategories
+    queryset = Subcategory.objects.filter(status='Active')  # Only active subcategories
     serializer_class = SubcategorySerializer
     permission_classes = [IsAuthenticated]
 
@@ -44,9 +44,9 @@ class SubcategoryServiceProviders(APIView):
         # Fetch the active service providers linked to the specific subcategory
         service_providers = ServiceProvider.objects.filter(
             status='Active',
-            verification_by_dealer='APPROVED',
+            verification_by_dealer='Approved',
             services__subcategory_id=subcategory_id,  # Filtering by subcategory_id
-            services__status='Active'
+            
         ).annotate(
             rating=Avg('user__to_review__rating')  # Correctly referencing the CustomerReview through the User model
         ).values(
