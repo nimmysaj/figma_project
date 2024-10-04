@@ -145,3 +145,16 @@ DEFAULT_FROM_EMAIL = 'workbyaswanth@gmail.com'  # Default sender email
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 1200  # 20 minutes (set to a reasonable duration)
+"""
+# settings.py
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',  # Session-based authentication
+        'rest_framework.authentication.BasicAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',  # Requires the user to be authenticated
+    ],
+}
+
+"""

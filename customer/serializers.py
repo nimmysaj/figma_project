@@ -1,11 +1,13 @@
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
-from .models import User, OTP, Country_Codes
+from .models import User, OTP, Country_Codes, ServiceRequest
 from django.core.mail import send_mail
 from phonenumber_field.serializerfields import PhoneNumberField 
 import pycountry 
 import phonenumbers 
 from rest_framework.exceptions import ValidationError
+import random
+import uuid
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -132,3 +134,49 @@ class OTPVerifySerializer(serializers.Serializer):
         return {"message": "User verified successfully."}
 
 
+
+
+#for service request and request views
+
+class ServiceRequestSerializer(serializers.ModelSerializer):
+    subcategory_title = serializers.CharField(source='service.subcategory.title', read_only=True)
+    subcategory_id = serializers.IntegerField(source='service.subcategory.id', read_only=True)  # Get subcategory ID
+    service_title = serializers.CharField(source='service.title', read_only=True)  # Get service title
+    customer_name = serializers.CharField(source='customer.full_name', read_only=True)
+    service_provider_name = serializers.CharField(source='service_provider.full_name', read_only=True)
+
+    class Meta:
+        model = ServiceRequest
+        fields = [
+            'customer_name',
+            'service_provider_name',
+            'service',  # Holds the service ID
+            'service_title',  # Service title for output
+            'subcategory_title',
+            'subcategory_id',  # Subcategory ID for output
+            'work_status',
+            'acceptance_status',
+            'availability_from',
+            'availability_to',
+            'additional_notes',
+            'image',
+            'booking_id',
+            'description'  #not needed line
+        ]
+        read_only_fields = ['booking_id', 'customer', 'service', 'service_title', 'subcategory_title', 'subcategory_id']
+
+class ServiceRequestDetailSerializer(serializers.ModelSerializer):
+    subcategory_name = serializers.CharField(source='service.subcategory.title', read_only=True)
+    service_title = serializers.CharField(source='service.title', read_only=True)  # Get service title
+    customer_name = serializers.CharField(source='customer.full_name', read_only=True)
+
+    class Meta:
+        model = ServiceRequest
+        fields = [
+            'service_title',
+            'subcategory_name',
+            'customer_name',
+            'availability_from',
+            'availability_to',
+            'acceptance_status'
+        ]

@@ -11,6 +11,7 @@ import random
 from django.core.validators import RegexValidator
 import phonenumbers
 from figma import settings
+import uuid
 
 # Create your models here.
 phone_regex = RegexValidator(
@@ -450,6 +451,8 @@ class ServiceRequest(models.Model):
     availability_to = models.DateTimeField()    # New field for availability end
     additional_notes = models.TextField(blank=True, null=True)
     image = models.ImageField(upload_to='service_request/', null=True, blank=True, validators=[validate_file_size])
+    booking_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True) 
+    description = models.TextField(blank=True, null=True)  #This field is not needed.
 
     def __str__(self):
         return f"Request by {self.customer.full_name} for {self.service.title} ({self.acceptance_status})"
@@ -513,7 +516,7 @@ class Payment(models.Model):
     payment_method = models.CharField(max_length=50, choices=PAYMENT_METHOD_CHOICES)
     payment_date = models.DateTimeField(default=timezone.now)
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
-
+    
     def __str__(self):
         return f"Payment of {self.amount_paid} by {self.sender} to {self.receiver}"
 
