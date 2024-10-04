@@ -3,8 +3,9 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate
-from Accounts.models import Customer
+from Accounts.models import Customer,Country_Codes
 from django.contrib.auth.password_validation import validate_password
+from django.core.validators import validate_email
 
 User = get_user_model()
 
@@ -46,10 +47,15 @@ class RegisterSerializer(serializers.ModelSerializer):
         # Validate email or phone number format
         if '@' in email_or_phone:
             # Check if email is already registered
+            validate_email(email_or_phone)
+            
             if User.objects.filter(email=email_or_phone).exists():
                 raise serializers.ValidationError("Email is already in use")
         else:
+            valid_codes = Country_Codes.objects.values_list('calling_code', flat=True)
             # Check if phone number is already registered
+            if not any(email_or_phone.startswith(str(code)) for code in valid_codes):
+                raise ValidationError("Invalid phone number format or country code.")
             if User.objects.filter(phone_number=email_or_phone).exists():
                 raise serializers.ValidationError("Phone number is already in use")
 
