@@ -13,3 +13,5 @@ migrations/
 # IDEs
 .vscode/
 .idea/
+
+myvenv/
