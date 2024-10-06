@@ -156,10 +156,12 @@ class Franchise_Type(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=50)
 
+    def __str__(self):
+        return self.name
+
 class Franchisee(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='franchisee')
     custom_id = models.CharField(max_length=10, unique=True, editable=False, blank=True) 
-
     about = models.TextField()
     profile_image = models.ImageField(upload_to='f-profile_images/', null=True, blank=True, validators=[validate_file_size])  # Profile image field
     revenue = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
