@@ -3,7 +3,7 @@ from phonenumbers import NumberParseException, is_valid_number, parse
 import phonenumbers
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from app1.models import ServiceProvider, User  
+from Accounts.models import ServiceProvider, User  
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 
