@@ -1,7 +1,7 @@
 from django.urls import path
 
 from service_provider.views import ResetPasswordView
-from .views import CustomerLoginView, CustomerPasswordForgotView, CustomerViewSet, RegisterView, VerifyOTPView
+from .views import CustomerLoginView, CustomerPasswordForgotView, CustomerViewSet, RegisterView, VerifyOTPView, CustomerActiveServicesList
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register_customer'),
@@ -16,5 +16,6 @@ urlpatterns = [
         'get': 'retrieve', 
         'put': 'update',
         'patch': 'partial_update'
-        }), name='profile_update')
+        }), name='profile_update'),
+    path('customers/<int:customer_id>/active-services/', CustomerActiveServicesList.as_view(), name='customer-active-services'),
 ]

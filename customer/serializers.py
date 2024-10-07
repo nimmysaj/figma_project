@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate
-from Accounts.models import Customer
+from Accounts.models import Customer, ServiceRequest
 from django.contrib.auth.password_validation import validate_password
 
 User = get_user_model()
@@ -213,4 +213,23 @@ class CustomerSerializer(serializers.ModelSerializer):
         # Save the ServiceProvider instance with updated data
         instance.save()
         return instance
+
+class ServiceRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ServiceRequest
+        fields = ['id', 'service_provider', 'service', 'work_status',
+                  'acceptance_status', 'request_date', 'availability_from', 'availability_to']
+
+
+class CustomerActiveServicesSerializer(serializers.ModelSerializer):
+    active_services = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Customer
+        fields = ['id', 'name', 'email']
+
+    def get_active_services(self, obj):
+        active_services = obj.service_requests.filter(work_status in ['pending',
+        'in_progress', 'completed'])
+        return ServiceRequestSerializer(active_services, many=True).data
 
