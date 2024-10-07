@@ -21,7 +21,7 @@ class UserAdmin(BaseUserAdmin):
     search_fields = ('email',)
     ordering = ('email',)
 
-admin.site.register(User, UserAdmin)
+admin.site.register(User)
 admin.site.register(Country_Codes)
 admin.site.register(Customer)
 admin.site.register(ServiceProvider)
