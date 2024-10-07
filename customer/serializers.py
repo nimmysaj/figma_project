@@ -6,6 +6,8 @@ from django.contrib.auth import authenticate
 from Accounts.models import Customer,Country_Codes
 from django.contrib.auth.password_validation import validate_password
 from django.core.validators import validate_email
+from django.db.models.functions import Concat
+import phonenumbers
 
 User = get_user_model()
 
@@ -46,17 +48,24 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         # Validate email or phone number format
         if '@' in email_or_phone:
-            # Check if email is already registered
             validate_email(email_or_phone)
-            
             if User.objects.filter(email=email_or_phone).exists():
                 raise serializers.ValidationError("Email is already in use")
         else:
-            valid_codes = Country_Codes.objects.values_list('calling_code', flat=True)
-            # Check if phone number is already registered
-            if not any(email_or_phone.startswith(str(code)) for code in valid_codes):
-                raise ValidationError("Invalid phone number format or country code.")
-            if User.objects.filter(phone_number=email_or_phone).exists():
+
+            try:
+                parsed_number = phonenumbers.parse(email_or_phone, None)
+                if not phonenumbers.is_valid_number(parsed_number):
+                    raise ValidationError("Invalid phone number.")
+            except phonenumbers.NumberParseException:
+                raise ValidationError("Invalid phone number format.")
+            
+            fullnumber=phonenumbers.parse(email_or_phone,None)
+            try:
+                code=Country_Codes.objects.get(calling_code="+"+str(fullnumber.country_code))
+            except Country_Codes.DoesNotExist:
+                raise serializers.ValidationError("Can't idntify country code")
+            if User.objects.filter(phone_number=str(fullnumber.national_number),country_code=code).exists():
                 raise serializers.ValidationError("Phone number is already in use")
 
         return data
@@ -67,11 +76,15 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         # Create user based on whether email or phone is provided
         if '@' in email_or_phone:
-            user = User.objects.create_user(email=email_or_phone, password=password)
+            user = User.objects.create(email=email_or_phone)
         else:
-            user = User.objects.create_user(phone_number=email_or_phone, password=password)
+            fullnumber=phonenumbers.parse(email_or_phone,None)
+            code=Country_Codes.objects.get(calling_code="+"+str(fullnumber.country_code))
+            number=str(fullnumber.national_number)
+            user = User.objects.create(country_code=code,phone_number=number)
         
         # Ensure that is_customer is always set to True during registration
+        user.set_password(password)
         user.is_active = False  # User is inactive until OTP is verified
         user.is_customer = True
         user.save()
@@ -104,9 +117,14 @@ class CustomerLoginSerializer(serializers.Serializer):
         else:
             # If input is phone number
             try:
-                user = User.objects.get(phone_number=email_or_phone)
+                fullnumber=phonenumbers.parse(email_or_phone,None)
+                code=Country_Codes.objects.get(calling_code="+"+str(fullnumber.country_code))
+                number=str(fullnumber.national_number)
+                user = User.objects.get(phone_number=number,country_code=code)
                 if not user.check_password(password):
                     raise serializers.ValidationError('Invalid credentials.')
+            except phonenumbers.phonenumberutil.NumberParseException:
+                raise serializers.ValidationError('Wrong phone number or email format')
             except User.DoesNotExist:
                 raise serializers.ValidationError('Invalid login credentials.')
 
@@ -130,7 +148,13 @@ class CustomerPasswordForgotSerializer(serializers.Serializer):
                 raise serializers.ValidationError("This email is not registered with any customer.")
         else:
             # Validate as phone number
-            if not User.objects.filter(phone_number=value, is_customer=True).exists():
+            try:
+                fullnumber=phonenumbers.parse(value,None)
+                code=Country_Codes.objects.get(calling_code="+"+str(fullnumber.country_code))
+                number=str(fullnumber.national_number)
+            except phonenumbers.phonenumberutil.NumberParseException:
+                raise serializers.ValidationError('Wrong phone number or email format')
+            if not User.objects.filter(phone_number=number,country_code=code, is_customer=True).exists():
                 raise serializers.ValidationError("This phone number is not registered with any customer.")
 
         return value    
