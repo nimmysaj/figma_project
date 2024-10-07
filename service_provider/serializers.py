@@ -1,5 +1,35 @@
 from rest_framework import serializers
-from Accounts.models import ServiceProvider, User
+from Accounts.models import ServiceProvider, User, Payment, Invoice
+
+
+# ----------------------------------------------------------- PAYMENT ---------------------------------------------------------------------
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = "__all__"
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Invoice
+        fields = '__all__'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ----------------------------------------------------------- PROFILE ---------------------------------------------------------------------
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -55,4 +85,6 @@ class ServiceProviderSerialzer(serializers.ModelSerializer):
         # Save the ServiceProvider instance with updated data
         instance.save()
         return instance
+    
+
 
