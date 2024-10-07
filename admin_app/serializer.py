@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Franchise_Type
+from Accounts.models import Franchise_Type
 import re
 
 class Franchise_Type_Serializer(serializers.ModelSerializer):
