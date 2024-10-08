@@ -1,41 +1,31 @@
 from django.urls import path
-from service_provider.views import ServiceProviderViewSet, InitiatePaymentView, ConfirmPaymentView
+from service_provider.views import ComplaintViewSet 
+
 
 urlpatterns = [
-path('initiate-payment/', InitiatePaymentView.as_view(), name='initiate-payment'),
-path('confirm-payment/', ConfirmPaymentView.as_view(), name='confirm-payment'),
-    
-        
+     # List and Create Complaints
+    path('complaints/', ComplaintViewSet.as_view({
+        'get': 'list',
+        'post': 'create'
+    }), name='complaint-list'),
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    path('serviceprovider/',ServiceProviderViewSet.as_view({
-        'get':'list',
-        'post':'create'
-        }),name ='service'),
-
-    path('serviceproviders/<int:pk>/', ServiceProviderViewSet.as_view({
-        'get': 'retrieve', 
+    # Retrieve, Update, and Delete a Complaint
+    path('complaints/<int:id>/', ComplaintViewSet.as_view({
+        'get': 'retrieve',
         'put': 'update',
-        'patch': 'partial_update'
-        }), name='service_update'),
+        'patch': 'partial_update',
+        'delete': 'destroy'
+    }), name='complaint-detail'),
+
+    # List Active Complaints
+    path('complaints/active/', ComplaintViewSet.as_view({
+        'get': 'list_active_complaints'
+    }), name='complaint-active-list'),
+
+    # List Completed Complaints
+    path('complaints/completed/', ComplaintViewSet.as_view({
+        'get': 'list_completed_complaints'
+    }), name='complaint-completed-list'),
 
 
 ]
