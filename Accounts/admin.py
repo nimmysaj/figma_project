@@ -25,8 +25,8 @@ admin.site.register(Country_Codes)
 
 
 class ServiceRegisterAdmin(admin.ModelAdmin):
-    list_display = ('id', 'service_provider',  'description', 'gstcode', 
-                    'category', 'subcategory', 'license', 'image', 'accepted_terms', 'collar','available_lead_balance')
+    list_display = ('id',  'service_provider',  'description', 'gstcode', 'status',
+                    'category', 'subcategory', 'license', 'image', 'accepted_terms','available_lead_balance')
 
 # Register the model with the custom admin class
 admin.site.register(ServiceRegister, ServiceRegisterAdmin)
@@ -38,7 +38,7 @@ class CategoryAdmin(admin.ModelAdmin):
 admin.site.register(Category, CategoryAdmin)
 
 class SubCategoryAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'category','service_type','status')
+    list_display = ('id', 'title','collar', 'category','service_type','status')
 
 # Register the model with the custom admin class
 admin.site.register(Subcategory, SubCategoryAdmin)
@@ -88,7 +88,7 @@ admin.site.register(Service_Type, ServiceTypeAdmin)
 @admin.register(ServiceProvider)
 class ServiceProviderAdmin(admin.ModelAdmin):
     # Fields to display in the list view
-    list_display = ('custom_id', 'user', 'dealer', 'franchisee', 'payout_required', 'status', 'verification_by_dealer')
+    list_display = ('id','custom_id', 'user', 'dealer', 'franchisee', 'payout_required', 'status', 'verification_by_dealer')
 
     # Fields to allow searching
     search_fields = ('custom_id', 'user__username', 'dealer__custom_id', 'franchisee__custom_id', 'status')

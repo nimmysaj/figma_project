@@ -1,4 +1,5 @@
 import re
+import uuid
 from django.contrib.auth.models import Permission,Group
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
@@ -363,20 +364,16 @@ class Subcategory(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE,related_name='category')
     image = models.ImageField(upload_to='subcategory-images/', null=True, blank=True, validators=[validate_file_size])  
     description = models.TextField() 
+    collar = models.ForeignKey(Collar, on_delete=models.CASCADE, related_name='collars', blank=True, null=True)
     service_type = models.ForeignKey(Service_Type, on_delete=models.PROTECT,related_name='service_type')
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')]) 
 
     def __str__(self):
-        return self.title  
-
-    def basic_amount(self):
-        basic_amount = self.service_type.amount + self.collar.amount
-        return basic_amount         
+        return self.title      
     
 class ServiceRegister(models.Model):
+    id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE, related_name='services')
-    collar = models.ForeignKey(Collar, on_delete=models.CASCADE, related_name='collars', blank=True, null=True)
-    title = models.CharField(max_length=50)
     description = models.TextField()
     gstcode = models.CharField(max_length=50)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='service_requests')
@@ -384,26 +381,47 @@ class ServiceRegister(models.Model):
     license = models.FileField(upload_to='service_license/', blank=True, null=True)
     image = models.ImageField(upload_to='service_images/', null=True, blank=True)
     accepted_terms = models.BooleanField(default=False)
+    status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')],default='Active')
     available_lead_balance = models.IntegerField(default=0)
 
     def __str__(self):
-        # Display both the service provider and the subcategory for better clarity
         return f"{self.service_provider.user} - {self.subcategory.title}"
 
-    def update_lead_balance(self, extra_leads):
-        """Update available lead balance by adding extra leads from collars."""
-        if self.collar:
-            self.available_lead_balance = self.available_lead_balance +  self.collar.lead_quantity + extra_leads
-            self.save()
+    def update_lead_balance(self, extra_leads=0):
+        """Update available lead balance by adding extra leads from the collar in the subcategory."""
+        if self.subcategory.service_type.name == "One Time Lead" and self.subcategory.collar:
+            # Ensure the available_lead_balance is an integer before performing addition
+            if not self.available_lead_balance:
+                self.available_lead_balance = 0  # Initialize if it's empty or None
+
+            # Increment lead balance by collar's lead quantity and extra_leads
+            self.available_lead_balance += self.subcategory.collar.lead_quantity + extra_leads
+            self.save()  # Save changes to the database
+
             return self.available_lead_balance
-        return 0
+    
+        # Return the current balance if not a "One Time Lead"
+        return self.available_lead_balance
+
+    def basic_amount(self):
+        """Calculate the basic amount by combining the subcategory's service type amount and the collar amount."""
+        basic_amount = float(self.subcategory.service_type.amount)
+
+        # Add the collar amount if it's present and the subcategory is 'one time lead'
+        if self.subcategory.collar and self.subcategory.service_type.title == 'one_time_lead':
+            basic_amount += float(self.subcategory.collar.amount)
+
+        return basic_amount
 
     def save(self, *args, **kwargs):
-        # Check the service type of the related subcategory
-        if self.subcategory and self.subcategory.service_type.name == "Daily Work":
-            # Set collar as 'Infinite' for daily work service type
-            self.collar = None  # We can either leave collar as None or handle the logic elsewhere.
-        super(ServiceRegister, self).save(*args, **kwargs)  
+        """
+        Override save method to handle 'Daily Work' services.
+        Ensure collar is set to None for 'Daily Work' service type.
+        """
+        if self.subcategory and self.subcategory.service_type.name == 'Daily Work':
+            # No collar is needed for 'Daily Work' service type
+            self.available_lead_balance = 0  # You can adjust logic for infinite leads here
+        super(ServiceRegister, self).save(*args, **kwargs) 
 
 class PaymentRequest(models.Model):
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.PROTECT,related_name='from_paymentrequest')
