@@ -40,7 +40,7 @@ class ServiceProviderSerialzer(serializers.ModelSerializer):
         if not validated_data.get('accepted_terms'):
             raise ValidationError({"accepted_terms": "You must accept the terms and conditions to create a profile."})
         
-        # Create user instance first
+       
         user = User.objects.create(**user_data)
         
         # Create the service provider profile
@@ -48,21 +48,21 @@ class ServiceProviderSerialzer(serializers.ModelSerializer):
         return service_provider
 
     def update(self, instance, validated_data):
-        # Extract user data and handle separately
+
         user_data = validated_data.pop('user', None)
 
-        # Update ServiceProvider fields
+      
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
-        # If user data is provided, update the related User instance
+        
         if user_data:
             user = instance.user
             for attr, value in user_data.items():
                 setattr(user, attr, value)
             user.save()
 
-        # Save the ServiceProvider instance with updated data
+        
         instance.save()
         return instance
 
