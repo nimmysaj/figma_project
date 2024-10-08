@@ -133,21 +133,21 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = ['id', 'title', 'description', 'status']
 
- 
 class SubcategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Subcategory
         fields = ['id', 'title', 'category', 'description', 'service_type', 'status']
 
-       
+
 class ServiceProviderSerializer(serializers.ModelSerializer):
-    # This will fetch the amount from ServiceRegister and average rating from CustomerReview
-    amount_forthis_service = serializers.DecimalField(source='services.amount_forthis_service', max_digits=10, decimal_places=2)
-    rating = serializers.FloatField()
+    user_name = serializers.CharField(source='service_provider.user.full_name', read_only=True)
+    rating = serializers.FloatField(read_only=True)
+    amount = serializers.FloatField(read_only=True)
 
     class Meta:
-        model = ServiceProvider
-        fields = ['user__full_name', 'amount_forthis_service', 'rating']  # Fields to return
+        model = ServiceRegister
+        fields = ['user_name', 'rating', 'amount']
+       
 
 
 

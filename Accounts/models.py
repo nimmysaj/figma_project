@@ -372,6 +372,7 @@ class Subcategory(models.Model):
         return self.service_type.amount + self.collar.amount
 
 class ServiceRegister(models.Model):
+    title=models.CharField(max_length=250,null=True)
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE, related_name='services')
     description = models.TextField()
     gstcode = models.CharField(max_length=50)
@@ -384,8 +385,10 @@ class ServiceRegister(models.Model):
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')],default='Active')
     accepted_terms = models.BooleanField(default=False)
 
+
+
     def __str__(self):
-        return self.title  
+        return self.description
 
 class PaymentRequest(models.Model):
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.PROTECT,related_name='from_paymentrequest')
@@ -436,6 +439,7 @@ class ServiceRequest(models.Model):
         ('cancelled', 'Cancelled'),
     ]
 
+    
     customer = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_servicerequest')
     service_provider = models.ForeignKey(User, on_delete=models.PROTECT,related_name='to_servicerequest')
     service = models.ForeignKey(ServiceRegister, on_delete=models.PROTECT,related_name='servicerequest')

@@ -8,12 +8,12 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken
-from Accounts.models import User, OTP,Category,Subcategory,ServiceProvider,ServiceRegister
+from Accounts.models import User, OTP,Category,Subcategory,ServiceProvider,ServiceRegister,CustomerReview
 from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, NewPasswordSerializer,LoginSerializer,CategorySerializer,SubcategorySerializer,ServiceProviderSerializer
 from django.utils import timezone
 from rest_framework import viewsets
 from rest_framework.decorators import action
-from django.db.models import Avg
+from django.db.models import Avg,F
 
 
 
@@ -22,42 +22,41 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CategorySerializer
     permission_classes = [IsAuthenticated]
 
-    @action(detail=True, methods=['get'])
-    def subcategories(self, request, pk=None):
-        category = self.get_object()
-        # Fetch only active subcategories
-        subcategories = Subcategory.objects.filter(category=category, status='active')
-        serializer = SubcategorySerializer(subcategories, many=True)
-        return Response(serializer.data)
-
-
-
-class SubcategoryViewSet(viewsets.ReadOnlyModelViewSet):
+class SubcategoryViewSet(APIView):
     queryset = Subcategory.objects.filter(status='Active')  # Only active subcategories
     serializer_class = SubcategorySerializer
     permission_classes = [IsAuthenticated]
+    def post(self, request):
+        category_id = request.data.get("category_id")
+        if not category_id:
+            return Response({"error":"category_id field required"},status=status.HTTP_400_BAD_REQUEST)
+        try:
+            category=Category.objects.get(id=category_id)
+        except Category.DoesNotExist:
+            return Response({"error":"category_id does not match any category"},status=status.HTTP_400_BAD_REQUEST)
+        subcategories = self.queryset.filter(category=category)
+        serializer = self.serializer_class(subcategories, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-   
+
+
+
 
 class SubcategoryServiceProviders(APIView):
-    def get(self, request, subcategory_id):
-        # Fetch the active service providers linked to the specific subcategory
-        service_providers = ServiceProvider.objects.filter(
-            status='Active',
-            verification_by_dealer='Approved',
-            services__subcategory_id=subcategory_id,  # Filtering by subcategory_id
-            
-        ).annotate(
-            rating=Avg('user__to_review__rating')  # Correctly referencing the CustomerReview through the User model
-        ).values(
-            'user__full_name',  # Service provider's name
-            'services__amount_forthis_service',  # Service amount
-            'rating'  # Average rating
+    queryset = ServiceRegister.objects.filter(status='Active')  # Only active subcategories
+    serializer_class = ServiceProviderSerializer
+    permission_classes = [IsAuthenticated]
+    def post(self, request):
+        subcategory_id = request.data.get("subcategory_id")
+        subcategory=Subcategory.objects.get(id=subcategory_id)
+        services = self.queryset.filter(subcategory=subcategory)
+        services.annotate(
+            user_name=F("service_provider__user__full_name"),
+            rating=Avg("service_provider__to_review__rating"),
+            amount=Avg("invoices__total_amount")
         )
-
-        # Return the response
-        return Response(service_providers)
-
+        serializer = self.serializer_class(services, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 

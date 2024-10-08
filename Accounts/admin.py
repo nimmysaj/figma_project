@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import User, Country_Codes, Category, Subcategory, Service_Type, \
     Collar, ServiceProvider, Dealer, Franchisee, Franchise_Type, \
-    ServiceRegister, ServiceRequest, Customer,CustomerReview
+    ServiceRegister, ServiceRequest, Customer,CustomerReview,Invoice
 # Register your models here.
 
 class UserAdmin(BaseUserAdmin):
@@ -36,3 +36,4 @@ admin.site.register(ServiceRegister)
 admin.site.register(ServiceRequest)
 admin.site.register(Subcategory)
 admin.site.register(CustomerReview)
+admin.site.register(Invoice)
