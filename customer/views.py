@@ -7,13 +7,22 @@ from .utils import send_otp_via_email, send_otp_via_phone
 from django.utils.http import urlsafe_base64_encode
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import smart_bytes
-from .serializers import CustomerPasswordForgotSerializer, CustomerSerializer,RegisterSerializer,SetNewPasswordSerializer
+from .serializers import CustomerPasswordForgotSerializer, CustomerSerializer,RegisterSerializer,SetNewPasswordSerializer#CustomerActiveServicesSerializer
 from Accounts.models import OTP, Customer, User
 from rest_framework import status, permissions,generics,viewsets
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import update_last_login
 from django.core.mail import send_mail
 from .serializers import CustomerLoginSerializer
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from Accounts.models import ServiceRequest
+from .serializers import ServiceRequestSerializer
+from django.utils import timezone
+from .serializers import ServiceRequestSerializer, ServiceRequestDetailSerializer
+from rest_framework import generics
+from .serializers import ServiceRequestSerializer, ServiceRequestDetailSerializer
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -158,3 +167,25 @@ class CustomerViewSet(viewsets.ModelViewSet):
     queryset =Customer.objects.all()
     serializer_class = CustomerSerializer
     
+
+class ServiceRequestListView(generics.ListAPIView):
+    serializer_class = ServiceRequestSerializer
+
+    def get_queryset(self):
+        # Get the 'status' query parameter, default to 'pending' if not provided
+        status = self.request.query_params.get('status', None)
+        
+        # If no status is provided, return 'pending', 'in_progress', and 'completed' requests
+        if not status:
+            return ServiceRequest.objects.filter(work_status__in=['pending', 'in_progress', 'completed'])
+        
+        # Otherwise, return requests matching the provided status
+        return ServiceRequest.objects.filter(work_status=status)
+
+
+# View to get the details of a specific service request (second image data)
+class ServiceRequestDetailView(generics.RetrieveAPIView):
+    queryset = ServiceRequest.objects.all()
+    serializer_class = ServiceRequestDetailSerializer
+    lookup_field = 'id'  # Fetch details using ServiceRequest ID
+

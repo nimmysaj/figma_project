@@ -3,7 +3,7 @@ from figma import settings
 from django.utils import timezone
 import random
 from django.core.mail import send_mail
-from twilio.rest import Client
+# from twilio.rest import Client
 
 def send_otp_via_email(user):
     # Save OTP in the database (model will handle OTP code generation and expiration)

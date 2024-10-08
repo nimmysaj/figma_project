@@ -14,7 +14,7 @@ from rest_framework import generics,viewsets
 from Accounts.models import ServiceProvider, User
 from .serializers import ServiceProviderPasswordForgotSerializer, SetNewPasswordSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer
 from django.utils.encoding import smart_bytes, smart_str
-from twilio.rest import Client
+# from twilio.rest import Client
 # Create your views here.
 class ServiceProviderLoginView(APIView):
     def post(self, request):

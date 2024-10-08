@@ -333,7 +333,7 @@ class Service_Type(models.Model):
     name = models.CharField(max_length=255)
     details = models.TextField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-
+    
     def __str__(self):
         return self.name  
        
@@ -365,36 +365,35 @@ class Subcategory(models.Model):
 
     def __str__(self):
         return self.title  
-
 class ServiceRegister(models.Model):
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE, related_name='services')
+    title = models.CharField(max_length=255)  # Added title field
     description = models.TextField()
     gstcode = models.CharField(max_length=50)
-    category = models.ForeignKey(Category, on_delete=models.PROTECT,related_name='serviceregister_category')    
-    subcategory = models.ForeignKey(Subcategory, on_delete=models.PROTECT,related_name='serviceregister_subcategory') 
-    collar = models.ForeignKey(Collar, on_delete=models.PROTECT,related_name='collar') 
+    category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name='serviceregister_category')
+    subcategory = models.ForeignKey(Subcategory, on_delete=models.PROTECT, related_name='serviceregister_subcategory')
+    
+    collar = models.ForeignKey(Collar, on_delete=models.PROTECT, related_name='collar', null=True, blank=True)
+    
     amount_forthis_service = models.DecimalField(max_digits=10, decimal_places=2)
     license = models.FileField(upload_to='service-license/', blank=True, null=True, validators=[validate_file_size])
     image = models.ImageField(upload_to='service-images/', null=True, blank=True, validators=[validate_file_size])
-    status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')],default='Active')
+    status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')], default='Active')
     accepted_terms = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.title  
-    
+        return f"{self.service_provider} - {self.title}: {self.description}"
+
     def basic_amount(self):
-        # Get the base amount from the subcategory's service_type amount
         basic_amount = self.subcategory.service_type.amount
 
-        # Only add collar amount if the subcategory is 'one time lead' and collar is not None
-        if self.subcategory == 'one_time_lead' and self.collar:
+        if self.subcategory.name == 'one_time_lead' and self.collar:
             basic_amount += self.collar.amount
 
         return basic_amount
-    
+
     def save(self, *args, **kwargs):
-        # If subcategory is not 'one_time_lead', set collar to None
-        if self.subcategory != 'one_time_lead':
+        if self.subcategory.name != 'one_time_lead':
             self.collar = None
         super().save(*args, **kwargs)
 
@@ -457,7 +456,7 @@ class ServiceRequest(models.Model):
     availability_to = models.DateTimeField()    # New field for availability end
     additional_notes = models.TextField(blank=True, null=True)
     image = models.ImageField(upload_to='service_request/', null=True, blank=True, validators=[validate_file_size])
-
+    is_active = models.BooleanField(default=True) 
     def __str__(self):
         return f"Request by {self.customer.full_name} for {self.service.title} ({self.acceptance_status})"
 

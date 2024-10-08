@@ -5,6 +5,8 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate
 from Accounts.models import Customer
 from django.contrib.auth.password_validation import validate_password
+from Accounts.models import ServiceRequest, Invoice
+
 
 User = get_user_model()
 
@@ -213,4 +215,24 @@ class CustomerSerializer(serializers.ModelSerializer):
         # Save the ServiceProvider instance with updated data
         instance.save()
         return instance
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Invoice
+        fields = ['invoice_number', 'invoice_type', 'quantity', 'price', 'total_amount', 'payment_status', 'appointment_date', 'additional_requirements']
+
+class ServiceRequestSerializer(serializers.ModelSerializer):
+    invoices = InvoiceSerializer(many=True, read_only=True)  # Related invoices
+
+    class Meta:
+        model = ServiceRequest
+        fields = [ 'customer',  'service', 'work_status', 'request_date', 'availability_from', 'availability_to', 'additional_notes', 'invoices']
+
+class ServiceRequestDetailSerializer(serializers.ModelSerializer):
+    invoices = InvoiceSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ServiceRequest
+        fields = ['id', 'customer', 'service_provider', 'service', 'work_status', 'acceptance_status', 'availability_from', 'availability_to', 'additional_notes', 'invoices', 'image', 'is_active']
+
 
