@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import User,Country_Codes
-from .models import OTP, Customer, Dealer, District, Franchise_Type, Franchisee, ServiceProvider, State
+from .models import OTP, Customer, Dealer, District, Franchise_Type, Franchisee, ServiceProvider, State, Service_Type, ServiceRequest, ServiceRegister
 
 # Register your models here.
 
@@ -31,4 +31,6 @@ admin.site.register(Dealer)
 admin.site.register(OTP)
 admin.site.register(District)
 admin.site.register(State)
-
+admin.site.register(Service_Type)
+admin.site.register(ServiceRequest)
+admin.site.register(ServiceRegister)
