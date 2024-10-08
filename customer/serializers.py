@@ -141,13 +141,21 @@ class SubcategorySerializer(serializers.ModelSerializer):
 
 class ServiceProviderSerializer(serializers.ModelSerializer):
     user_name = serializers.CharField(source='service_provider.user.full_name', read_only=True)
-    rating = serializers.FloatField(read_only=True)
-    amount = serializers.FloatField(read_only=True)
+    rating = serializers.SerializerMethodField()
+    amount = serializers.SerializerMethodField()
 
     class Meta:
         model = ServiceRegister
-        fields = ['user_name', 'rating', 'amount']
-       
+        fields = ['id','user_name', 'rating', 'amount']
+    def get_rating(self,obj):
+        return obj.service_provider.user.to_review.aggregate(Avg('rating'))['rating__avg']
+    def get_amount(self,obj):
+        serReq=obj.servicerequest.all()
+        if serReq.exists():
+            return obj.servicerequest.all().first().invoices.aggregate(Avg('total_amount'))['total_amount__avg']
+        else:
+            return None
+
 
 
 

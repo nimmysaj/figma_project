@@ -50,11 +50,6 @@ class SubcategoryServiceProviders(APIView):
         subcategory_id = request.data.get("subcategory_id")
         subcategory=Subcategory.objects.get(id=subcategory_id)
         services = self.queryset.filter(subcategory=subcategory)
-        services.annotate(
-            user_name=F("service_provider__user__full_name"),
-            rating=Avg("service_provider__user__to_review__rating"),
-            amount=Avg("servicerequest__invoices__total_amount")
-        )
         serializer = self.serializer_class(services, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
