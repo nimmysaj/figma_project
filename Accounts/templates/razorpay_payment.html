@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Razorpay Payment</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+    <h1>Complete your Payment</h1>
+    <button id="rzp-button">Pay Now</button>
+
+    <script>
+        var options = {
+            "key": "{{ razorpay_key }}", // Replace with your Razorpay Key ID
+            "amount": "{{ amount }}", // Amount in paise
+            "currency": "INR",
+            "name": "Your Company Name",
+            "description": "Payment for Invoice",
+            "order_id": "{{ order_id }}", // Order ID from your backend
+            "handler": function (response) {
+                // Log payment details to console
+                console.log("Payment ID:", response.razorpay_payment_id);
+                console.log("Order ID:", response.razorpay_order_id);
+                console.log("Signature:", response.razorpay_signature);
+                
+                // Here you can send the details to your backend if needed
+                // For now, just display an alert with payment info
+                alert("Payment ID: " + response.razorpay_payment_id +
+                      "\nOrder ID: " + response.razorpay_order_id +
+                      "\nSignature: " + response.razorpay_signature);
+            },
+            "prefill": {
+                "name": "{{ user_name }}",
+                "email": "{{ user_email }}",
+                "contact": "{{ user_contact }}"
+            },
+            "theme": {
+                "color": "#3399cc"
+            }
+        };
+
+        var rzp1 = new Razorpay(options);
+        document.getElementById('rzp-button').onclick = function (e) {
+            rzp1.open();
+            e.preventDefault();
+        }
+    </script>
+</body>
+</html>
