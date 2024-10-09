@@ -19,7 +19,7 @@ class ComplaintViewSet(viewsets.ModelViewSet):
     lookup_field = 'id'
 
     def get_serializer_class(self):
-        if self.action in ['create', 'update', 'partial_update']:
+        if self.action in ['create']:
             return ComplaintCreateSerializer
         return ComplaintSerializer
     def perform_create(self, serializer):
