@@ -3,18 +3,15 @@ from service_provider.views import ComplaintViewSet
 
 
 urlpatterns = [
-     # List and Create Complaints
+    
     path('complaints/', ComplaintViewSet.as_view({
         'get': 'list',
         'post': 'create'
     }), name='complaint-list'),
 
-    # Retrieve, Update, and Delete a Complaint
+    
     path('complaints/<int:id>/', ComplaintViewSet.as_view({
         'get': 'retrieve',
-        'put': 'update',
-        'patch': 'partial_update',
-        'delete': 'destroy'
     }), name='complaint-detail'),
 
     # List Active Complaints
@@ -27,7 +24,7 @@ urlpatterns = [
         'get': 'list_completed_complaints'
     }), name='complaint-completed-list'),
 
-
+     # List Rejected Complaints
     path('complaints/rejected/', ComplaintViewSet.as_view({
         'get': 'list_rejected_complaints'
     }), name='complaint-rejected-list'),
