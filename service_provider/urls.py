@@ -24,9 +24,9 @@ urlpatterns = [
         'get': 'list_completed_complaints'
     }), name='complaint-completed-list'),
 
-     # List Rejected Complaints
-    path('complaints/rejected/', ComplaintViewSet.as_view({
-        'get': 'list_rejected_complaints'
-    }), name='complaint-rejected-list'),
+    #  # List Rejected Complaints
+    # path('complaints/rejected/', ComplaintViewSet.as_view({
+    #     'get': 'list_rejected_complaints'
+    # }), name='complaint-rejected-list'),
 
 ]

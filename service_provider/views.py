@@ -34,16 +34,24 @@ class ComplaintViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(active_complaints, many=True)
         return Response(serializer.data)
 
+
     @action(detail=False, methods=['get'], url_path='completed')
     def list_completed_complaints(self, request):
-        """List all completed complaints."""
-        completed_complaints = self.queryset.filter(status='resolved')
+        """List all completed and rejected complaints."""
+        completed_complaints = self.queryset.filter(status__in=['resolved', 'rejected'])
         serializer = self.get_serializer(completed_complaints, many=True)
         return Response(serializer.data)
+
+    # @action(detail=False, methods=['get'], url_path='completed')
+    # def list_completed_complaints(self, request):
+    #     """List all completed complaints."""
+    #     completed_complaints = self.queryset.filter(status='resolved')
+    #     serializer = self.get_serializer(completed_complaints, many=True)
+    #     return Response(serializer.data)
     
-    @action(detail=False, methods=['get'], url_path='rejected')
-    def list_rejected_complaints(self, request):
-        """List all rejected complaints."""
-        rejected_complaints = self.queryset.filter(status='rejected')
-        serializer = self.get_serializer(rejected_complaints, many=True)
-        return Response(serializer.data)
+    # @action(detail=False, methods=['get'], url_path='rejected')
+    # def list_rejected_complaints(self, request):
+    #     """List all rejected complaints."""
+    #     rejected_complaints = self.queryset.filter(status='rejected')
+    #     serializer = self.get_serializer(rejected_complaints, many=True)
+    #     return Response(serializer.data)
