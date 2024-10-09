@@ -6,7 +6,7 @@ class ComplaintSerializer(serializers.ModelSerializer):
     class Meta:
         model = Complaint
         fields = [
-            'id', 'service_provider', 'service_request', 'subject', 'description', 
+            'id', 'sender', 'service_request', 'subject', 'description', 
             'images', 'submitted_at', 'status', 
             'resolved_at', 'resolution_notes'
         ]
@@ -15,6 +15,6 @@ class ComplaintSerializer(serializers.ModelSerializer):
 class ComplaintCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Complaint
-        fields = ['service_provider', 'customer','service_request', 'subject', 'description', 'images']
+        fields = ['sender', 'receiver','service_request', 'subject', 'description', 'images']
 
 

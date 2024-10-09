@@ -28,4 +28,8 @@ urlpatterns = [
     }), name='complaint-completed-list'),
 
 
+    path('complaints/rejected/', ComplaintViewSet.as_view({
+        'get': 'list_rejected_complaints'
+    }), name='complaint-rejected-list'),
+
 ]

@@ -531,8 +531,8 @@ class Complaint(models.Model):
         ('rejected', 'Rejected'),
     ]
     
-    customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_compliant')  
-    service_provider = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_compliant')  
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_compliant')  
+    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_compliant')  
     service_request = models.ForeignKey(ServiceRequest, on_delete=models.SET_NULL, null=True, blank=True, related_name='complaints')  # Optional link to service request
     subject = models.CharField(max_length=255)
     description = models.TextField()
@@ -543,7 +543,7 @@ class Complaint(models.Model):
     resolution_notes = models.TextField(null=True, blank=True)
 
     def __str__(self):
-        return f"Complaint by {self.customer} - {self.subject} ({self.status})"
+        return f"Complaint by {self.sender} - {self.subject} ({self.status})"
     
     def mark_as_resolved(self, resolution_notes=''):
         self.status = 'resolved'

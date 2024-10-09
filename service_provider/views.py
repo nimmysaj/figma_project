@@ -4,12 +4,11 @@ from rest_framework.response import Response
 from rest_framework import viewsets, permissions 
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from Accounts.models import ServiceProvider, Complaint
-from service_provider.serializers import ComplaintSerializer, ComplaintCreateSerializer
 from django.conf import settings
-from django.shortcuts import get_object_or_404
 from django.utils import timezone 
 from rest_framework.decorators import action
+from Accounts.models import ServiceProvider, Complaint
+from service_provider.serializers import ComplaintSerializer, ComplaintCreateSerializer
 
 
 
@@ -40,4 +39,11 @@ class ComplaintViewSet(viewsets.ModelViewSet):
         """List all completed complaints."""
         completed_complaints = self.queryset.filter(status='resolved')
         serializer = self.get_serializer(completed_complaints, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], url_path='rejected')
+    def list_rejected_complaints(self, request):
+        """List all rejected complaints."""
+        rejected_complaints = self.queryset.filter(status='rejected')
+        serializer = self.get_serializer(rejected_complaints, many=True)
         return Response(serializer.data)
