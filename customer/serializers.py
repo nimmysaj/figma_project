@@ -156,7 +156,7 @@ class ServiceProviderSerializer(serializers.ModelSerializer):
         if serReq.exists():  # Check if there are any service requests
             return obj.servicerequest.all().first().invoices.aggregate(Avg('total_amount'))['total_amount__avg']  # Calculate and return the average amount from invoices
         else:
-            return None  # If no service requests exist, return None
+            return None  
 
 
 

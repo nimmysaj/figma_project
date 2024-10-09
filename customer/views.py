@@ -29,13 +29,13 @@ class SubcategoryViewSet(APIView):
     
     def post(self, request):  
         category_id = request.data.get("category_id")  # Get category ID from the POST request data
-        if not category_id:  # If category_id is missing
-            return Response({"error": "category_id field required"}, status=status.HTTP_400_BAD_REQUEST)  # Return an error response if category_id is not provided
+        if not category_id:  
+            return Response({"error": "category_id field required"}, status=status.HTTP_400_BAD_REQUEST)  
 
         try:  # Attempt to find the category
             category = Category.objects.get(id=category_id)  # Find the category using the provided ID
-        except Category.DoesNotExist:  # If the category does not exist
-            return Response({"error": "category_id does not match any category"}, status=status.HTTP_400_BAD_REQUEST)  # Return an error response if the category is not found
+        except Category.DoesNotExist: 
+            return Response({"error": "category_id does not match any category"}, status=status.HTTP_400_BAD_REQUEST)  
 
         subcategories = self.queryset.filter(category=category)  # Filter active subcategories by the selected category
         serializer = self.serializer_class(subcategories, many=True) 
