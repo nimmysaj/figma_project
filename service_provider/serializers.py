@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Category, Subcategory, ServiceProvider, Complaint
+from customer.models import Customer
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -20,6 +21,19 @@ class ServiceProviderSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'subcategory', 'description', 'contact_info', 'status']
 
 class ComplaintSerializer(serializers.ModelSerializer):
+    custom_id = serializers.CharField(write_only=True)
+
     class Meta:
         model = Complaint
-        fields = ['id', 'service_provider', 'title', 'description', 'additional_requirements', 'status', 'created_at', 'images']
+        fields = ['id', 'service_provider', 'title', 'description', 'custom_id']  # Include custom_id here
+
+    def create(self, validated_data):
+        custom_id = validated_data.pop('custom_id', None)  # Get custom_id from the validated data
+        customer = Customer.objects.filter(custom_id=custom_id).first()
+        
+        if not customer:
+            raise serializers.ValidationError('Customer with the provided custom_id does not exist')
+        
+        # Create the complaint using the customer instance
+        complaint = Complaint.objects.create(customer=customer, **validated_data)
+        return complaint

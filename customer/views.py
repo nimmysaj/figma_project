@@ -5,14 +5,14 @@ from rest_framework.permissions import AllowAny
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 
-class CustomerProfileCreateView(generics.CreateAPIView):
+class CustomerProfileCreateView(generics.ListCreateAPIView):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
     permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
         # Pass the current user to the serializer context
-        serializer.save(user=self.request.user)
+        serializer.save()
 
 # List all customer profiles (GET)
 class CustomerProfileListView(generics.ListAPIView):

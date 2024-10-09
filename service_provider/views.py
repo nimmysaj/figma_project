@@ -5,6 +5,7 @@ from rest_framework.permissions import AllowAny
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from django.db.models import Q
+from customer.models import Customer
 
 # Create your views here.
 
@@ -81,5 +82,17 @@ class ServiceProviderListCreateView(generics.ListCreateAPIView):
 # --------------------------------------------------- C O M P L A I N T - F O R M -------------------------------------------------------
 
 class CreateComplaintView(generics.ListCreateAPIView):
-    queryset = Complaint.objects.all()
     serializer_class = ComplaintSerializer
+
+    def get_queryset(self):
+        custom_id = self.request.query_params.get('custom_id', None)  # Get custom_id from query parameters
+        queryset = Complaint.objects.all()  # Default to all complaints if no custom_id is provided
+
+        if custom_id:
+            customer = Customer.objects.filter(custom_id=custom_id).first()  # Fetch Customer based on custom_id
+            if customer:
+                queryset = queryset.filter(customer=customer)  # Filter complaints by customer instance
+
+        return queryset.order_by('-created_at')  # Order complaints by the latest created
+
+

@@ -20,8 +20,8 @@ class Customer(models.Model):
         ('O', 'Other'),
     )
 
-    # user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='customer')
-    custom_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)  # Custom ID field
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='customer')
+    custom_id = models.CharField(max_length=20, unique=True, blank=True)  # Custom ID field
     profile_image = models.ImageField(upload_to='c-profile-images/', null=True, blank=True, validators=[validate_file_size])#Customer specific field
     full_name = models.CharField(max_length=100)
     address = models.TextField()
@@ -37,19 +37,16 @@ class Customer(models.Model):
     def save(self, *args, **kwargs):
         if not self.custom_id:
             # Generate a custom ID if it doesn't exist
-            last_custom_id = Customer.objects.order_by('custom_id').last()
-            if last_custom_id:
-                match = re.match(r'USER(\d+)', last_custom_id.custom_id)
-                if match:
-                    customer_number = int(match.group(1)) + 1
-                else:
-                    customer_number = 1
+            last_customer = Customer.objects.order_by('custom_id').last()
+            if last_customer and last_customer.custom_id.isdigit():  # Ensure it's numeric
+                customer_number = int(last_customer.custom_id) + 1
             else:
                 customer_number = 1
-            self.custom_id = f'USER{customer_number}'
-
+            self.custom_id = str(customer_number)
+        
         # Ensure that super save is called with all arguments
         super(Customer, self).save(*args, **kwargs)
+
 
     def _str_(self):
         return self.custom_id

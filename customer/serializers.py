@@ -4,8 +4,8 @@ from .models import Customer
 class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
-        fields = ['profile_image', 'full_name', 'address', 'date_of_birth', 'gender', 'house_name', 'landmark', 'pin_code', 'district', 'state']
-        read_only_fields = ['custom_id', 'status']
+        fields = ['id', 'profile_image', 'custom_id', 'full_name', 'address', 'date_of_birth', 'gender', 'house_name', 'landmark', 'pin_code', 'district', 'state']
+        read_only_fields = ['status']
 
     def create(self, validated_data):
         # Retrieve the user from the context
