@@ -13,7 +13,7 @@ from .serializers import ForgotPasswordSerializer, VerifyOTPSerializer, NewPassw
 from django.utils import timezone
 from rest_framework import viewsets
 from rest_framework.decorators import action
-from django.db.models import Avg,F
+from django.db.models import Avg
 
 
 
@@ -22,36 +22,42 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CategorySerializer
     permission_classes = [IsAuthenticated]
 
-class SubcategoryViewSet(APIView):
-    queryset = Subcategory.objects.filter(status='Active')  # Only active subcategories
-    serializer_class = SubcategorySerializer
-    permission_classes = [IsAuthenticated]
-    def post(self, request):
-        category_id = request.data.get("category_id")
-        if not category_id:
-            return Response({"error":"category_id field required"},status=status.HTTP_400_BAD_REQUEST)
-        try:
-            category=Category.objects.get(id=category_id)
-        except Category.DoesNotExist:
-            return Response({"error":"category_id does not match any category"},status=status.HTTP_400_BAD_REQUEST)
-        subcategories = self.queryset.filter(category=category)
-        serializer = self.serializer_class(subcategories, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+class SubcategoryViewSet(APIView): 
+    queryset = Subcategory.objects.filter(status='Active')  # Get all active subcategories from the Subcategory model
+    serializer_class = SubcategorySerializer  
+    permission_classes = [IsAuthenticated]  
+    
+    def post(self, request):  
+        category_id = request.data.get("category_id")  # Get category ID from the POST request data
+        if not category_id:  # If category_id is missing
+            return Response({"error": "category_id field required"}, status=status.HTTP_400_BAD_REQUEST)  # Return an error response if category_id is not provided
+
+        try:  # Attempt to find the category
+            category = Category.objects.get(id=category_id)  # Find the category using the provided ID
+        except Category.DoesNotExist:  # If the category does not exist
+            return Response({"error": "category_id does not match any category"}, status=status.HTTP_400_BAD_REQUEST)  # Return an error response if the category is not found
+
+        subcategories = self.queryset.filter(category=category)  # Filter active subcategories by the selected category
+        serializer = self.serializer_class(subcategories, many=True) 
+        return Response(serializer.data, status=status.HTTP_200_OK)  
 
 
 
 
 
-class SubcategoryServiceProviders(APIView):
-    queryset = ServiceRegister.objects.filter(status='Active')  # Only active subcategories
-    serializer_class = ServiceProviderSerializer
-    permission_classes = [IsAuthenticated]
-    def post(self, request):
-        subcategory_id = request.data.get("subcategory_id")
-        subcategory=Subcategory.objects.get(id=subcategory_id)
-        services = self.queryset.filter(subcategory=subcategory)
-        serializer = self.serializer_class(services, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class SubcategoryServiceProviders(APIView):  
+    queryset = ServiceRegister.objects.filter(status='Active')  # Get all active services from ServiceRegister model
+    serializer_class = ServiceProviderSerializer  
+    permission_classes = [IsAuthenticated] 
+    
+    def post(self, request):  
+        subcategory_id = request.data.get("subcategory_id")  # Get subcategory ID from the POST request data
+        subcategory = Subcategory.objects.get(id=subcategory_id)  # Find the subcategory using the provided ID
+        services = self.queryset.filter(subcategory=subcategory)  # Filter active services by the selected subcategory
+        serializer = self.serializer_class(services, many=True)  
+        return Response(serializer.data, status=status.HTTP_200_OK)  
+
 
 
 

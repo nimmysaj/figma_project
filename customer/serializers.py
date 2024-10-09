@@ -139,22 +139,25 @@ class SubcategorySerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'category', 'description', 'service_type', 'status']
 
 
-class ServiceProviderSerializer(serializers.ModelSerializer):
-    user_name = serializers.CharField(source='service_provider.user.full_name', read_only=True)
-    rating = serializers.SerializerMethodField()
-    amount = serializers.SerializerMethodField()
+class ServiceProviderSerializer(serializers.ModelSerializer):  
+    user_name = serializers.CharField(source='service_provider.user.full_name', read_only=True)  # Read-only field to get the full name of the service provider
+    rating = serializers.SerializerMethodField()  # Custom method field to calculate the rating
+    amount = serializers.SerializerMethodField()  # Custom method field to calculate the service amount
 
-    class Meta:
-        model = ServiceRegister
-        fields = ['id','user_name', 'rating', 'amount']
-    def get_rating(self,obj):
-        return obj.service_provider.user.to_review.aggregate(Avg('rating'))['rating__avg']
-    def get_amount(self,obj):
-        serReq=obj.servicerequest.all()
-        if serReq.exists():
-            return obj.servicerequest.all().first().invoices.aggregate(Avg('total_amount'))['total_amount__avg']
+    class Meta: 
+        model = ServiceRegister 
+        fields = ['id', 'user_name', 'rating', 'amount']  
+
+    def get_rating(self, obj):  # Custom method to get the average rating of the service provider
+        return obj.service_provider.user.to_review.aggregate(Avg('rating'))['rating__avg']  # Calculate and return the average rating of the service provider
+
+    def get_amount(self, obj):  # Custom method to get the average amount for the service
+        serReq = obj.servicerequest.all()  # Get all service requests related to this service register
+        if serReq.exists():  # Check if there are any service requests
+            return obj.servicerequest.all().first().invoices.aggregate(Avg('total_amount'))['total_amount__avg']  # Calculate and return the average amount from invoices
         else:
-            return None
+            return None  # If no service requests exist, return None
+
 
 
 
