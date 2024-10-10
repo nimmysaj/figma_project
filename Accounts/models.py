@@ -362,9 +362,11 @@ class Subcategory(models.Model):
     description = models.TextField() 
     service_type = models.ForeignKey(Service_Type, on_delete=models.PROTECT,related_name='service_type')
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')]) 
+    collar = models.ForeignKey(Collar, on_delete=models.PROTECT, related_name='collar', null=True, blank=True)
 
     def __str__(self):
         return self.title  
+    
 class ServiceRegister(models.Model):
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE, related_name='services')
     title = models.CharField(max_length=255)  # Added title field
@@ -372,8 +374,6 @@ class ServiceRegister(models.Model):
     gstcode = models.CharField(max_length=50)
     category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name='serviceregister_category')
     subcategory = models.ForeignKey(Subcategory, on_delete=models.PROTECT, related_name='serviceregister_subcategory')
-    
-    collar = models.ForeignKey(Collar, on_delete=models.PROTECT, related_name='collar', null=True, blank=True)
     
     amount_forthis_service = models.DecimalField(max_digits=10, decimal_places=2)
     license = models.FileField(upload_to='service-license/', blank=True, null=True, validators=[validate_file_size])
