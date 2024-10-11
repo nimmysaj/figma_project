@@ -1,6 +1,6 @@
 from django.urls import path
-from .views import get_service_request_by_id
+from .views import ServiceRequestDetailView
 
 urlpatterns = [
-    path('api/service-request/<int:id>/', get_service_request_by_id, name='get_service_request_by_id'),
+    path('service-request-detail/', ServiceRequestDetailView.as_view(), name='service-request-detail'),
 ]
