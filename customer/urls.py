@@ -1,7 +1,8 @@
-from django.urls import path
-
+from django.urls import include, path
 from service_provider.views import ResetPasswordView
-from .views import CustomerLoginView, CustomerPasswordForgotView, CustomerViewSet, RegisterView, VerifyOTPView
+from .views import CategoryListView, CustomerLoginView, CustomerPasswordForgotView, CustomerViewSet, RegisterView, ServiceProviderDetailView, ServiceProviderListView, ServiceRequestCreateView, ServiceRequestDetailView, ServiceRequestInvoiceDetailView, SubcategoryListView, UnifiedSearchView, VerifyOTPView
+from rest_framework.routers import DefaultRouter
+
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register_customer'),
@@ -16,5 +17,16 @@ urlpatterns = [
         'get': 'retrieve', 
         'put': 'update',
         'patch': 'partial_update'
-        }), name='profile_update')
+        }), name='profile_update'),
+    #category, subcategory, service_providers_list, detailed view of service providers
+    path('categories/', CategoryListView.as_view(), name='category-list'),
+    path('categories/<int:category_id>/subcategories/', SubcategoryListView.as_view(), name='subcategory-list'),
+    path('subcategories/<int:subcategory_id>/service-providers/', ServiceProviderListView.as_view(), name='serviceprovider-list'),
+    path('service_provider/<int:id>/', ServiceProviderDetailView.as_view(), name='service_provider_detail'),
+    #search_functionality
+    path('search/', UnifiedSearchView.as_view(), name='unified-search'),
+    #service request upto booking details
+    path('service-request/', ServiceRequestCreateView.as_view(), name='service-request-create'),
+    path('view-request-user/', ServiceRequestDetailView.as_view(), name='view-request-user'),
+    path('service-request-invoice/', ServiceRequestInvoiceDetailView.as_view(), name='service-request-invoice-detail'),
 ]
