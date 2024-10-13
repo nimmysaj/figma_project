@@ -167,21 +167,18 @@ class CustomerViewSet(viewsets.ModelViewSet):
     queryset =Customer.objects.all()
     serializer_class = CustomerSerializer
     
-
-class ServiceRequestListView(generics.ListAPIView):
+class OngoingServiceRequestListView(generics.ListAPIView):
     serializer_class = ServiceRequestSerializer
 
     def get_queryset(self):
-        # Get the 'status' query parameter, default to 'pending' if not provided
-        status = self.request.query_params.get('status', None)
-        
-        # If no status is provided, return 'pending', 'in_progress', and 'completed' requests
-        if not status:
-            return ServiceRequest.objects.filter(work_status__in=['pending', 'in_progress', 'completed'])
-        
-        # Otherwise, return requests matching the provided status
-        return ServiceRequest.objects.filter(work_status=status)
+        return ServiceRequest.objects.filter(work_status='in_progress')
 
+
+class CompletedServiceRequestListView(generics.ListAPIView):
+    serializer_class = ServiceRequestSerializer
+
+    def get_queryset(self):
+        return ServiceRequest.objects.filter(work_status='completed')
 
 # View to get the details of a specific service request (second image data)
 class ServiceRequestDetailView(generics.RetrieveAPIView):
