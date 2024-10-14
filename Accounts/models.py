@@ -7,8 +7,13 @@ from django.utils import timezone
 import random
 from django.core.validators import RegexValidator
 import phonenumbers
+<<<<<<< HEAD
 from figma import settings
 from django.contrib.gis.db import models
+=======
+from django.conf import settings
+import uuid
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 
 # Create your models here.
 phone_regex = RegexValidator(
@@ -118,7 +123,11 @@ class User(AbstractBaseUser):
 
     watsapp = models.CharField(max_length=15, blank=True, null=True)
     email = models.EmailField(unique=True, null=True, blank=True)
+<<<<<<< HEAD
     phone_number = models.CharField(max_length=15, unique=True, null=True, blank=True)
+=======
+    phone_number = models.CharField(max_length=15, unique=True,validators=[phone_regex], null=True, blank=True)
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
     country_code = models.ForeignKey('Country_Codes', on_delete=models.SET_NULL, null=True, blank=True)
 
     USERNAME_FIELD = 'email'  
@@ -243,9 +252,13 @@ class ServiceProvider(models.Model):
     profile_image = models.ImageField(upload_to='s-profile-images/', null=True, blank=True, validators=[validate_file_size])
     date_of_birth = models.DateField(null=True, blank=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
+<<<<<<< HEAD
     about = models.TextField()
 
     location = models.PointField(geography=True, blank=True, null=True)
+=======
+    about = models.TextField(null=True,blank=True)
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 
     dealer = models.ForeignKey(Dealer, on_delete=models.PROTECT)
     franchisee = models.ForeignKey(Franchisee, on_delete=models.PROTECT)
@@ -335,7 +348,12 @@ class OTP(models.Model):
 class Service_Type(models.Model):
     name = models.CharField(max_length=255)
     details = models.TextField()
+<<<<<<< HEAD
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+=======
+    #amount = models.DecimalField(max_digits=10, decimal_places=2)
+    curreny=models.CharField(max_length=10,null=True,blank=True, default="INR")
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 
     def __str__(self):
         return self.name  
@@ -344,7 +362,11 @@ class Collar(models.Model):
     name = models.CharField(max_length=255)
     lead_quantity = models.IntegerField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+<<<<<<< HEAD
     currency = models.CharField(max_length=50)
+=======
+    #currency = models.CharField(max_length=50)
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 
     def __str__(self):
         return self.name  
@@ -364,23 +386,35 @@ class Subcategory(models.Model):
     image = models.ImageField(upload_to='subcategory-images/', null=True, blank=True, validators=[validate_file_size])  
     description = models.TextField() 
     service_type = models.ForeignKey(Service_Type, on_delete=models.PROTECT,related_name='service_type')
+<<<<<<< HEAD
+=======
+    collar = models.ForeignKey(Collar,on_delete=models.PROTECT,related_name='collar')
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')]) 
 
     def __str__(self):
         return self.title  
 
 class ServiceRegister(models.Model):
+<<<<<<< HEAD
+=======
+    id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE, related_name='services')
     description = models.TextField()
     gstcode = models.CharField(max_length=50)
     category = models.ForeignKey(Category, on_delete=models.PROTECT,related_name='serviceregister_category')    
     subcategory = models.ForeignKey(Subcategory, on_delete=models.PROTECT,related_name='serviceregister_subcategory') 
+<<<<<<< HEAD
     collar = models.ForeignKey(Collar, on_delete=models.PROTECT,related_name='collar') 
     amount_forthis_service = models.DecimalField(max_digits=10, decimal_places=2)
+=======
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
     license = models.FileField(upload_to='service-license/', blank=True, null=True, validators=[validate_file_size])
     image = models.ImageField(upload_to='service-images/', null=True, blank=True, validators=[validate_file_size])
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')],default='Active')
     accepted_terms = models.BooleanField(default=False)
+<<<<<<< HEAD
 
     def __str__(self):
         return self.title  
@@ -401,6 +435,69 @@ class ServiceRegister(models.Model):
             self.collar = None
         super().save(*args, **kwargs)
 
+=======
+    available_lead_balance = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.subcategory.title} by {self.service_provider}"
+    '''
+    def update_lead_balance(self, extra_leads=0):
+        """Update available lead balance by adding extra leads from the collar in the subcategory."""
+        if self.subcategory.service_type.name == "One Time Lead" and self.subcategory.collar:
+            # Ensure the available_lead_balance is an integer before performing addition
+            if not self.available_lead_balance:
+                self.available_lead_balance = 0  # Initialize if it's empty or None
+
+            # Increment lead balance by collar's lead quantity and extra_leads
+            self.available_lead_balance += self.subcategory.collar.lead_quantity + extra_leads
+            self.save()  # Save changes to the database
+
+            return self.available_lead_balance
+
+        # Return the current balance if not a "One Time Lead"
+        return self.available_lead_balance
+    '''
+    def update_lead_balance(self, extra_leads=1):
+        """
+        Update the available lead balance by adding extra leads based on the subcategory's collar.
+        Returns the updated lead balance and the amount for the added leads.
+        """
+        if self.subcategory.service_type.name == "One Time Lead" and self.subcategory.collar:
+            # Calculate the amount per lead from the collar model
+            lead_quantity = self.subcategory.collar.lead_quantity
+            collar_amount = float(self.subcategory.collar.amount)
+            
+            # Update the available lead balance by adding the specified leads
+            self.available_lead_balance += lead_quantity * extra_leads
+            self.save()
+
+            # Calculate the total amount to be paid for the added leads
+            total_amount = collar_amount * extra_leads
+            return self.available_lead_balance, total_amount
+
+        # If not a "One Time Lead", just return the current balance and amount as 0
+        return self.available_lead_balance, 0.0
+    def basic_amount(self):
+        """Calculate the basic amount by combining the subcategory's service type amount and the collar amount."""
+        basic_amount = float(self.subcategory.service_type.amount)
+
+        # Add the collar amount if it's present and the subcategory is 'one time lead'
+        if self.subcategory.collar and self.subcategory.service_type.title == 'one_time_lead':
+            basic_amount += float(self.subcategory.collar.amount)
+
+        return basic_amount
+
+    def save(self, *args, **kwargs):
+        """
+        Override save method to handle 'Daily Work' services.
+        Ensure collar is set to None for 'Daily Work' service type.
+        """
+        if self.subcategory and self.subcategory.service_type.name == 'Daily Work':
+            # No collar is needed for 'Daily Work' service type
+            self.available_lead_balance = 0  # You can adjust logic for infinite leads here
+        super(ServiceRegister, self).save(*args, **kwargs) 
+   
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 class PaymentRequest(models.Model):
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.PROTECT,related_name='from_paymentrequest')
     dealer = models.ForeignKey(Dealer, on_delete=models.PROTECT,related_name='to_paymentrequest')
@@ -449,7 +546,13 @@ class ServiceRequest(models.Model):
         ('completed', 'Completed'),
         ('cancelled', 'Cancelled'),
     ]
+<<<<<<< HEAD
 
+=======
+    
+    booking_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    title = models.CharField(max_length=20,null=True,blank=True)
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
     customer = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_servicerequest')
     service_provider = models.ForeignKey(User, on_delete=models.PROTECT,related_name='to_servicerequest')
     service = models.ForeignKey(ServiceRegister, on_delete=models.PROTECT,related_name='servicerequest')
@@ -462,7 +565,11 @@ class ServiceRequest(models.Model):
     image = models.ImageField(upload_to='service_request/', null=True, blank=True, validators=[validate_file_size])
 
     def __str__(self):
+<<<<<<< HEAD
         return f"Request by {self.customer.full_name} for {self.service.title} ({self.acceptance_status})"
+=======
+        return f"Request by {self.customer.full_name} for {self.service} ({self.acceptance_status})"
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 
     def clean(self):
         # Ensure the availability_from is before availability_to
@@ -474,9 +581,16 @@ class Invoice(models.Model):
         ('service_request', 'Service Request'),
         ('dealer_payment', 'Dealer Payment'),
         ('provider_payment', 'Service Provider Payment'),
+<<<<<<< HEAD
     ]
     
     invoice_number = models.IntegerField()
+=======
+        ('Ads' ,'Ads')
+    ]
+    
+    invoice_number = models.PositiveIntegerField(unique=True, editable=False)
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 
     #invoice_type: This field determines whether the invoice is related to a Service Request payment (service_request), a Dealer Payment (dealer_payment), or a Service Provider Payment (provider_payment).
     invoice_type = models.CharField(max_length=20, choices=INVOICE_TYPE_CHOICES)
@@ -485,8 +599,13 @@ class Invoice(models.Model):
     service_request = models.ForeignKey(ServiceRequest, on_delete=models.SET_NULL, null=True, blank=True,related_name='invoices')
 
     # Sender (user who is paying) and receiver (user receiving payment)
+<<<<<<< HEAD
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_invoices')
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_invoices')
+=======
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_payment')
+    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_payment')
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
     
     quantity = models.IntegerField(null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -516,10 +635,24 @@ class Invoice(models.Model):
         self.payment_status = 'cancelled'
         self.save()
 
+<<<<<<< HEAD
+=======
+    def save(self, *args, **kwargs):
+        if not self.invoice_number:
+            last_invoice = Invoice.objects.order_by('invoice_number').last()
+            self.invoice_number = last_invoice.invoice_number + 1 if last_invoice else 1
+        super().save(*args, **kwargs)    
+
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 class Payment(models.Model):
 
     PAYMENT_STATUS_CHOICES = [
         ('pending', 'Pending'),
+<<<<<<< HEAD
+=======
+        ('rescheduled', 'rescheduled'),
+        ('partially paid', 'partially paid'),
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
         ('completed', 'Completed'),
         ('failed', 'Failed'),
     ]
@@ -553,8 +686,13 @@ class Complaint(models.Model):
         ('rejected', 'Rejected'),
     ]
     
+<<<<<<< HEAD
     customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_compliant')  
     service_provider = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_compliant')  
+=======
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_compliant')  
+    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_compliant')  
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
     service_request = models.ForeignKey(ServiceRequest, on_delete=models.SET_NULL, null=True, blank=True, related_name='complaints')  # Optional link to service request
     subject = models.CharField(max_length=255)
     description = models.TextField()
@@ -565,7 +703,11 @@ class Complaint(models.Model):
     resolution_notes = models.TextField(null=True, blank=True)
 
     def __str__(self):
+<<<<<<< HEAD
         return f"Complaint by {self.customer} - {self.subject} ({self.status})"
+=======
+        return f"Complaint by {self.sender} - {self.subject} ({self.status})"
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
     
     def mark_as_resolved(self, resolution_notes=''):
         self.status = 'resolved'
@@ -581,6 +723,7 @@ class Complaint(models.Model):
         self.status = 'rejected'
         self.resolution_notes = rejection_reason
         self.save()
+<<<<<<< HEAD
 
 
 
@@ -600,3 +743,5 @@ class CurrentLocation(models.Model):
 
     def __str__(self):
         return f"{self.user}'s Location"
+=======
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3

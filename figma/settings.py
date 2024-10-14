@@ -163,6 +163,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'  # SMTP server host
 EMAIL_PORT = 587  # SMTP port
 EMAIL_USE_TLS = True  # Use TLS encryption
+<<<<<<< HEAD
 EMAIL_HOST_USER = 'figmaproject886@gmail.com'  # Your email
 EMAIL_HOST_PASSWORD = 'ncki rdko eleo jlyl'  # Your email password
 DEFAULT_FROM_EMAIL = 'figmaproject886@gmail.com'  # Default from email
@@ -173,8 +174,17 @@ DEFAULT_FROM_EMAIL = 'figmaproject886@gmail.com'  # Default from email
 # EMAIL_USE_TLS = True
 # EMAIL_HOST_USER = 'figmaproject886@gmail.com'
 # EMAIL_HOST_PASSWORD = 'ncki rdko eleo jlyl'
+=======
+EMAIL_HOST_USER = ''  # Your email
+EMAIL_HOST_PASSWORD = ''  # Your email password
+DEFAULT_FROM_EMAIL = ''  # Default from email
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 
 # settings.py
 #TWILIO_ACCOUNT_SID = ''
 #TWILIO_AUTH_TOKEN = ''
+<<<<<<< HEAD
 #TWILIO_PHONE_NUMBER = ''
+=======
+#TWILIO_PHONE_NUMBER = ''
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3

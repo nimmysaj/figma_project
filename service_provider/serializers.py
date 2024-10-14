@@ -1,12 +1,24 @@
 import re
 from phonenumbers import NumberParseException, is_valid_number, parse
 import phonenumbers
+<<<<<<< HEAD
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from Accounts.models import ServiceProvider, User  
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 
+=======
+from rest_framework.response import Response
+from rest_framework import serializers,status
+from django.contrib.auth import authenticate
+from Accounts.models import Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User  
+from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from rest_framework.exceptions import ValidationError
+
+#service provider login
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 class ServiceProviderLoginSerializer(serializers.Serializer):
     email_or_phone = serializers.CharField()
     password = serializers.CharField()
@@ -36,7 +48,11 @@ class ServiceProviderLoginSerializer(serializers.Serializer):
         return attrs
 
 
+<<<<<<< HEAD
 
+=======
+#forgot password and reset password
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 class ServiceProviderPasswordForgotSerializer(serializers.Serializer):
     email_or_phone = serializers.CharField(required=True)
 
@@ -56,7 +72,10 @@ class ServiceProviderPasswordForgotSerializer(serializers.Serializer):
 
         return value    
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 class SetNewPasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(required=True, write_only=True)
     confirm_password = serializers.CharField(required=True, write_only=True)
@@ -74,8 +93,11 @@ class SetNewPasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError("Password must contain at least one digit.")
         if not re.search(r'[!@#$%^&*(),.?":{}|<>]', value):
             raise serializers.ValidationError("Password must contain at least one special character.")
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
         return value
 
     def validate(self, attrs):
@@ -84,6 +106,10 @@ class SetNewPasswordSerializer(serializers.Serializer):
         return attrs
 
 
+<<<<<<< HEAD
+=======
+#profile updation
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -121,6 +147,14 @@ class ServiceProviderSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # Extract the nested user data from the validated data
         user_data = validated_data.pop('user')
+<<<<<<< HEAD
+=======
+
+        # Check if accepted_terms is False
+        if not validated_data.get('accepted_terms'):
+            raise ValidationError({"accepted_terms": "You must accept the terms and conditions to create a profile."})
+        
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
         user = User.objects.create(**user_data)
         service_provider = ServiceProvider.objects.create(user=user, **validated_data)
         return service_provider
@@ -146,4 +180,150 @@ class ServiceProviderSerializer(serializers.ModelSerializer):
 
         # Save the ServiceProvider instance with updated data
         instance.save()
+<<<<<<< HEAD
         return instance
+=======
+        return instance
+    
+
+
+#service registration and view the registered services of themselves
+class ServiceRegisterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ServiceRegister
+        fields = ['id', 'service_provider', 'description', 'gstcode', 'category', 'subcategory', 'license', 'image', 'status', 'accepted_terms', 'available_lead_balance']
+
+    def validate(self, data):
+        service_provider = data.get('service_provider')
+        # Ensure service provider is active and approved
+        # Check if the service provider is approved by the dealer
+        if service_provider.verification_by_dealer != 'APPROVED':
+            raise serializers.ValidationError("Service provider must be approved by the dealer to register the service.")
+        if service_provider.status != 'Active':
+            raise serializers.ValidationError("Service provider must be active to register the service.")
+
+        return data
+
+#update service register and lead balance
+class ServiceRegisterUpdateSerializer(serializers.ModelSerializer):
+    add_lead = serializers.IntegerField(required=False)
+   
+    class Meta:
+        model = ServiceRegister
+        fields = ['description', 'gstcode', 'status', 'accepted_terms', 'add_lead']
+
+    def update(self, instance, validated_data):
+        add_lead = validated_data.pop('add_lead', None)
+
+        # Update fields excluding category and subcategory
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        # Fetch the lead quantity from the SubCategory model
+        if instance.subcategory and instance.subcategory.collar:
+            lead_quantity = instance.subcategory.collar.lead_quantity  # Adjust field name as necessary
+            print(lead_quantity)
+
+            # Fetch the amount from the Collar model
+            if instance.subcategory.collar:  # Assuming `collar` is a field in ServiceRegister
+                collar_amount = instance.subcategory.collar.amount  # Adjust field name as necessary
+                print(collar_amount)
+
+                # Check if the service type is "Daily Work"
+                if instance.subcategory.service_type.name == "Daily Work" and add_lead is not None:
+                 # If it's "Daily Work", respond with a message without modifying the lead balance.
+                    raise serializers.ValidationError({"message": "You have unlimited leads. No need to add or adjust lead balance."})
+                
+                if add_lead is not None:# Fetch the lead quantity from the subcategory and collar
+                    if instance.subcategory and instance.subcategory.collar:
+                        lead_quantity = instance.subcategory.collar.lead_quantity  # Adjust the field names as necessary
+                        # Update the available lead balance by multiplying the lead quantity
+                        total_lead_quantity = lead_quantity * add_lead
+                        instance.available_lead_balance += total_lead_quantity
+                        amount_to_paid = collar_amount * add_lead
+                        print(amount_to_paid)
+                        self.context['total_lead_quantity'] = total_lead_quantity           
+                        self.context['amount_to_paid'] = amount_to_paid
+                            
+                else:
+                    instance.available_lead_balance
+ 
+        instance.save()
+        return instance
+    
+#service request
+class ServiceRequestSerializer(serializers.ModelSerializer):
+    customer_name = serializers.CharField(source='customer.full_name', read_only=True)
+    subcategory = serializers.CharField(source='service.subcategory', read_only=True)
+
+    class Meta:
+        model = ServiceRequest
+        fields = [
+            'customer_name', 'subcategory', 'acceptance_status', 'request_date', 
+            'availability_from', 'availability_to','image'
+        ]
+
+
+class CustomerServiceRequestSerializer(serializers.ModelSerializer):
+    serviceprovider = serializers.CharField(source='service_provider.full_name', read_only = True)
+    location  = serializers.CharField(source='service_provider.address', read_only = True)
+    subcategory = serializers.CharField(source='service.subcategory', read_only=True)
+    description = serializers.CharField(source='service.description', read_only=True)
+    customer_address = serializers.CharField(source='customer.address', read_only=True)
+    profile_image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ServiceRequest
+        fields = [
+            'booking_id', 'location','serviceprovider', 'subcategory', 'description', 
+            'acceptance_status', 'availability_from', 'availability_to', 'image', 
+            'profile_image', 'customer_address'
+        ]
+
+    def get_profile_image(self, obj):
+        # Access the profile image through the ServiceRegister's service_provider field
+        return obj.service.service_provider.profile_image.url if obj.service.service_provider.profile_image else None
+
+    def update(self, instance, validated_data):
+        # Update the instance with the validated data
+        instance.acceptance_status = validated_data.get('acceptance_status', instance.acceptance_status)
+        instance.save()
+        return instance
+
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    total_amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)  # Ensure total_amount is read-only
+
+    class Meta:
+        model = Invoice
+        fields = [
+            'invoice_number', 'invoice_type', 'service_request', 'sender', 
+            'receiver', 'quantity', 'price', 'total_amount', 'payment_status',
+            'invoice_date', 'due_date', 'appointment_date', 'additional_requirements',
+            'accepted_terms'
+        ]
+        read_only_fields = ['invoice_number', 'total_amount']
+
+    def create(self, validated_data):
+        quantity = validated_data.get('quantity')
+        price = validated_data.get('price')
+
+        # Calculate total amount
+        total_amount = quantity * price if quantity and price else 0.0
+        validated_data['total_amount'] = total_amount
+
+
+        # Extract the service_request to update its work_status later
+        service_request = validated_data.get('service_request')
+
+        # Create the invoice instance
+        invoice = Invoice.objects.create(**validated_data)
+
+        # Update the work_status of the associated service request
+        if service_request:
+            if service_request.acceptance_status == 'accept':
+                service_request.work_status = 'pending'  # Set the desired work_status
+                service_request.save()
+
+        return invoice
+>>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
