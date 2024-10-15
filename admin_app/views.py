@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from Accounts.models import User, Franchise_Type ,Payment ,Franchisee
-from .serializers import UserSerializer, FranchiseeSerializer ,PaymentSerializer
+from .serializers import UserSerializer, FranchiseeSerializer ,TransactionSerializer
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -32,10 +32,10 @@ class FranchiseeViewSet(viewsets.ModelViewSet):
         self.perform_create(serializer)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-class PaymentListView(generics.ListAPIView):
+class TransactionsListView(generics.ListAPIView):
     queryset = Payment.objects.all()
-    serializer_class = PaymentSerializer
+    serializer_class = TransactionSerializer
 
-class PaymentDetailView(generics.RetrieveAPIView):
+class TransactionDetailView(generics.RetrieveAPIView):
     queryset = Payment.objects.all()
-    serializer_class = PaymentSerializer
+    serializer_class = TransactionSerializer
