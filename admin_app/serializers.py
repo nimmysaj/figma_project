@@ -1,12 +1,43 @@
 from rest_framework import serializers
-from Accounts.models import User, Franchisee
+from Accounts.models import User, Franchisee ,Payment
 from django.db import models
-
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
+import re
 # User Serializer
 class UserSerializer(serializers.ModelSerializer):
+    
+    password = serializers.CharField(write_only=True)
+
     class Meta:
         model = User
         fields = ['email', 'full_name', 'phone_number', 'password','landmark','address','district','state','watsapp','country_code','pin_code']
+
+    # Validate email field
+    def validate_email(self, value):
+        try:
+            validate_email(value)  # Django's built-in email validator
+        except ValidationError:
+            raise serializers.ValidationError("Enter a valid email address.")
+        
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("This email is already in use.")
+        
+        return value
+
+    # Validate phone number field
+    def validate_phone_number(self, value):
+        # Example regex for phone numbers (adjust based on your country format)
+        phone_regex = re.compile(r'^\+?\d{10,15}$')  # Accepts phone numbers between 10 and 15 digits
+        
+        if not phone_regex.match(value):
+            raise serializers.ValidationError("Enter a valid phone number (10-15 digits).")
+        
+        if User.objects.filter(phone_number=value).exists():
+            raise serializers.ValidationError("This phone number is already in use.")
+        
+        return value
+
 
     def create(self, validated_data):
         user = User(
@@ -80,3 +111,9 @@ class FranchiseeSerializer(serializers.ModelSerializer):
             user.save()
 
         return instance
+    
+    
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = ['transaction_id','invoice','sender','receiver','amount_paid','payment_method','payment_date','payment_status']
