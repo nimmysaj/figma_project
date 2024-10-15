@@ -8,6 +8,7 @@ import random
 from django.core.validators import RegexValidator
 import phonenumbers
 from figma import settings
+import uuid
 
 # Create your models here.
 phone_regex = RegexValidator(
@@ -117,9 +118,8 @@ class User(AbstractBaseUser):
 
     watsapp = models.CharField(max_length=15, blank=True, null=True)
     email = models.EmailField(unique=True, null=True, blank=True)
-    phone_number = models.CharField(max_length=15, unique=True, null=True, blank=True)
+    phone_number = models.CharField(max_length=15, unique=True, validators=[phone_regex], null=True, blank=True)
     country_code = models.ForeignKey('Country_Codes', on_delete=models.SET_NULL, null=True, blank=True)
-
 
     nationality = models.CharField(max_length=100,blank=True, null=True)
     designation = models.CharField(max_length=100, blank=True, null=True)
@@ -336,7 +336,8 @@ class OTP(models.Model):
 class Service_Type(models.Model):
     name = models.CharField(max_length=255)
     details = models.TextField()
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    # amount = models.DecimalField(max_digits=10, decimal_places=2)
+    curreny=models.CharField(max_length=10,null=True,blank=True, default="INR")
 
     def __str__(self):
         return self.name  
@@ -365,42 +366,83 @@ class Subcategory(models.Model):
     image = models.ImageField(upload_to='subcategory-images/', null=True, blank=True, validators=[validate_file_size])  
     description = models.TextField() 
     service_type = models.ForeignKey(Service_Type, on_delete=models.PROTECT,related_name='service_type')
+    collar = models.ForeignKey(Collar,on_delete=models.PROTECT,related_name='collar')
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')]) 
 
     def __str__(self):
         return self.title  
 
 class ServiceRegister(models.Model):
+    id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE, related_name='services')
     description = models.TextField()
     gstcode = models.CharField(max_length=50)
     category = models.ForeignKey(Category, on_delete=models.PROTECT,related_name='serviceregister_category')    
     subcategory = models.ForeignKey(Subcategory, on_delete=models.PROTECT,related_name='serviceregister_subcategory') 
-    collar = models.ForeignKey(Collar, on_delete=models.PROTECT,related_name='collar') 
-    amount_forthis_service = models.DecimalField(max_digits=10, decimal_places=2)
     license = models.FileField(upload_to='service-license/', blank=True, null=True, validators=[validate_file_size])
     image = models.ImageField(upload_to='service-images/', null=True, blank=True, validators=[validate_file_size])
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')],default='Active')
     accepted_terms = models.BooleanField(default=False)
+    available_lead_balance = models.IntegerField(default=0)
 
     def __str__(self):
-        return self.title  
-    
-    def basic_amount(self):
-        # Get the base amount from the subcategory's service_type amount
-        basic_amount = self.subcategory.service_type.amount
+        return f"{self.subcategory.title} by {self.service_provider}"  
+    '''
+    def update_lead_balance(self, extra_leads=0):
+        """Update available lead balance by adding extra leads from the collar in the subcategory."""
+        if self.subcategory.service_type.name == "One Time Lead" and self.subcategory.collar:
+            # Ensure the available_lead_balance is an integer before performing addition
+            if not self.available_lead_balance:
+                self.available_lead_balance = 0  # Initialize if it's empty or None
 
-        # Only add collar amount if the subcategory is 'one time lead' and collar is not None
-        if self.subcategory == 'one_time_lead' and self.collar:
-            basic_amount += self.collar.amount
+            # Increment lead balance by collar's lead quantity and extra_leads
+            self.available_lead_balance += self.subcategory.collar.lead_quantity + extra_leads
+            self.save()  # Save changes to the database
+
+            return self.available_lead_balance
+
+        # Return the current balance if not a "One Time Lead"
+        return self.available_lead_balance
+    '''
+    def update_lead_balance(self, extra_leads=1):
+        """
+        Update the available lead balance by adding extra leads based on the subcategory's collar.
+        Returns the updated lead balance and the amount for the added leads.
+        """
+        if self.subcategory.service_type.name == "One Time Lead" and self.subcategory.collar:
+            # Calculate the amount per lead from the collar model
+            lead_quantity = self.subcategory.collar.lead_quantity
+            collar_amount = float(self.subcategory.collar.amount)
+            
+            # Update the available lead balance by adding the specified leads
+            self.available_lead_balance += lead_quantity * extra_leads
+            self.save()
+
+            # Calculate the total amount to be paid for the added leads
+            total_amount = collar_amount * extra_leads
+            return self.available_lead_balance, total_amount
+
+        # If not a "One Time Lead", just return the current balance and amount as 0
+        return self.available_lead_balance, 0.0
+    def basic_amount(self):
+        """Calculate the basic amount by combining the subcategory's service type amount and the collar amount."""
+        basic_amount = float(self.subcategory.service_type.amount)
+
+        # Add the collar amount if it's present and the subcategory is 'one time lead'
+        if self.subcategory.collar and self.subcategory.service_type.title == 'one_time_lead':
+            basic_amount += float(self.subcategory.collar.amount)
 
         return basic_amount
     
     def save(self, *args, **kwargs):
-        # If subcategory is not 'one_time_lead', set collar to None
-        if self.subcategory != 'one_time_lead':
-            self.collar = None
-        super().save(*args, **kwargs)
+        """
+        Override save method to handle 'Daily Work' services.
+        Ensure collar is set to None for 'Daily Work' service type.
+        """
+        if self.subcategory and self.subcategory.service_type.name == 'Daily Work':
+            # No collar is needed for 'Daily Work' service type
+            self.available_lead_balance = 0  # You can adjust logic for infinite leads here
+        super(ServiceRegister, self).save(*args, **kwargs)
 
 class PaymentRequest(models.Model):
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.PROTECT,related_name='from_paymentrequest')
@@ -451,6 +493,8 @@ class ServiceRequest(models.Model):
         ('cancelled', 'Cancelled'),
     ]
 
+    booking_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    title = models.CharField(max_length=20,null=True,blank=True)
     customer = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_servicerequest')
     service_provider = models.ForeignKey(User, on_delete=models.PROTECT,related_name='to_servicerequest')
     service = models.ForeignKey(ServiceRegister, on_delete=models.PROTECT,related_name='servicerequest')
@@ -475,9 +519,10 @@ class Invoice(models.Model):
         ('service_request', 'Service Request'),
         ('dealer_payment', 'Dealer Payment'),
         ('provider_payment', 'Service Provider Payment'),
+        ('Ads' ,'Ads')
     ]
     
-    invoice_number = models.IntegerField()
+    invoice_number = models.PositiveIntegerField(unique=True, editable=False)
 
     #invoice_type: This field determines whether the invoice is related to a Service Request payment (service_request), a Dealer Payment (dealer_payment), or a Service Provider Payment (provider_payment).
     invoice_type = models.CharField(max_length=20, choices=INVOICE_TYPE_CHOICES)
@@ -516,11 +561,19 @@ class Invoice(models.Model):
         """Method to cancel the invoice."""
         self.payment_status = 'cancelled'
         self.save()
+    
+    def save(self, *args, **kwargs):
+        if not self.invoice_number:
+            last_invoice = Invoice.objects.order_by('invoice_number').last()
+            self.invoice_number = last_invoice.invoice_number + 1 if last_invoice else 1
+        super().save(*args, **kwargs)  
 
 class Payment(models.Model):
 
     PAYMENT_STATUS_CHOICES = [
         ('pending', 'Pending'),
+        ('rescheduled', 'rescheduled'),
+        ('partially paid', 'partially paid'),
         ('completed', 'Completed'),
         ('failed', 'Failed'),
     ]
@@ -554,8 +607,8 @@ class Complaint(models.Model):
         ('rejected', 'Rejected'),
     ]
     
-    customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_compliant')  
-    service_provider = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_compliant')  
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_compliant')  
+    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_compliant')  
     service_request = models.ForeignKey(ServiceRequest, on_delete=models.SET_NULL, null=True, blank=True, related_name='complaints')  # Optional link to service request
     subject = models.CharField(max_length=255)
     description = models.TextField()
