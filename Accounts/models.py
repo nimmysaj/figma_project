@@ -1,3 +1,6 @@
+from django.db import models
+
+# Create your models here.
 import re
 from django.contrib.auth.models import Permission,Group
 from django.db import models
@@ -8,6 +11,8 @@ import random
 from django.core.validators import RegexValidator
 import phonenumbers
 from figma import settings
+
+
 
 # Create your models here.
 phone_regex = RegexValidator(
@@ -25,7 +30,7 @@ class Country_Codes(models.Model):
     country_name = models.CharField(max_length=100,unique=True)
     calling_code = models.CharField(max_length=10,unique=True)
 
-    def __str__(self):
+    def _str_(self):
         return f"{self.country_name} ({self.calling_code})"
     
     class Meta:
@@ -34,14 +39,14 @@ class Country_Codes(models.Model):
 class State(models.Model):
     name = models.CharField(max_length=255)
 
-    def __str__(self):
+    def _str_(self):
         return self.name
 
 class District(models.Model):
     name = models.CharField(max_length=255)
     state = models.ForeignKey(State, on_delete=models.CASCADE)
 
-    def __str__(self):
+    def _str_(self):
         return self.name
 
 GENDER_CHOICES = [
@@ -141,7 +146,7 @@ class User(AbstractBaseUser):
         related_name='app1_user_permissions'  # Add a unique related_name
     )
     
-    def __str__(self):
+    def _str_(self):
         return self.email if self.email else self.phone_number
 
     def has_perm(self, perm, obj=None):
@@ -183,7 +188,7 @@ class Franchisee(models.Model):
         super(Franchisee, self).save(*args, **kwargs)
 
 
-    def __str__(self):
+    def _str_(self):
         return self.custom_id 
 
     @property
@@ -217,7 +222,7 @@ class Dealer(models.Model):
 
         super(Dealer, self).save(*args, **kwargs)
 
-    def __str__(self):
+    def _str_(self):
         return self.custom_id 
 
 
@@ -270,7 +275,7 @@ class ServiceProvider(models.Model):
 
 
 
-    def __str__(self):
+    def _str_(self):
         return self.custom_id
 
 class Customer(models.Model):
@@ -303,7 +308,7 @@ class Customer(models.Model):
 
         super(Customer, self).save(*args, **kwargs)
 
-    def __str__(self):
+    def _str_(self):
         return self.custom_id
 
 class OTP(models.Model):
@@ -325,7 +330,7 @@ class OTP(models.Model):
             self.expires_at = timezone.now() + timezone.timedelta(minutes=5)
         super().save(*args, **kwargs)
 
-    def __str__(self):
+    def _str_(self):
         return f"OTP for {self.user.email or self.user.phone_number} - Expires at {self.expires_at}"
     
 
@@ -334,7 +339,7 @@ class Service_Type(models.Model):
     details = models.TextField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
 
-    def __str__(self):
+    def _str_(self):
         return self.name  
        
 class Collar(models.Model):
@@ -343,7 +348,7 @@ class Collar(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=50)
 
-    def __str__(self):
+    def _str_(self):
         return self.name  
             
 class Category(models.Model):
@@ -352,7 +357,7 @@ class Category(models.Model):
     description = models.TextField()
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')])
 
-    def __str__(self):
+    def _str_(self):
         return self.title 
 
 class Subcategory(models.Model):
@@ -361,27 +366,27 @@ class Subcategory(models.Model):
     image = models.ImageField(upload_to='subcategory-images/', null=True, blank=True, validators=[validate_file_size])  
     description = models.TextField() 
     service_type = models.ForeignKey(Service_Type, on_delete=models.PROTECT,related_name='service_type')
-    collar = models.ForeignKey(Collar, on_delete=models.CASCADE, related_name='collar')
-    status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')])
+    collar=models.ForeignKey(Collar,on_delete=models.PROTECT,related_name='collar')
+    status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')]) 
 
-
-    def __str__(self):
+    def _str_(self):
         return self.title  
 
 class ServiceRegister(models.Model):
-    title = models.CharField(max_length=255,default='Untitled')
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE, related_name='services')
     description = models.TextField()
     gstcode = models.CharField(max_length=50)
     category = models.ForeignKey(Category, on_delete=models.PROTECT,related_name='serviceregister_category')    
     subcategory = models.ForeignKey(Subcategory, on_delete=models.PROTECT,related_name='serviceregister_subcategory') 
-    amount_forthis_service = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    title = models.CharField(max_length=200, default=True)  
+    
     license = models.FileField(upload_to='service-license/', blank=True, null=True, validators=[validate_file_size])
     image = models.ImageField(upload_to='service-images/', null=True, blank=True, validators=[validate_file_size])
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')],default='Active')
     accepted_terms = models.BooleanField(default=False)
 
-    def __str__(self):
+    def _str_(self):
         return self.title  
     
     def basic_amount(self):
@@ -419,27 +424,8 @@ class PaymentRequest(models.Model):
     supporting_documents = models.FileField(upload_to='payment-request/', blank=True, null=True, validators=[validate_file_size])
 
 
-    def __str__(self):
+    def _str_(self):
         return f"Request by {self.service_provider.full_name} to {self.dealer.name} for {self.amount}"
-
-class CustomerReview(models.Model):
-    RATING_CHOICES = [
-        (1, '1 Star'),
-        (2, '2 Stars'),
-        (3, '3 Stars'),
-        (4, '4 Stars'),
-        (5, '5 Stars'),
-    ]
-
-    customer = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_review')  # The customer leaving the review
-    service_provider = models.ForeignKey(User, on_delete=models.PROTECT,related_name='to_review')  # The service provider being reviewed
-    rating = models.IntegerField(choices=RATING_CHOICES)  # Rating from 1 to 5 stars
-    image = models.ImageField(upload_to='reviews/', null=True, blank=True, validators=[validate_file_size])
-    comment = models.TextField(blank=True, null=True)  # Optional comment
-    created_at = models.DateTimeField(auto_now_add=True)  # Auto-set the review date
-
-    def __str__(self):
-        return f"{self.customer.full_name} - {self.service_provider.full_name} ({self.rating} stars)"
     
 class ServiceRequest(models.Model):
     STATUS_CHOICES = [
@@ -460,13 +446,33 @@ class ServiceRequest(models.Model):
     additional_notes = models.TextField(blank=True, null=True)
     image = models.ImageField(upload_to='service_request/', null=True, blank=True, validators=[validate_file_size])
 
-    def __str__(self):
-        return f"Request by {self.customer.full_name} for {self.service.title} ({self.acceptance_status})"
+    def _str_(self):
+        return f"Request by {self.customer.full_name} for {self.service.title}  ({self.acceptance_status})"
 
     def clean(self):
         # Ensure the availability_from is before availability_to
         if self.availability_from >= self.availability_to:
-            raise ValidationError('Availability "from" time must be before "to" time.')    
+            raise ValidationError('Availability "from" time must be before "to" time.')   
+
+class CustomerReview(models.Model):
+    RATING_CHOICES = [
+        (1, '1 Star'),
+        (2, '2 Stars'),
+        (3, '3 Stars'),
+        (4, '4 Stars'),
+        (5, '5 Stars'),
+    ]
+
+    customer = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_review')  # The customer leaving the revie
+    servicer_request = models.ForeignKey(ServiceRequest,on_delete=models.SET_NULL, null=True, blank=True, related_name='reviews')
+    service_provider = models.ForeignKey(User, on_delete=models.PROTECT,related_name='to_review')  # The service provider being reviewed
+    rating = models.IntegerField(choices=RATING_CHOICES)  # Rating from 1 to 5 stars
+    image = models.ImageField(upload_to='reviews/', null=True, blank=True, validators=[validate_file_size])
+    comment = models.TextField(blank=True, null=True)  # Optional comment
+    created_at = models.DateTimeField(auto_now_add=True)  # Auto-set the review date 
+
+    def _str_(self):
+        return f"{self.customer.full_name} - {self.service_provider.full_name} ({self.rating} stars)"  
 
 class Invoice(models.Model):
     INVOICE_TYPE_CHOICES = [
@@ -499,7 +505,7 @@ class Invoice(models.Model):
     additional_requirements = models.TextField(null=True, blank=True)
     accepted_terms = models.BooleanField(default=False)
 
-    def __str__(self):
+    def _str_(self):
         if self.service_request:
             return f"Invoice for Service Request {self.service_request} - {self.payment_status}"
         else:
@@ -532,7 +538,7 @@ class Payment(models.Model):
     payment_date = models.DateTimeField(default=timezone.now)
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
 
-    def __str__(self):
+    def _str_(self):
         return f"Payment of {self.amount_paid} by {self.sender} to {self.receiver}"
 
     def mark_completed(self):
@@ -556,6 +562,8 @@ class Complaint(models.Model):
     service_provider = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_compliant')  
     service_request = models.ForeignKey(ServiceRequest, on_delete=models.SET_NULL, null=True, blank=True, related_name='complaints')  # Optional link to service request
     subject = models.CharField(max_length=255)
+    
+    
     description = models.TextField()
     images = models.ImageField(upload_to='complaint/', null=True, blank=True, validators=[validate_file_size])
     submitted_at = models.DateTimeField(auto_now_add=True)
@@ -563,7 +571,7 @@ class Complaint(models.Model):
     resolved_at = models.DateTimeField(null=True, blank=True)
     resolution_notes = models.TextField(null=True, blank=True)
 
-    def __str__(self):
+    def _str_(self):
         return f"Complaint by {self.customer} - {self.subject} ({self.status})"
     
     def mark_as_resolved(self, resolution_notes=''):
