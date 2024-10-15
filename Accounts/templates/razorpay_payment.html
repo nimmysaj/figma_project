@@ -8,27 +8,24 @@
 </head>
 <body>
     <h1>Complete your Payment</h1>
+    <h2>Amount: {{ amount }} </h2>
     <button id="rzp-button">Pay Now</button>
 
     <script>
         var options = {
-            "key": "{{ razorpay_key }}", // Replace with your Razorpay Key ID
+            "key": "your_razorpay_key_id", // Replace with your Razorpay Key ID
             "amount": "{{ amount }}", // Amount in paise
             "currency": "INR",
             "name": "Your Company Name",
             "description": "Payment for Invoice",
             "order_id": "{{ order_id }}", // Order ID from your backend
             "handler": function (response) {
-                // Log payment details to console
+                // Log the payment details to the console
                 console.log("Payment ID:", response.razorpay_payment_id);
                 console.log("Order ID:", response.razorpay_order_id);
                 console.log("Signature:", response.razorpay_signature);
                 
-                // Here you can send the details to your backend if needed
-                // For now, just display an alert with payment info
-                alert("Payment ID: " + response.razorpay_payment_id +
-                      "\nOrder ID: " + response.razorpay_order_id +
-                      "\nSignature: " + response.razorpay_signature);
+                alert("Payment successful! Check console for details.");
             },
             "prefill": {
                 "name": "{{ user_name }}",

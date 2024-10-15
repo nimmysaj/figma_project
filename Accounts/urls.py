@@ -1,13 +1,9 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import InvoiceViewSet, PaymentInitiationView, PaymentConfirmationView, razorpay_payment_page
-
-router = DefaultRouter()
-router.register(r'invoices', InvoiceViewSet)
+from django.urls import path
+from .views import InvoiceCreateView, PaymentView, VerifyPaymentView, payment_page
 
 urlpatterns = [
-    path('', include(router.urls)),
-    path('initiate-payment/', PaymentInitiationView.as_view(), name='initiate-payment'),
-    path('confirm-payment/', PaymentConfirmationView.as_view(), name='confirm-payment'),
-    path('pay-invoice/<int:invoice_id>/', razorpay_payment_page, name='razorpay-payment'),
-    ]
+    path('invoices/', InvoiceCreateView.as_view(), name='create-invoice'),
+    path('invoices/payment/', PaymentView.as_view(), name='make-payment'),
+    path('payment/verify/', VerifyPaymentView.as_view(), name='verify-payment'),
+    path('payment/<int:invoice_id>/', payment_page, name='payment-page'),
+]

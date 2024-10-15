@@ -1,160 +1,162 @@
-from rest_framework import viewsets, status 
-from rest_framework.response import Response
-from .models import Invoice, Payment
-from .serializers import InvoiceSerializer
 import razorpay
-from rest_framework.views import APIView
 from django.conf import settings
-from django.shortcuts import render
+from rest_framework import status, views
+from rest_framework.response import Response
+from django.shortcuts import render, get_object_or_404
+from .models import Invoice, Payment, User
+from .serializers import InvoiceSerializer, PaymentSerializer
+from rest_framework.views import APIView
+from decimal import Decimal
+
+
+razorpay_client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+
+
+class InvoiceCreateView(views.APIView):
+    def post(self, request):
+        serializer = InvoiceSerializer(data=request.data)
+        if serializer.is_valid():
+            invoice = serializer.save()
+            invoice.remaining_amount = invoice.price 
+            invoice.save()
+
+            response_data = {
+                "invoice_id": invoice.id,
+                "remaining_amount": invoice.remaining_amount
+            }
+            return Response(response_data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 
-class InvoiceViewSet(viewsets.ModelViewSet):
-    queryset = Invoice.objects.all()
-    serializer_class = InvoiceSerializer
-
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        invoice = serializer.save()
-        
-        return Response({'invoice_id': invoice.id}, status=status.HTTP_201_CREATED)
-
-
-
-class PaymentInitiationView(APIView):
+class PaymentView(views.APIView):
     def post(self, request):
         invoice_id = request.data.get('invoice_id')
+        amount_paying = request.data.get('amount')
+        payment_type = request.data.get('payment_type')  
 
-        if not invoice_id:
-            return Response({"error": "Invoice ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if not invoice_id or not amount_paying or not payment_type:
+            return Response({"error": "invoice_id, amount, and payment_type are required."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
+            amount_paying = Decimal(request.data.get('amount'))
+
+
+            if amount_paying <= 0:
+                return Response({"error": "Amount must be greater than zero."}, status=status.HTTP_400_BAD_REQUEST)
+
             invoice = Invoice.objects.get(id=invoice_id)
+            invoice.payment_type = payment_type
 
-            if invoice.payment_status != 'pending':
-                return Response({"error": "Invoice cannot be paid."}, status=status.HTTP_400_BAD_REQUEST)
-
-            client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_SECRET))
-
-
-            order_amount = int(invoice.total_amount * 100)  
-            order_currency = 'INR'
-            order_receipt = f"receipt#_{invoice.id}"
-            order = client.order.create({
-                'amount': order_amount,
-                'currency': order_currency,
-                'receipt': order_receipt,
-                'payment_capture': 1, 
+            razorpay_order = razorpay_client.order.create({
+                "amount": int(amount_paying * 100), 
+                "currency": "INR",
+                "payment_capture": "1"
             })
 
             payment = Payment.objects.create(
                 invoice=invoice,
-                sender=invoice.sender,
-                receiver=invoice.receiver,
-                amount_paid=invoice.total_amount,
-                payment_method='razorpay',
-                payment_date=request.data.get('payment_date', None), 
-                payment_status='pending',
-                payment_id=order['id'],  
-                order_id=order['id'],  
+                order_id=razorpay_order['id'],
+                amount=amount_paying,
             )
 
-            return Response({
-                "message": "Payment initiated successfully.",
-                "order_id": order['id'],  
-                "amount": order_amount,
-                "currency": order_currency,
-            }, status=status.HTTP_201_CREATED)
+            if amount_paying > invoice.remaining_amount:
+                return Response({'error':f"Amount should be less than the remaining balance - {invoice.remaining_amount}"})
+            if payment_type == "full" and invoice.price != amount_paying:
+                return Response({'error':f"Please ensure that you are paying the full amount if payment type is full - {invoice.price}"})
+
+            if payment_type == 'partial':
+                invoice.remaining_amount -= amount_paying 
+            elif payment_type == 'full':
+                invoice.remaining_amount = Decimal(0)  
+            invoice.payment_type = payment_type
+            invoice.amount_paying = amount_paying
+            invoice.save()
+            response_data = {
+                "order_id": razorpay_order['id'],
+                "amount": amount_paying,
+            }
+
+            if payment_type == 'partial':
+                response_data["remaining_amount"] = invoice.remaining_amount
+            
+            invoice.order_id = response_data["order_id"]
+            invoice.save()
+
+            return Response(response_data, status=status.HTTP_200_OK)
 
         except Invoice.DoesNotExist:
-            return Response({"error": "Invoice not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Invoice not found"}, status=status.HTTP_404_NOT_FOUND)
+        except ValueError:
+            return Response({"error": "Invalid amount value."}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-
-
-class PaymentConfirmationView(APIView):
+        
+class VerifyPaymentView(views.APIView):
     def post(self, request):
-        order_id = request.data.get('order_id')
-        payment_id = request.data.get('payment_id')  
-        signature = request.data.get('signature')  
-
-        if not order_id or not payment_id or not signature:
-            return Response({"error": "order_id, payment_id, and signature are required."}, status=status.HTTP_400_BAD_REQUEST)
+        payment_id = request.data.get('payment_id')
+        signature = request.data.get('signature')
+        order_id = request.data.get('order_id') 
+        invoice_id = request.data.get('invoice_id')
 
         try:
             payment = Payment.objects.get(order_id=order_id)
+            invoice = Invoice.objects.get(id=invoice_id)
 
-            payment.transaction_id = payment_id
-            payment.signature = signature
+            try:
+                razorpay_client.utility.verify_payment_signature({
+                    'razorpay_order_id': order_id,
+                    'razorpay_payment_id': payment_id,
+                    'razorpay_signature': signature
+                })
+                
+                if invoice.order_id != order_id:
+                    return Response({'status':'Enter the correct invoice id for the Payment.'}) 
 
-            is_success = True  
+                if invoice.payment_type == 'partial':
+                    invoice.payment_status = 'partially_paid' if invoice.remaining_amount > 0 else 'paid'
+                elif invoice.payment_type == 'full':
+                    invoice.payment_status = 'paid'
+                invoice.save()   
 
-            if is_success:
-                payment.mark_completed()
+                payment.sender = invoice.receiver
+                payment.receiver = invoice.sender
+                payment.price = invoice.price
+                payment.remaining_amount = invoice.remaining_amount
+                payment.payment_id = payment_id
+                payment.signature = signature
+                payment.save()
 
-                invoice = payment.invoice
-                invoice.mark_paid()
+                return Response({"status": "Payment verified"}, status=status.HTTP_200_OK)
 
-                success_message = "Your payment has been processed successfully."
-                payment_status = "completed"
-                invoice_status = "paid"
-
-                return Response({
-                    'success_message': success_message,
-                    'order_id': order_id,
-                    'payment_id': payment_id,
-                    'signature': signature,
-                    'payment_status': payment_status,
-                    'invoice_status': invoice_status
-                }, status=status.HTTP_200_OK)
-            else:
-                payment.mark_failed()
-                return Response({"message": "Payment failed.", "payment_status": "failed"}, status=status.HTTP_400_BAD_REQUEST)
+            except razorpay.errors.SignatureVerificationError:
+                return Response({"error": "Payment verification failed"}, status=status.HTTP_400_BAD_REQUEST)
 
         except Payment.DoesNotExist:
-            return Response({"error": "Payment not found."}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": "Payment not found"}, status=status.HTTP_404_NOT_FOUND)
+        
 
 
-
-
-def razorpay_payment_page(request, invoice_id):
+def payment_page(request, invoice_id):
     try:
         invoice = Invoice.objects.get(id=invoice_id)
-
-        if invoice.payment_status != 'pending':
-            return render(request, 'razorpay_payment.html', {
-                'message': 'Invoice cannot be paid.'
-            })
-
-        if request.user.is_authenticated:
-            user_name = request.user.get_full_name()
-            user_email = request.user.email
-        else:
-            user_name = "Guest" 
-            user_email = "" 
-
-        payment = invoice.payments.first()  
-
-        order_id = payment.order_id if payment else None
-
-        context = {
-            'order_id': order_id,
-            'amount': int(invoice.total_amount * 100),  
-            'user_name': user_name,
-            'user_email': user_email,
-            'razorpay_key': settings.RAZORPAY_KEY_ID  
-        }
-
-        return render(request, 'razorpay_payment.html', context)
-
+        user = request.user 
     except Invoice.DoesNotExist:
-        return render(request, 'razorpay_payment.html', {
-            'message': 'Invoice not found.'
-        })
+        return render(request, '404.html', status=404)
 
+   
+    user_name = getattr(user, 'full_name', 'Guest')  
+    user_email = getattr(user, 'email', 'guest@example.com') 
+    user_contact = getattr(user, 'phone_number', '0000000000')  
 
+    context = {
+        'amount': invoice.amount_paying,
+        'order_id': invoice.order_id,
+        'user_name': user_name,
+        'user_email': user_email,
+        'user_contact': user_contact
+    }
+
+    return render(request, 'razorpay_payment.html', context)
