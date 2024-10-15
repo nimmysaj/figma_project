@@ -291,19 +291,19 @@ class Customer(models.Model):
     def save(self, *args, **kwargs):
         if not self.custom_id:
             # Find the last existing custom ID
-            last_custom_id = Customer.objects.order_by('custom_id').last()
-            if last_custom_id:
-                # Extract the numeric part and increment
-                match = re.match(r'USER(\d+)', last_custom_id.custom_id)
-                if match:
-                    customer_number = int(match.group(1)) + 1
-                else:
-                    customer_number = 1  # Start from 1 if no previous ID found
-            else:
-                customer_number = 1  # Start from 1 if no previous ID found
+            # last_custom_id = Customer.objects.order_by('custom_id').last()
+            # if last_custom_id:
+            #     # Extract the numeric part and increment
+            #     match = re.match(r'USER(\d+)', last_custom_id.custom_id)
+            #     if match:
+            #         customer_number = int(match.group(1)) + 1
+            #     else:
+            #         customer_number = 1  # Start from 1 if no previous ID found
+            # else:
+            #     customer_number = 1  # Start from 1 if no previous ID found
 
-            # Create the custom ID with the USER prefix
-            self.custom_id = f'USER{customer_number}'  # No leading zeros
+            # # Create the custom ID with the USER prefix
+            self.custom_id = f'USER{self.user.id}'  # No leading zeros
 
         super(Customer, self).save(*args, **kwargs)
 
