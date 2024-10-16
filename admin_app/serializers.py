@@ -113,7 +113,15 @@ class FranchiseeSerializer(serializers.ModelSerializer):
         return instance
     
     
+# class TransactionSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Payment
+#         fields = ['transaction_id','invoice','sender','receiver','description','amount_paid','payment_method','payment_date','payment_status']
+
+
+
+
 class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
-        fields = ['transaction_id','invoice','sender','receiver','description','amount_paid','payment_method','payment_date','payment_status']
+        fields = '__all__'  # Or specify the fields you need
