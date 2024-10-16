@@ -4,6 +4,8 @@ from rest_framework import status
 from .models import ServiceRequest
 from .serializers import ServiceRequestSerializer
 from django.shortcuts import get_object_or_404
+from .models import User
+from .serializers import UserSerializer
 
 
 class ServiceRequestDetailView(APIView):
@@ -23,3 +25,35 @@ class ServiceRequestDetailView(APIView):
 
         # Return the serialized data in the response
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UserDetailsView(APIView):
+    def post(self, request, *args, **kwargs):
+        user_id = request.data.get('user_id')
+        
+        if not user_id:
+            return Response({'error': 'User ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = User.objects.get(id=user_id)
+            serializer = UserSerializer(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+
+class UserPaymentHistoryView(APIView):
+
+
+    def post(self, request, format=None):
+        users_id = request.data.get('users_id')
+        
+        if not users_id:
+            return Response({"error": "User ID not provided"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = User.objects.get(id=users_id)
+            serializer = UserSerializer(user)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)

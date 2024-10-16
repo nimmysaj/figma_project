@@ -11,3 +11,7 @@ from Accounts.models import Invoice
 from Accounts.models import Payment
 from Accounts.models import Complaint
 from Accounts.models import CustomerReview
+from Accounts.models import User
+from Accounts.models import District
+from Accounts.models import State
+from Accounts.models import Country_Codes
