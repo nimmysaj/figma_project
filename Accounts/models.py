@@ -157,10 +157,12 @@ class Franchise_Type(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=50)
 
+    def __str__(self):
+        return self.name
+
 class Franchisee(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='franchisee')
     custom_id = models.CharField(max_length=10, unique=True, editable=False, blank=True) 
-
     about = models.TextField()
     profile_image = models.ImageField(upload_to='f-profile_images/', null=True, blank=True, validators=[validate_file_size])  # Profile image field
     revenue = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -578,6 +580,7 @@ class Payment(models.Model):
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='payments')
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_payments')  # User who sends the payment
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_payments')  # User who receives the payment
+    description = models.TextField(null=True, max_length=200 ,blank=True)
     transaction_id = models.CharField(max_length=15)
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
     payment_method = models.CharField(max_length=50, choices=PAYMENT_METHOD_CHOICES)
