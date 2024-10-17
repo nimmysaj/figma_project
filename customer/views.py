@@ -72,7 +72,6 @@ class ServiceRequestCreateView(generics.CreateAPIView):
             if existing_service_request:
                 return Response({"error": "You already have a pending request for this service."}, status=status.HTTP_400_BAD_REQUEST)
 
-
             # Get the service provider
             service_provider_id = request.data.get('service_provider_id')
             service_provider = User.objects.get(id=service_provider_id) if service_provider_id else None
@@ -90,7 +89,7 @@ class ServiceRequestCreateView(generics.CreateAPIView):
                 availability_to=request.data.get('availability_to'),
                 additional_notes=request.data.get('additional_notes'),
                 image=request.data.get('image'),
-                description=request.data.get('description'),
+                title=request.data.get('title'),
                 booking_id=self.generate_booking_id(),
             )
 
@@ -112,6 +111,54 @@ class ServiceRequestCreateView(generics.CreateAPIView):
     def generate_booking_id(self):
         import uuid
         return str(uuid.uuid4())
+
+    def put(self, request, *args, **kwargs):
+        try:
+            user_id = request.data.get('user_id')
+            service_request_id = request.data.get('service_request_id')
+
+            # Validate the user and service request ID
+            customer = User.objects.get(id=user_id)
+            service_request = ServiceRequest.objects.get(id=service_request_id, customer=customer)
+
+            # Ensure acceptance_status is 'accept' before allowing the update
+            if service_request.acceptance_status != 'accept':
+                return Response({"error": "Cannot reschedule. The service request must be accepted."}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            # Update fields for rescheduling
+            service_request.availability_from = request.data.get('availability_from', service_request.availability_from)
+            service_request.availability_to = request.data.get('availability_to', service_request.availability_to)
+            service_request.additional_notes = request.data.get('additional_notes', service_request.additional_notes)
+            service_request.title = request.data.get('title', service_request.title)
+            if 'image' in request.data:
+                service_request.image = request.data.get('image')
+
+            # If any of the fields changed, set reschedule_status to True
+            #if (
+             #   service_request.availability_from != request.data.get('availability_from') or
+              #  service_request.availability_to != request.data.get('availability_to') 
+            #):
+            service_request.reschedule_status = True
+
+            service_request.save()
+
+            # Fetch related data in one query using select_related
+            service_request = ServiceRequest.objects.select_related(
+                'customer', 'service_provider', 'service'
+            ).get(id=service_request.id)
+
+            # Serialize and return updated data
+            serializer = self.get_serializer(service_request)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+        except ServiceRequest.DoesNotExist:
+            return Response({"error": "Service request not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 #For the second page , The customer can view all the services that requested
@@ -172,8 +219,8 @@ class ServiceRequestInvoiceDetailView(APIView):
         
         data = {
             'service_request': {
+                #'title': service_request.service.title,
                 'title': service_request.service.title,
-                'description': service_request.service.description,
                 'work_status': service_request.work_status,
                 'request_date': service_request.request_date,
                 'availability_from': service_request.availability_from,

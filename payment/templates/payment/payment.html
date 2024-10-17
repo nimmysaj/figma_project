@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+    <h1>Payment Page</h1>
+
+    <!-- Two buttons for full and partial payments -->
+    <button id="payFullBtn">Pay Full Amount</button>
+    <button id="payPartialBtn">Pay Only Advance</button>
+
+    <script>
+        // Function to initiate payment with either 'full' or 'partial' payment type
+        function initiatePayment(paymentType) {
+            fetch('/payment/create-payment/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ invoice_id: 14, payment_type: paymentType })  // Replace with actual invoice ID
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.order_id) {
+                    var options = {
+                        key: "{{ razorpay_key }}", // Razorpay key from backend
+                        amount: data.amount, // Amount in subunits
+                        currency: data.currency,
+                        name: "Your Company Name",
+                        description: "Test Transaction",
+                        image: "https://example.com/your_logo",  // Replace with your logo URL
+                        order_id: data.order_id,  // Order ID from backend
+                        handler: function (response) {
+                            // Log payment details for debugging
+                            console.log(response.razorpay_payment_id);
+                            console.log(response.razorpay_order_id);
+                            console.log(response.razorpay_signature);
+
+                            // Call backend to verify payment
+                            fetch('/payment/verify-payment/', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    razorpay_payment_id: response.razorpay_payment_id,
+                                    razorpay_order_id: response.razorpay_order_id,
+                                    razorpay_signature: response.razorpay_signature
+                                })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                alert(data.status);  // Show payment status
+                            });
+                        },
+                        prefill: {
+                            name: "Customer Name",  // Prefill customer details
+                            email: "customer@example.com",
+                            contact: "9999999999",
+                        },
+                        notes: {
+                            address: "Customer Address",  // Custom notes
+                        },
+                        theme: {
+                            color: "#F37254"  // Theme color
+                        }
+                    };
+
+                    var rzp1 = new Razorpay(options);
+                    rzp1.open();  // Open Razorpay checkout form
+                } else {
+                    alert("Payment order creation failed.");
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        // Bind buttons to initiate payment with different payment types
+        document.getElementById('payFullBtn').onclick = function() {
+            initiatePayment('full');  // Full payment
+        };
+        document.getElementById('payPartialBtn').onclick = function() {
+            initiatePayment('partial');  // Partial payment
+        };
+    </script>
+</body>
+</html>

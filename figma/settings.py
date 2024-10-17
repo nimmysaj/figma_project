@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'service_provider',
     'rest_framework',
     'phonenumber_field',
+    'payment',
 ]
 
 MIDDLEWARE = [
@@ -59,8 +60,8 @@ ROOT_URLCONF = 'figma.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],
-        'APP_DIRS': True,
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],  # Optional if you have a global templates folder
+        'APP_DIRS': True,  # This allows Django to look for templates inside each app's templates folder
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
@@ -122,6 +123,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
@@ -158,3 +160,7 @@ REST_FRAMEWORK = {
 }
 
 """
+
+RAZORPAY_KEY_ID = 'rzp_test_nCK5pKIuMmqyuY'
+RAZORPAY_KEY_SECRET = 'su5sk2GafpbzObnXbnrtgssx'
+

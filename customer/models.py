@@ -452,7 +452,8 @@ class ServiceRequest(models.Model):
     additional_notes = models.TextField(blank=True, null=True)
     image = models.ImageField(upload_to='service_request/', null=True, blank=True, validators=[validate_file_size])
     booking_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True) 
-    description = models.TextField(blank=True, null=True)  #This field is not needed.
+    title = models.CharField(max_length=20,null=True,blank=True)
+    reschedule_status = models.BooleanField(default=False)  # New field for rescheduling status
 
     def __str__(self):
         return f"Request by {self.customer.full_name} for {self.service.title} ({self.acceptance_status})"
@@ -484,7 +485,17 @@ class Invoice(models.Model):
     quantity = models.IntegerField(null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    payment_status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('paid', 'Paid'), ('cancelled', 'Cancelled')], default='pending')
+    partial_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, default=0)  # New field for partial payment
+    payment_status = models.CharField(
+        max_length=20, 
+        choices=[
+            ('pending', 'Pending'), 
+            ('paid', 'Paid'), 
+            ('partially_paid', 'Partially Paid'), 
+            ('cancelled', 'Cancelled')
+        ], 
+        default='pending'
+    )
 
     invoice_date = models.DateTimeField(auto_now_add=True)
     due_date = models.DateTimeField(null=True, blank=True)
@@ -516,6 +527,9 @@ class Payment(models.Model):
     payment_method = models.CharField(max_length=50, choices=PAYMENT_METHOD_CHOICES)
     payment_date = models.DateTimeField(default=timezone.now)
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
+
+    order_id = models.CharField(max_length=100, null=True, blank=True)
+    signature = models.CharField(max_length=256, null=True, blank=True)
     
     def __str__(self):
         return f"Payment of {self.amount_paid} by {self.sender} to {self.receiver}"

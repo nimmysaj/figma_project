@@ -161,7 +161,7 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
             'additional_notes',
             'image',
             'booking_id',
-            'description'  #not needed line
+            'title',  # Service title for output
         ]
         read_only_fields = ['booking_id', 'customer', 'service', 'service_title', 'subcategory_title', 'subcategory_id']
 
