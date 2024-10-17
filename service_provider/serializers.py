@@ -158,10 +158,61 @@ class ServiceProviderSerializer(serializers.ModelSerializer):
 
 #service registration and view the registered services of themselves
 class ServiceRegisterSerializer(serializers.ModelSerializer):
+
+    available_lead_balance = serializers.SerializerMethodField(read_only=True)
+    collar_amount = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = ServiceRegister
-        fields = ['id', 'service_provider', 'description', 'gstcode', 'category', 'subcategory', 'license', 'image', 'status', 'accepted_terms', 'available_lead_balance']
+        fields = ['id', 'service_provider', 'description', 'gstcode', 'category', 'subcategory', 'license', 
+                  'status', 'image', 'accepted_terms', 'available_lead_balance', 'collar_amount']
+        read_only_fields = ['available_lead_balance', 'collar_amount']
 
+
+    def get_available_lead_balance(self, obj):
+        if obj.subcategory and obj.subcategory.service_type.name == 'Daily Work':
+            return 0  # For 'Daily Work', the lead balance is always 0.
+        elif obj.subcategory and obj.subcategory.service_type.name == 'One Time Lead':
+            if obj.subcategory.collar:
+                # If available_lead_balance is None, return the collar's lead balance, else return the saved balance.
+                return obj.update_lead_balance(1)
+            return 0  # Return 0 if collar is missing.
+        return None
+
+    def get_collar_amount(self, obj):
+        if obj.subcategory.service_type.name == 'Daily Work':
+            return obj.subcategory.collar.amount
+        elif obj.subcategory.service_type.name == 'One Time Lead' and obj.subcategory.collar:
+            return obj.subcategory.collar.amount
+        return None
+
+    def create(self, validated_data):
+        # Remove fields not in the actual model
+        validated_data.pop('available_lead_balance', None)
+        validated_data.pop('collar_amount', None)
+        
+        # Create the service register instance
+        service_register = super().create(validated_data)
+        
+        # Create the corresponding invoice automatically
+        self.create_invoice(service_register)
+        
+        return service_register
+
+    def create_invoice(self, service_register):
+        """
+        Creates an invoice for the registered service based on the collar amount.
+        """
+        collar_amount = self.get_collar_amount(service_register)
+        if collar_amount:
+            Invoice.objects.create(
+                invoice_type='service_register',  # Assuming service-related invoice
+                sender=service_register.service_provider.user,  # Assuming service provider is the sender
+                receiver=service_register.service_provider.dealer.user,  # Assuming dealer is the receiver
+                price=collar_amount,
+                total_amount=collar_amount,
+                accepted_terms=service_register.accepted_terms
+            )
     def validate(self, data):
         service_provider = data.get('service_provider')
         # Ensure service provider is active and approved
@@ -172,6 +223,8 @@ class ServiceRegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Service provider must be active to register the service.")
 
         return data
+    
+
 
 #update service register and lead balance
 class ServiceRegisterUpdateSerializer(serializers.ModelSerializer):
@@ -213,12 +266,27 @@ class ServiceRegisterUpdateSerializer(serializers.ModelSerializer):
                         print(amount_to_paid)
                         self.context['total_lead_quantity'] = total_lead_quantity           
                         self.context['amount_to_paid'] = amount_to_paid
+                        self.create_invoice(instance, amount_to_paid)
+
                             
                 else:
                     instance.available_lead_balance
  
         instance.save()
         return instance
+    def create_invoice(self, service_register, amount_to_paid):
+        """
+        Creates an invoice for the registered service based on the calculated amount to be paid.
+        """
+        # Fetch the collar amount based on the provided service_register
+        Invoice.objects.create(
+            invoice_type='service_register',  # Assuming this is for a service registration
+            sender=service_register.service_provider.user,  # Service provider as sender
+            receiver=service_register.service_provider.dealer.user,  # Dealer as receiver
+            price=amount_to_paid,
+            total_amount=amount_to_paid,
+            accepted_terms=service_register.accepted_terms
+        )
     
 #service request
 class ServiceRequestSerializer(serializers.ModelSerializer):

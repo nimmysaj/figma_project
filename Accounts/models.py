@@ -401,7 +401,7 @@ class ServiceRegister(models.Model):
         # Return the current balance if not a "One Time Lead"
         return self.available_lead_balance
     '''
-    def update_lead_balance(self, extra_leads=1):
+    def update_lead_balance(self, extra_leads=0):
         """
         Update the available lead balance by adding extra leads based on the subcategory's collar.
         Returns the updated lead balance and the amount for the added leads.
@@ -410,6 +410,9 @@ class ServiceRegister(models.Model):
             # Calculate the amount per lead from the collar model
             lead_quantity = self.subcategory.collar.lead_quantity
             collar_amount = float(self.subcategory.collar.amount)
+            print('hay',lead_quantity)
+            print('hay',collar_amount)
+
             
             # Update the available lead balance by adding the specified leads
             self.available_lead_balance += lead_quantity * extra_leads
@@ -514,6 +517,7 @@ class ServiceRequest(models.Model):
 class Invoice(models.Model):
     INVOICE_TYPE_CHOICES = [
         ('service_request', 'Service Request'),
+        ('service_register','Service Register'),
         ('dealer_payment', 'Dealer Payment'),
         ('provider_payment', 'Service Provider Payment'),
         ('Ads' ,'Ads')
@@ -539,7 +543,6 @@ class Invoice(models.Model):
     invoice_date = models.DateTimeField(auto_now_add=True)
     due_date = models.DateTimeField(null=True, blank=True)
     
-    appointment_date = models.DateTimeField()
     additional_requirements = models.TextField(null=True, blank=True)
     accepted_terms = models.BooleanField(default=False)
 

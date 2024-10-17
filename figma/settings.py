@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -158,12 +159,13 @@ SIMPLE_JWT = {
 
 #email smtp
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'  # SMTP server host
-EMAIL_PORT = 587  # SMTP port
-EMAIL_USE_TLS = True  # Use TLS encryption
-EMAIL_HOST_USER = ''  # Your email
-EMAIL_HOST_PASSWORD = ''  # Your email password
-DEFAULT_FROM_EMAIL = ''  # Default from email
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'newbieos.contact@gmail.com'
+EMAIL_HOST_PASSWORD = 'rged vvor jtdk pxhk'
+DEFAULT_FROM_EMAIL = 'newbieos.contact@gmail.com'
+ADMIN_EMAIL = 'newbieos.contact@gmail.com'
 
 # settings.py
 #TWILIO_ACCOUNT_SID = ''

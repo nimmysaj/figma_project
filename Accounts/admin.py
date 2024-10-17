@@ -3,7 +3,19 @@ from .models import OTP, Category, Collar, Customer, CustomerReview, Dealer, Dis
 
 admin.site.register(User)
 admin.site.register(Customer)
-admin.site.register(ServiceProvider)
+@admin.register(ServiceProvider)
+class ServiceProviderAdmin(admin.ModelAdmin):
+    # Fields to display in the list view
+    list_display = ('id','custom_id', 'user', 'dealer', 'franchisee', 'payout_required', 'status', 'verification_by_dealer')
+
+    # Fields to allow searching
+    search_fields = ('custom_id', 'user__username', 'dealer__custom_id', 'franchisee__custom_id', 'status')
+
+    # Default ordering (by 'user' and 'custom_id')
+    ordering = ('user', 'custom_id')
+
+    # Optionally, you can make `list_filter` for easy filtering
+    list_filter = ('status', 'payout_required', 'verification_by_dealer')
 admin.site.register(Franchisee)
 admin.site.register(Franchise_Type)
 admin.site.register(Dealer)

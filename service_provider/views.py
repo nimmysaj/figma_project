@@ -17,6 +17,7 @@ from .serializers import CustomerServiceRequestSerializer, InvoiceSerializer, Se
 from django.utils.encoding import smart_bytes, smart_str
 from twilio.rest import Client
 from rest_framework.decorators import action
+from django.views.decorators.csrf import csrf_exempt
 from copy import deepcopy
 # Create your views here.
 
