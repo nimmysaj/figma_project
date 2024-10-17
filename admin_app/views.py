@@ -33,16 +33,25 @@ class UserViewSet(viewsets.ModelViewSet):
 class FranchiseeViewSet(viewsets.ModelViewSet):
     queryset = Franchisee.objects.all()
     serializer_class = FranchiseeSerializer    
-    http_method_names = ['get']  # Only allow GET requests (list and retrieve)
+    http_method_names = ['get'] 
 
-    # @action(detail=True, methods=['get'])
-    # def retrieve(self, request, pk=None):
-    #     try:
-    #         franchisee = Franchisee.objects.get(pk=pk)
-    #         serializer = FranchiseeSerializer(franchisee)
-    #         return Response(serializer.data)
-    #     except Franchisee.DoesNotExist:
-    #         return Response({"error": "Franchisee not found"}, status=404)
+    def list(self, request, *args, **kwargs):
+        franchisees = self.get_queryset()  
+        franchisees_count = franchisees.count()
+        active_count = franchisees.filter(status='Active').count()  
+        inactive_count = franchisees.filter(status='Inactive').count()  
+        
+        # Serialize all franchisees (you can filter if needed)
+        serializer = self.get_serializer(franchisees, many=True)
+
+        # Return the response with counts
+        return Response({
+            "franchisees_count":franchisees_count,
+            "active_franchisees": active_count, 
+            "inactive_franchisees": inactive_count, 
+            "franchisees": serializer.data 
+        })
+
 class FranchiseTypeViewSet(viewsets.ModelViewSet):
     queryset = Franchise_Type.objects.all()
     serializer_class = FranchiseTypeSerializer    
