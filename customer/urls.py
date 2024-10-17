@@ -1,6 +1,6 @@
 from django.urls import include, path
 from service_provider.views import ResetPasswordView
-from .views import CategoryListView, CustomerLoginView, CustomerPasswordForgotView, CustomerViewSet, RegisterView, ServiceProviderDetailView, ServiceProviderListView, ServiceRequestCreateView, ServiceRequestDetailView, ServiceRequestInvoiceDetailView, SubcategoryListView, UnifiedSearchView, VerifyOTPView
+from .views import CategoryListView, CustomerLoginView, CustomerPasswordForgotView, CustomerViewSet, RegisterView, ServiceProviderDetailView, ServiceProviderListView, ServiceRequestCreateView, ServiceRequestDetailView, ServiceRequestInvoiceDetailView, SubcategoryListView, UnifiedSearchView, VerifyOTPView, ServiceTypeListView, ServiceTypeDetailView, CollarListView, CollarDetailView
 from rest_framework.routers import DefaultRouter
 
 
@@ -29,4 +29,10 @@ urlpatterns = [
     path('service-request/', ServiceRequestCreateView.as_view(), name='service-request-create'),
     path('view-request-user/', ServiceRequestDetailView.as_view(), name='view-request-user'),
     path('service-request-invoice/', ServiceRequestInvoiceDetailView.as_view(), name='service-request-invoice-detail'),
+
+    path('service-types/', ServiceTypeListView.as_view(), name='service_type_list'),
+    path('service-types/<int:pk>/', ServiceTypeDetailView.as_view(), name='service_type_detail'),
+    
+    path('collars/', CollarListView.as_view(), name='collar_list'),
+    path('collars/<int:pk>/', CollarDetailView.as_view(), name='collar_detail'),
 ]

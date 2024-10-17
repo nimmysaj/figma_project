@@ -4,7 +4,7 @@ import phonenumbers
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate
-from Accounts.models import Category, Country_Codes, Customer, CustomerReview, Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory
+from Accounts.models import Category, Country_Codes, Customer, CustomerReview, Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, Collar, Service_Type
 from django.contrib.auth.password_validation import validate_password
 from django.db.models import Avg
 from django.core.validators import validate_email
@@ -299,12 +299,25 @@ class CustomerSerializer(serializers.ModelSerializer):
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['id', 'title', 'description', 'image']
+        fields = ['id', 'title', 'description', 'image', 'status']
 
 class SubcategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Subcategory
-        fields = ['id', 'title', 'description', 'image']
+        fields = ['id', 'title', 'description', 'image', 'status', 'category', 'collar', 'service_type']
+
+
+# Serializer for Service_Type model
+class ServiceTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Service_Type
+        fields = ['id', 'name', 'details', 'curreny']
+
+# Serializer for Collar model
+class CollarSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Collar
+        fields = ['id', 'name', 'lead_quantity', 'amount']
 
 class ServiceProviderSerializer(serializers.ModelSerializer):
      # Fetch the full name from the related User model

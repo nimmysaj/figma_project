@@ -10,10 +10,10 @@ from .utils import send_otp_via_email, send_otp_via_phone
 from django.utils.http import urlsafe_base64_encode
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import smart_bytes
-from .serializers import CustomerLoginSerializer,CustomerPasswordForgotSerializer, CustomerSerializer, ResendOTPSerializer, ServiceProviderProfileSerializer,ServiceProviderSerializer,RegisterSerializer, ServiceRequestDetailSerializer, ServiceRequestSerializer,SetNewPasswordSerializer
+from .serializers import CustomerLoginSerializer,CustomerPasswordForgotSerializer, CustomerSerializer, ResendOTPSerializer, ServiceProviderProfileSerializer,ServiceProviderSerializer,RegisterSerializer, ServiceRequestDetailSerializer, ServiceRequestSerializer,SetNewPasswordSerializer, ServiceTypeSerializer, CollarSerializer
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.pagination import PageNumberPagination
-from Accounts.models import OTP, Category, Country_Codes, Customer, Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User
+from Accounts.models import OTP, Category, Country_Codes, Customer, Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User, Service_Type, Collar
 from rest_framework import status, permissions,generics,viewsets,serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import update_last_login
@@ -213,14 +213,14 @@ class CustomerViewSet(viewsets.ModelViewSet):
         return Customer.objects.filter(user=self.request.user)
 
 # List all active categories
-class CategoryListView(generics.ListAPIView):
+class CategoryListView(generics.ListCreateAPIView):
     queryset = Category.objects.filter(status='Active')
     serializer_class = CategorySerializer
     authentication_classes = [SessionAuthentication, BasicAuthentication]  # Override JWT authentication
     permission_classes = []  # This removes any permission restrictions
 
 # List all active subcategories under a specific category
-class SubcategoryListView(generics.ListAPIView):
+class SubcategoryListView(generics.ListCreateAPIView):
     serializer_class = SubcategorySerializer
     authentication_classes = [SessionAuthentication, BasicAuthentication]  # Override JWT authentication
     permission_classes = []  # This removes any permission restrictions
@@ -228,6 +228,44 @@ class SubcategoryListView(generics.ListAPIView):
     def get_queryset(self):
         category_id = self.kwargs['category_id']  # Get the category from URL
         return Subcategory.objects.filter(category_id=category_id, status='Active')
+
+    def perform_create(self, serializer):
+        category_id = self.kwargs['category_id']  # Get the category from URL
+        category = Category.objects.get(id=category_id)
+        serializer.save(category=category)  # Save subcategory with the category
+
+
+
+
+# View for listing and creating Service_Type
+class ServiceTypeListView(generics.ListCreateAPIView):
+    queryset = Service_Type.objects.all()
+    serializer_class = ServiceTypeSerializer
+    authentication_classes = [SessionAuthentication, BasicAuthentication]  # Override JWT if needed
+    permission_classes = [AllowAny]  # Remove any restrictions if not needed
+
+# View for retrieving, updating, or deleting a single Service_Type
+class ServiceTypeDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Service_Type.objects.all()
+    serializer_class = ServiceTypeSerializer
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [AllowAny]
+
+# View for listing and creating Collar
+class CollarListView(generics.ListCreateAPIView):
+    queryset = Collar.objects.all()
+    serializer_class = CollarSerializer
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [AllowAny]
+
+# View for retrieving, updating, or deleting a single Collar
+class CollarDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Collar.objects.all()
+    serializer_class = CollarSerializer
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [AllowAny]
+
+
 
 # List all active and verified service providers under a specific subcategory
 class ServiceProviderListView(generics.ListAPIView):
