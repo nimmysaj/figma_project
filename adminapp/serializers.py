@@ -1,21 +1,25 @@
 from datetime import datetime
 import random
 import re
-import uuid
 from rest_framework import serializers
 from Accounts.models import Customer, User
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.hashers import make_password
-from django.db import transaction
+from Accounts.models import ServiceRequest,Customer
+from django.utils import timezone
 
 
+
+
+# ******************************  ADD NEW USER  ******************************************************
 
 class UserSerializer(serializers.ModelSerializer):   # serializers.ModelSerializer - parent cls of UserSerializer 
     password = serializers.CharField(write_only=True)
 
     class Meta:
         model = User 
-        fields = ['full_name','address','landmark','pin_code','district','state','watsapp','email','phone_number','country_code','password']
+        fields = ['full_name','address','landmark','pin_code','district','state','watsapp','email','phone_number',
+                  'country_code','password','joining_date']
     
     
     def validate_password(self, value):
@@ -33,10 +37,19 @@ class UserSerializer(serializers.ModelSerializer):   # serializers.ModelSerializ
 
         if not re.search(r'[@$!%*?&]', value):
             raise serializers.ValidationError("Password must contain at least one special character (@, $, !, %, *, ?, &).")
-
-        # # Use Django's built-in password validators.
-        # validate_password(value)
+        
         return value
+    
+
+    # custom validation for joining date
+    def validate_joining_date(self, value):
+        # Ensure the joining date is not in the future
+        if value > timezone.now().date():
+            raise serializers.ValidationError("joining date cannot be in the future.")
+        return value
+        
+
+
     
 
     def create(self, validated_data):
@@ -60,29 +73,49 @@ class CustomerSerializer(serializers.ModelSerializer):
         user.is_customer = True                      #Ensure user is marked as a customer
         user.save()
 
-        # with transaction.atomic():
-        #     try:
-        #         # create user instance
-        #         user = User.objects.create(**profile_data)   #create user (**profile_data) 
-        #         user.is_customer = True                      #Ensure user is marked as a customer
-        #         user.save()
-
-
-        #         # Generate custom_id like 'USER20241014' + random number
-        #         current_time = datetime.now().strftime("%Y%m%d%H%M%S")
-        #         randum_number = random.randint(100,999)
-        #         custom_id = f"USER{current_time}{randum_number}"
-
-        #         # create customer instance
-        #         customer = Customer.objects.create(user=user, custom_id=custom_id, **validated_data)
-            
-        #     except Exception as e:
-        #         # If any part of the process fails, the whole transaction will be rolled back 
-        #         raise serializers.ValidationError(f"Error creating customer: {str(e)}")
-        #     return customer
-
-
-        # custom_id = str(uuid.uuid4())
         customer = Customer.objects.create(user=user, **validated_data)   #create customer data associated with that user
         return customer
+
+
+
+
+
+# *************************************  USERS - USER MANAGEMENT  ************************************
+
+class Customerview_Serializer(serializers.ModelSerializer):
+        # Fields from the User model (related via Customer model)
+    full_name = serializers.CharField(source='user.full_name', read_only=True)
+    joining_date = serializers.DateField(source='user.joining_date', read_only=True)
+    address = serializers.CharField(source='user.address', read_only=True)
+    phone_number = serializers.CharField(source='user.phone_number', read_only=True)
+    email = serializers.EmailField(source='user.email', read_only=True)
+    is_active = serializers.BooleanField(source='user.is_active', read_only=True)
+
+
+    # Total number of completed services from ServiceRequest model
+    completed_services = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Customer
+        fields = [
+            'custom_id',           # From Customer model
+            'full_name',           # From the User model
+            'joining_date',        # From the User model
+            'address',             # From the User model
+            'phone_number',        # From the User model
+            'email',               # From the User model
+            'is_active',           # From the User model
+            'completed_services'   # Calculated field from Service Request model    
+        ]
+
+
+    # func to calculate completed services
+
+    def get_completed_services(self,obj):
+        # Count the number of completed services for this customer
+        return ServiceRequest.objects.filter(customer=obj.user, work_status='completed').count()
+
+
+
+
 
