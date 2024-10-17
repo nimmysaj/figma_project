@@ -121,8 +121,8 @@ class VerifyPaymentView(views.APIView):
                     invoice.payment_status = 'paid'
                 invoice.save()   
 
-                payment.sender = invoice.receiver
-                payment.receiver = invoice.sender
+                payment.sender = invoice.sender
+                payment.receiver = invoice.receiver
                 payment.price = invoice.price
                 payment.remaining_amount = invoice.remaining_amount
                 payment.payment_id = payment_id

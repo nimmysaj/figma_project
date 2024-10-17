@@ -170,8 +170,8 @@ class Invoice(models.Model):
     
     invoice_number = models.CharField(max_length=100, unique=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    amount_paying = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # Add this field
-    remaining_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # Add this field
+    amount_paying = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  
+    remaining_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00) 
     invoice_type = models.CharField(max_length=20, choices=INVOICE_TYPE_CHOICES)
     payment_type = models.CharField(
         max_length=20, choices=PAYMENT_TYPE_CHOICES, default='full'
@@ -186,7 +186,7 @@ class Invoice(models.Model):
     appointment_date = models.DateTimeField()
     accepted_terms = models.BooleanField(default=False)
     additional_requirements = models.TextField(null=True, blank=True)
-    order_id = models.CharField(max_length=100, null=True, blank=True)  # Ensure null=True and blank=True
+    order_id = models.CharField(max_length=100, null=True, blank=True)  
 
     def __str__(self):
         return f"Invoice for {self.invoice_number} - {self.payment_status}"
