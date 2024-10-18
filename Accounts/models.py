@@ -8,6 +8,7 @@ import random
 from django.core.validators import RegexValidator
 import phonenumbers
 from figma import settings
+import uuid
 
 # Create your models here.
 phone_regex = RegexValidator(
@@ -368,18 +369,17 @@ class Subcategory(models.Model):
         return self.title  
     
 class ServiceRegister(models.Model):
+    booking_id = models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE, related_name='services')
-    title = models.CharField(max_length=255)  # Added title field
     description = models.TextField()
     gstcode = models.CharField(max_length=50)
     category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name='serviceregister_category')
     subcategory = models.ForeignKey(Subcategory, on_delete=models.PROTECT, related_name='serviceregister_subcategory')
-    
-    amount_forthis_service = models.DecimalField(max_digits=10, decimal_places=2)
     license = models.FileField(upload_to='service-license/', blank=True, null=True, validators=[validate_file_size])
     image = models.ImageField(upload_to='service-images/', null=True, blank=True, validators=[validate_file_size])
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')], default='Active')
     accepted_terms = models.BooleanField(default=False)
+    available_lead_balance = models.IntegerField(default=0)
 
     def __str__(self):
         return f"{self.service_provider} - {self.title}: {self.description}"
@@ -419,6 +419,36 @@ class PaymentRequest(models.Model):
     def __str__(self):
         return f"Request by {self.service_provider.full_name} to {self.dealer.name} for {self.amount}"
 
+class ServiceRequest(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    booking_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    title = models.CharField(max_length=20,null=True,blank=True)
+    customer = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_servicerequest')
+    service_provider = models.ForeignKey(User, on_delete=models.PROTECT,related_name='to_servicerequest')
+    service = models.ForeignKey(ServiceRegister, on_delete=models.PROTECT,related_name='servicerequest')
+    work_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    acceptance_status = models.CharField(max_length=20,choices=[('accept', 'accept'), ('decline', 'decline'),('pending', 'pending')],default='pending')
+    request_date = models.DateTimeField(auto_now_add=True)
+    availability_from = models.DateTimeField()  # New field for availability start
+    availability_to = models.DateTimeField()    # New field for availability end
+    additional_notes = models.TextField(blank=True, null=True)
+    image = models.ImageField(upload_to='service_request/', null=True, blank=True, validators=[validate_file_size])
+    reschedule_status = models.BooleanField(default=False) 
+
+    def __str__(self):
+        return f"Request by {self.customer.full_name} for {self.service.title} ({self.acceptance_status})"
+
+    def clean(self):
+        # Ensure the availability_from is before availability_to
+        if self.availability_from >= self.availability_to:
+            raise ValidationError('Availability "from" time must be before "to" time.')    
+
 class CustomerReview(models.Model):
     RATING_CHOICES = [
         (1, '1 Star'),
@@ -434,37 +464,11 @@ class CustomerReview(models.Model):
     image = models.ImageField(upload_to='reviews/', null=True, blank=True, validators=[validate_file_size])
     comment = models.TextField(blank=True, null=True)  # Optional comment
     created_at = models.DateTimeField(auto_now_add=True)  # Auto-set the review date
+    service_request = models.ForeignKey(ServiceRequest,on_delete=models.SET_NULL,null=True,blank=True,related_name='servicerequest')
 
     def __str__(self):
         return f"{self.customer.full_name} - {self.service_provider.full_name} ({self.rating} stars)"
     
-class ServiceRequest(models.Model):
-    STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('in_progress', 'In Progress'),
-        ('completed', 'Completed'),
-        ('cancelled', 'Cancelled'),
-    ]
-
-    customer = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_servicerequest')
-    service_provider = models.ForeignKey(User, on_delete=models.PROTECT,related_name='to_servicerequest')
-    service = models.ForeignKey(ServiceRegister, on_delete=models.PROTECT,related_name='servicerequest')
-    work_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    acceptance_status = models.CharField(max_length=20,choices=[('accept', 'accept'), ('decline', 'decline'),('pending', 'pending')],default='pending')
-    request_date = models.DateTimeField(auto_now_add=True)
-    availability_from = models.DateTimeField()  # New field for availability start
-    availability_to = models.DateTimeField()    # New field for availability end
-    additional_notes = models.TextField(blank=True, null=True)
-    image = models.ImageField(upload_to='service_request/', null=True, blank=True, validators=[validate_file_size])
-    is_active = models.BooleanField(default=True) 
-    def __str__(self):
-        return f"Request by {self.customer.full_name} for {self.service.title} ({self.acceptance_status})"
-
-    def clean(self):
-        # Ensure the availability_from is before availability_to
-        if self.availability_from >= self.availability_to:
-            raise ValidationError('Availability "from" time must be before "to" time.')    
-
 class Invoice(models.Model):
     INVOICE_TYPE_CHOICES = [
         ('service_request', 'Service Request'),
