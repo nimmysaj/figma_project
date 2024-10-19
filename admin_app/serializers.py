@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from Accounts.models import User, Franchisee ,Payment
-from django.db import models
+from Accounts.models import User, Franchisee ,Payment ,Customer ,Dealer
+from django.db import models 
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 import re
@@ -60,12 +60,17 @@ class UserSerializer(serializers.ModelSerializer):
 
 class FranchiseeSerializer(serializers.ModelSerializer):
     
+    district_name = serializers.SerializerMethodField()
     user = UserSerializer() 
 
     class Meta:
         model = Franchisee
         fields = ['about', 'revenue', 'dealers', 'service_providers', 'type', 'valid_from', 
-                  'valid_up_to', 'status', 'verification_id', 'verificationid_number', 'community_name', 'user']
+                  'valid_up_to', 'status', 'verification_id', 'verificationid_number', 'community_name','profile_image' ,'user','district_name']
+        
+    def get_district_name(self, obj):
+        # Access the district name via the related user object
+        return obj.user.district.name if obj.user.district else None
 
     def create(self, validated_data):
         user_data = validated_data.pop('user')  
@@ -78,7 +83,6 @@ class FranchiseeSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
 
         user_data = validated_data.pop('user', None)
-
         instance.about = validated_data.get('about', instance.about)
         instance.revenue = validated_data.get('revenue', instance.revenue)
         instance.dealers = validated_data.get('dealers', instance.dealers)
@@ -90,6 +94,11 @@ class FranchiseeSerializer(serializers.ModelSerializer):
         instance.verification_id = validated_data.get('verification_id', instance.verification_id)
         instance.verificationid_number = validated_data.get('verificationid_number', instance.verificationid_number)
         instance.community_name = validated_data.get('community_name', instance.community_name)
+        
+        profile_image = validated_data.get('profile_image')
+        if profile_image:
+            instance.profile_image = profile_image
+        
         instance.save()
 
         if user_data:
@@ -111,17 +120,96 @@ class FranchiseeSerializer(serializers.ModelSerializer):
             user.save()
 
         return instance
-    
-    
-# class TransactionSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Payment
-#         fields = ['transaction_id','invoice','sender','receiver','description','amount_paid','payment_method','payment_date','payment_status']
-
 
 
 
 class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
-        fields = '__all__'  # Or specify the fields you need
+        fields = ['transaction_id', 'invoice', 'description', 'amount_paid',
+                  'payment_method', 'payment_date', 'payment_status', 'sender', 'receiver']
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+
+        # Safely get the invoice type
+        representation['type'] = getattr(instance.invoice, 'invoice_type', None)
+
+        # Initialize sender to None
+        sender = None
+        if instance.sender.is_customer:
+            try:
+                # Fetch the Customer data using sender's user_id
+                customerdata = Customer.objects.get(user_id=instance.sender.id)
+                sender = customerdata.custom_id
+            except Customer.DoesNotExist:
+                sender = None  # If the customer does not exist, handle it gracefully
+
+        elif instance.sender.is_franchisee:
+            try:
+                # Fetch the Franchisee data using sender's user_id
+                franchiseedata = Franchisee.objects.get(user_id=instance.sender.id)
+                sender = franchiseedata.custom_id
+            except Franchisee.DoesNotExist:
+                sender = None  # If the franchisee does not exist, handle it gracefully
+
+        elif instance.sender.is_dealer:
+            try:
+                # Fetch the Dealer data using sender's user_id
+                dealerdata = Dealer.objects.get(user_id=instance.sender.id)
+                sender = dealerdata.custom_id
+            except Dealer.DoesNotExist:
+                sender = None  # If the dealer does not exist, handle it gracefully
+
+        # Set the sender and receiver fields
+        representation['sender'] = sender
+        representation['receiver'] = instance.receiver.id
+
+        return representation
+
+
+    
+# class TransactionSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Payment
+#         fields = ['transaction_id', 'invoice', 'description', 'amount_paid',
+#                   'payment_method', 'payment_date', 'payment_status','sender','receiver']
+
+#     def to_representation(self, instance):
+#         representation = super().to_representation(instance)
+
+#         # Safely get the invoice type
+#         representation['type'] = getattr(instance.invoice, 'invoice_type', None)
+
+#         # Initialize sender to None
+#         sender = None
+#         if instance.sender.is_customer:
+#             try:
+#                 # Fetch the Customer data using sender's user_id
+#                 customerdata = Customer.objects.get(user_id=instance.sender.id)
+#                 sender = customerdata.custom_id
+#             except Customer.DoesNotExist:
+#                 sender = None  # If the customer does not exist, handle it gracefully
+                
+#         elif instance.sender.is_franchisee:
+#             try:
+#                 # Fetch the Franchisee data using sender's user_id
+#                 franchiseedata = Franchisee.objects.get(user_id=instance.sender.id)
+#                 sender = franchiseedata.custom_id
+#             except Franchisee.DoesNotExist:
+#                 sender = None  # If the franchisee does not exist, handle it gracefully
+#         elif instance.sender.is_dealer:
+#             try:
+#                 # Fetch the Dealer data using sender's user_id
+#                 dealerdata = Dealer.objects.get(user_id=instance.sender.id)
+#                 sender = dealerdata.custom_id
+#             except Dealer.DoesNotExist:
+#                 sender = None  # If the dealer does not exist, handle it gracefully
+                
+#         representation['receiver'] = instance.receiver.id
+#         representation['sender'] = sender
+
+#         return representation
+
+
+

@@ -495,7 +495,14 @@ class ServiceRequest(models.Model):
     booking_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     title = models.CharField(max_length=20,null=True,blank=True)
     customer = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_servicerequest')
+    
+    
     service_provider = models.ForeignKey(User, on_delete=models.PROTECT,related_name='to_servicerequest')
+    
+    # service_provider = models.ForeignKey(ServiceProvider, on_delete=models.PROTECT,related_name='to_servicerequest')
+
+    
+    
     service = models.ForeignKey(ServiceRegister, on_delete=models.PROTECT,related_name='servicerequest')
     work_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     acceptance_status = models.CharField(max_length=20,choices=[('accept', 'accept'), ('decline', 'decline'),('pending', 'pending')],default='pending')
@@ -528,7 +535,12 @@ class Invoice(models.Model):
     
     #A foreign key that links to a ServiceRequest model, which is populated if the payment is related to a customer requesting a service.
     service_request = models.ForeignKey(ServiceRequest, on_delete=models.SET_NULL, null=True, blank=True,related_name='invoices')
-
+    
+    # dealer = models.ForeignKey(dealer, on_delete=models.PROTECT,related_name='to_invoice')
+    # franchisee = models.ForeignKey(franchisee, on_delete=models.PROTECT,related_name='to_invoice')
+    
+    
+    
     # Sender (user who is paying) and receiver (user receiving payment)
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_payment')
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_payment')
