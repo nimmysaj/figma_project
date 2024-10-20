@@ -1,11 +1,14 @@
 from rest_framework import serializers
-from Accounts.models import User,Franchisee,Franchise_Type
+from Accounts.models import User,Franchisee,Franchise_Type,Country_Codes
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 import re  # For regex validation
+import phonenumbers
+from phonenumbers import NumberParseException
 
 
 class UserSerializer(serializers.ModelSerializer):
+    phone_with_code = serializers.SerializerMethodField()
     class Meta:
         model = User
         exclude = ['password']
@@ -66,33 +69,64 @@ class UserSerializer(serializers.ModelSerializer):
     #         raise serializers.ValidationError("Phone number must be exactly 10 digits.")
     #     return value
 
+    # def validate_phone_number(self, value):
+    #     if not value:
+    #         raise serializers.ValidationError("Phone number is required.")
+    #     # The regex requires the phone number to start with a `+` and be followed by 9 to 15 digits.
+    #     regex = r'^\+\d{9,15}$'
+    #     if not re.match(regex, value):
+    #         raise serializers.ValidationError("Enter a valid phone number with country code (e.g., +1234567890).")
+    #     return value
     def validate_phone_number(self, value):
         if not value:
             raise serializers.ValidationError("Phone number is required.")
-        # The regex requires the phone number to start with a `+` and be followed by 9 to 15 digits.
-        regex = r'^\+\d{9,15}$'
-        if not re.match(regex, value):
-            raise serializers.ValidationError("Enter a valid phone number with country code (e.g., +1234567890).")
+        
+        try:
+            # Parse the phone number using the phonenumbers library
+            parsed_number = phonenumbers.parse(value, None)
+            
+            # Check if the phone number is valid
+            if not phonenumbers.is_valid_number(parsed_number):
+                raise serializers.ValidationError("Invalid phone number.")
+        except NumberParseException:
+            raise serializers.ValidationError("Invalid phone number format.")
+        
         return value
+
+    def validate_country_code(self, value):
+        try:
+            # Check if the country code exists in your Country_Codes model
+            Country_Codes.objects.get(calling_code=value)
+        except Country_Codes.DoesNotExist:
+            raise serializers.ValidationError("Can't identify country code.")
+        
+        return value
+
+    # Combine country code and phone number for display
+    def get_phone_with_code(self, obj):
+        if obj.phone_number and obj.country_code:
+            return f"{obj.country_code.calling_code} {obj.phone_number}"
+        return None
 
 
 
 class FranchiseeSerializer(serializers.ModelSerializer):
-    is_franchisee = serializers.CharField(source='user.is_franchisee')  # Fetching from User model
-    location = serializers.CharField(source='user.address')  # Location (from User)
-    contact = serializers.CharField(source='user.phone_number')  # Contact (from User)
+    is_franchisee = serializers.CharField(source='user.is_franchisee')  
+    location = serializers.CharField(source='user. district')  
+    contact = serializers.CharField(source='user.phone_number')  
+    dealers = serializers.IntegerField(read_only=True)  
     class Meta:
         model = Franchisee
         fields = [
-            'is_franchisee',   # From User model
-            'custom_id',        # From Franchisee model
-            'revenue',          # From Franchisee model
-            'dealers',          # Representing branches (from Franchisee)
-            'service_providers', # From Franchisee model
-            'location',         # From User model
-            'contact',          # From User model
-            'valid_up_to',      # From Franchisee model
-            'status'            # From Franchisee model
+            'is_franchisee',  
+            'custom_id',       
+            'revenue', 
+            'dealers',          
+            'service_providers',
+            'location',        
+            'contact',          
+            'valid_up_to',     
+            'status'            
         ]
 class FranchiseTypeSerializer(serializers.ModelSerializer):
     class Meta:

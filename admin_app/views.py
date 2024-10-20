@@ -5,6 +5,7 @@ from rest_framework import status
 from Accounts.models import User, Franchisee,Franchise_Type
 from .serializers import UserSerializer,FranchiseeSerializer,FranchiseTypeSerializer
 from rest_framework.decorators import action
+from django.db.models import Count
 
 
 
@@ -35,22 +36,40 @@ class FranchiseeViewSet(viewsets.ModelViewSet):
     serializer_class = FranchiseeSerializer    
     http_method_names = ['get'] 
 
+    def get_queryset(self):
+        # Annotate each franchise with the count of related dealers
+        return Franchisee.objects.annotate(dealer_count=Count('dealer'))
+
     def list(self, request, *args, **kwargs):
         franchisees = self.get_queryset()  
         franchisees_count = franchisees.count()
         active_count = franchisees.filter(status='Active').count()  
         inactive_count = franchisees.filter(status='Inactive').count()  
         
-        # Serialize all franchisees (you can filter if needed)
-        serializer = self.get_serializer(franchisees, many=True)
+         # Automatically apply pagination
+        paginator = self.paginator
+        paginated_franchisees = paginator.paginate_queryset(franchisees, request)
 
-        # Return the response with counts
-        return Response({
+        # Serialize paginated data
+        serializer = self.get_serializer(paginated_franchisees, many=True)
+
+        # Return the response with counts and paginated data
+        return paginator.get_paginated_response({
             "franchisees_count":franchisees_count,
             "active_franchisees": active_count, 
             "inactive_franchisees": inactive_count, 
             "franchisees": serializer.data 
         })
+        # # Serialize all franchisees (you can filter if needed)
+        # serializer = self.get_serializer(franchisees, many=True)
+
+        # # Return the response with counts
+        # return Response({
+        #     "franchisees_count":franchisees_count,
+        #     "active_franchisees": active_count, 
+        #     "inactive_franchisees": inactive_count, 
+        #     "franchisees": serializer.data 
+        # })
 
 class FranchiseTypeViewSet(viewsets.ModelViewSet):
     queryset = Franchise_Type.objects.all()
