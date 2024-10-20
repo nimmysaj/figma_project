@@ -1,6 +1,8 @@
+from django.views import generic
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.decorators import api_view
 
 from .models import ServiceRequest
 from .serializers import ServiceRequestSerializer
@@ -8,6 +10,8 @@ from django.shortcuts import get_object_or_404
 from .models import User
 from .serializers import UserSerializer
 from .pagination import CustomPagination
+from .models import Category, Subcategory
+from  .serializers import CategorySerializer
 
 
 class ServiceRequestDetailView(APIView):
@@ -81,3 +85,57 @@ class UserPaymentHistoryView(APIView):
 
         # Return the paginated response
         return paginator.get_paginated_response(serializer.data)
+    
+
+@api_view(['GET', 'POST'])
+def category_list(request):
+    # Handle GET request
+    if request.method == 'GET':
+        categories = Category.objects.all()
+        serializer = CategorySerializer(categories, many=True)
+
+        # Prepare custom response with counts
+        response_data = {
+            'total_categories': Category.objects.count(),
+            'total_subcategories': Subcategory.objects.count(),  # Assuming Subcategory model exists
+            'categories': serializer.data  # Include the actual list of categories
+        }
+
+        return Response(response_data)  # This is reachable now
+
+    # Handle POST request
+    elif request.method == 'POST':
+        serializer = CategorySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+@api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
+def category_detail(request, pk):
+    try:
+        category = Category.objects.get(pk=pk)
+    except Category.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    
+
+    if request.method == 'PUT':
+        serializer = CategorySerializer(category, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'PATCH':
+        serializer = CategorySerializer(category, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        category.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

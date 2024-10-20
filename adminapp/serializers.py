@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import ServiceRequest, Invoice,Complaint,CustomerReview,Payment
 from .models import User, District, State, Country_Codes
+from .models import Category
 
 class InvoiceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -83,3 +84,9 @@ class PaginationSerializer(serializers.Serializer):
     
     page = serializers.IntegerField(required=False, default=1)
     page_size = serializers.IntegerField(required=False, default=10)
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'title', 'image', 'description', 'status']
