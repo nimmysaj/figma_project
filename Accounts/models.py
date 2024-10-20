@@ -346,7 +346,6 @@ class Collar(models.Model):
     lead_quantity = models.IntegerField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     #currency = models.CharField(max_length=50)
-
     def __str__(self):
         return self.name  
             
