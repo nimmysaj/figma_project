@@ -11,9 +11,9 @@ from rest_framework import status, permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import generics,viewsets
-from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User
+from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User,Payment
 from service_provider.permissions import IsOwnerOrAdmin
-from .serializers import CustomerServiceRequestSerializer, InvoiceSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestSerializer, SetNewPasswordSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer
+from .serializers import CustomerServiceRequestSerializer, InvoiceSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestSerializer, SetNewPasswordSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer,PaymentListSerializer
 from django.utils.encoding import smart_bytes, smart_str
 from twilio.rest import Client
 from rest_framework.decorators import action
@@ -404,3 +404,30 @@ class ServiceRequestInvoiceView(APIView):
                 {"error": "Cannot generate invoice. Accepted terms must be true."}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+class PaymentListView(APIView):
+    # Ensure the user is authenticated
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        # Get the logged-in service provider's ID
+        service_provider_id = request.user.id
+
+        # Payments where the logged-in service provider is the sender (Ads)
+        ads_payments = Payment.objects.filter(
+            invoice__invoice_type='Ads',
+            sender_id=service_provider_id
+        )
+
+        # Payments where the logged-in service provider is the receiver (Salary)
+        salary_payments = Payment.objects.filter(
+            invoice__invoice_type='salary',
+            receiver_id=service_provider_id
+        )
+
+        # Combine both querysets
+        all_payments = ads_payments | salary_payments
+
+        # Serialize the combined payments
+        serializer = PaymentListSerializer(all_payments, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

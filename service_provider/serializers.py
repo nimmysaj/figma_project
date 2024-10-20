@@ -4,7 +4,7 @@ import phonenumbers
 from rest_framework.response import Response
 from rest_framework import serializers,status
 from django.contrib.auth import authenticate
-from Accounts.models import Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User  
+from Accounts.models import Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User, Payment  
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
@@ -88,7 +88,7 @@ class SetNewPasswordSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = [
+        fields = [ 
             'full_name',
             'address', 
             'landmark',
@@ -295,3 +295,11 @@ class InvoiceSerializer(serializers.ModelSerializer):
                 service_request.save()
 
         return invoice
+
+
+class PaymentListSerializer(serializers.ModelSerializer): 
+    invoice_type = serializers.CharField(source='invoice.invoice_type', read_only=True) 
+    class Meta: 
+        model = Payment 
+        # fields = ['transaction_id', 'sender', 'receiver', 'amount_paid', 'payment_method', 'payment_status', 'payment_date'] 
+        fields = ['transaction_id', 'sender', 'receiver', 'invoice_type', 'payment_status']
