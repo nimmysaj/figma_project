@@ -382,20 +382,64 @@ class ServiceRegister(models.Model):
     available_lead_balance = models.IntegerField(default=0)
 
     def __str__(self):
-        return f"{self.service_provider} - {self.title}: {self.description}"
+        return f"{self.subcategory.title} by {self.service_provider}"
+    '''
+    def update_lead_balance(self, extra_leads=0):
+        """Update available lead balance by adding extra leads from the collar in the subcategory."""
+        if self.subcategory.service_type.name == "One Time Lead" and self.subcategory.collar:
+            # Ensure the available_lead_balance is an integer before performing addition
+            if not self.available_lead_balance:
+                self.available_lead_balance = 0  # Initialize if it's empty or None
 
+            # Increment lead balance by collar's lead quantity and extra_leads
+            self.available_lead_balance += self.subcategory.collar.lead_quantity + extra_leads
+            self.save()  # Save changes to the database
+
+            return self.available_lead_balance
+
+        # Return the current balance if not a "One Time Lead"
+        return self.available_lead_balance
+    '''
+    def update_lead_balance(self, extra_leads=1):
+        """
+        Update the available lead balance by adding extra leads based on the subcategory's collar.
+        Returns the updated lead balance and the amount for the added leads.
+        """
+        if self.subcategory.service_type.name == "One Time Lead" and self.subcategory.collar:
+            # Calculate the amount per lead from the collar model
+            lead_quantity = self.subcategory.collar.lead_quantity
+            collar_amount = float(self.subcategory.collar.amount)
+
+            # Update the available lead balance by adding the specified leads
+            self.available_lead_balance += lead_quantity * extra_leads
+            self.save()
+
+            # Calculate the total amount to be paid for the added leads
+            total_amount = collar_amount * extra_leads
+            return self.available_lead_balance, total_amount
+
+        # If not a "One Time Lead", just return the current balance and amount as 0
+        return self.available_lead_balance, 0.0
     def basic_amount(self):
-        basic_amount = self.subcategory.service_type.amount
+        """Calculate the basic amount by combining the subcategory's service type amount and the collar amount."""
+        basic_amount = float(self.subcategory.service_type.amount)
 
-        if self.subcategory.name == 'one_time_lead' and self.collar:
-            basic_amount += self.collar.amount
+        # Add the collar amount if it's present and the subcategory is 'one time lead'
+        if self.subcategory.collar and self.subcategory.service_type.title == 'one_time_lead':
+            basic_amount += float(self.subcategory.collar.amount)
 
         return basic_amount
 
     def save(self, *args, **kwargs):
-        if self.subcategory.name != 'one_time_lead':
-            self.collar = None
-        super().save(*args, **kwargs)
+        """
+        Override save method to handle 'Daily Work' services.
+        Ensure collar is set to None for 'Daily Work' service type.
+        """
+        if self.subcategory and self.subcategory.service_type.name == 'Daily Work':
+            # No collar is needed for 'Daily Work' service type
+            self.available_lead_balance = 0  # You can adjust logic for infinite leads here
+        super(ServiceRegister, self).save(*args, **kwargs)
+
 
 class PaymentRequest(models.Model):
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.PROTECT,related_name='from_paymentrequest')
@@ -442,12 +486,13 @@ class ServiceRequest(models.Model):
     reschedule_status = models.BooleanField(default=False) 
 
     def __str__(self):
-        return f"Request by {self.customer.full_name} for {self.service.title} ({self.acceptance_status})"
+        return f"Request by {self.customer.full_name} for {self.service} ({self.acceptance_status})"
 
     def clean(self):
         # Ensure the availability_from is before availability_to
         if self.availability_from >= self.availability_to:
             raise ValidationError('Availability "from" time must be before "to" time.')    
+
 
 class CustomerReview(models.Model):
     RATING_CHOICES = [
@@ -476,7 +521,7 @@ class Invoice(models.Model):
         ('provider_payment', 'Service Provider Payment'),
     ]
     
-    invoice_number = models.IntegerField()
+    invoice_number = models.PositiveIntegerField(unique=True, editable=False)
 
     #invoice_type: This field determines whether the invoice is related to a Service Request payment (service_request), a Dealer Payment (dealer_payment), or a Service Provider Payment (provider_payment).
     invoice_type = models.CharField(max_length=20, choices=INVOICE_TYPE_CHOICES)
