@@ -10,5 +10,6 @@ urlpatterns = [
     path('user-details/', UserDetailsView.as_view(), name='user-details'),
     path('user-payment-history-service/', UserPaymentHistoryView.as_view(), name='user-payment-history-service'),
     path('categories/', category_list, name='category-list'),
-    path('categories/<int:pk>/', category_detail, name='category-detail'),
+    path('categories-detail/', category_detail, name='category-detail'),
+
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

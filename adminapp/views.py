@@ -112,15 +112,18 @@ def category_list(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
+@api_view(['PUT', 'PATCH', 'DELETE'])
+def category_detail(request):
+    # Get the 'id' from the request body.
+    category_id = request.data.get('id')
 
-@api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
-def category_detail(request, pk):
+    if not category_id:
+        return Response({"error": "ID not provided"}, status=status.HTTP_400_BAD_REQUEST)
+    
     try:
-        category = Category.objects.get(pk=pk)
+        category = Category.objects.get(pk=category_id)
     except Category.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
-
-    
 
     if request.method == 'PUT':
         serializer = CategorySerializer(category, data=request.data)
@@ -133,8 +136,9 @@ def category_detail(request, pk):
         serializer = CategorySerializer(category, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
     elif request.method == 'DELETE':
         category.delete()
