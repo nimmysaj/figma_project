@@ -13,7 +13,9 @@ from .models import (
     Category,
     Subcategory,
     Service_Type,
-    Collar)
+    Collar,
+    DeclineServiceModel
+    )
 # Register your models here.
 
 class UserAdmin(BaseUserAdmin):
@@ -32,6 +34,7 @@ class UserAdmin(BaseUserAdmin):
     search_fields = ('email',)
     ordering = ('email',)
 
+
 admin.site.register(User)
 admin.site.register(Country_Codes)
 admin.site.register(ServiceProvider)
@@ -45,3 +48,4 @@ admin.site.register(Subcategory)
 admin.site.register(Service_Type)
 admin.site.register(Collar)
 admin.site.register(Invoice)
+admin.site.register(DeclineServiceModel)

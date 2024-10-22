@@ -131,3 +131,9 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
+
+
+AUTHENTICATION_BACKENDS = [
+    'service_provider.authentication_backends.EmailOrPhoneBackend',  # Your custom backend
+    'django.contrib.auth.backends.ModelBackend',  # Django's default backend
+]
