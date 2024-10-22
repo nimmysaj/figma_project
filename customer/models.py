@@ -486,6 +486,7 @@ class Invoice(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     partial_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, default=0)  # New field for partial payment
+    payment_balance = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, default=0)
     payment_status = models.CharField(
         max_length=20, 
         choices=[

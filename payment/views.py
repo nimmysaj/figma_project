@@ -50,11 +50,11 @@ class CreatePaymentOrderAPIView(APIView):
                     return Response({"error": "Partial payment is allowed only when the invoice status is 'pending'."}, status=status.HTTP_400_BAD_REQUEST)
                 
                 partial_amount = invoice.partial_amount or 0  # Default to 0 if None
-                payment_amount = (invoice.total_amount * Decimal('0.4'))  # Calculate 40% of the total amount
+                payment_amount = (invoice.payment_balance * Decimal('0.4'))  # Calculate 40% of the payment balance
                 print(payment_amount)
 
                 # Validate that partial amount is not greater than total_amount
-                if partial_amount + payment_amount > invoice.total_amount:
+                if partial_amount + payment_amount > invoice.payment_balance:
                     return Response({"error": "Partial amount cannot be greater than the total amount."}, status=status.HTTP_400_BAD_REQUEST)
 
                 print(f"Partial amount: {partial_amount}, Payment amount (in paise): {payment_amount * 100}")
@@ -62,21 +62,21 @@ class CreatePaymentOrderAPIView(APIView):
                 #print(f"Partial amount: {partial_amount}, Payment amount (in paise): {payment_amount}")
 
                 # Calculate remaining balance after partial payment
-                remaining_amount = invoice.total_amount - payment_amount
+                remaining_amount = invoice.payment_balance - payment_amount
                 print(f"Remaining amount: {remaining_amount}")
                 
                 
 
                 # Update the invoice with the new remaining amount and payment status
                 invoice.payment_status = 'partially_paid'
-                invoice.total_amount = remaining_amount
+                invoice.payment_balance = remaining_amount
                 invoice.partial_amount = partial_amount + payment_amount
                 print(f"The invoice table partial amount:{invoice.partial_amount}")
                 payment_amount = int(payment_amount * 100)
                 print(payment_amount)
 
                 # Save the invoice after updates
-                invoice.save(update_fields=['payment_status', 'total_amount', 'partial_amount'])
+                invoice.save(update_fields=['payment_status', 'payment_balance', 'partial_amount'])
                 print(f"Invoice updated with remaining amount: {remaining_amount}, Status: Partially Paid")
 
             # Handling full payment
@@ -88,10 +88,10 @@ class CreatePaymentOrderAPIView(APIView):
                     return Response({"error": "Full payment is not allowed when the invoice is already marked as 'paid'."}, status=status.HTTP_400_BAD_REQUEST)
 
                 if invoice.payment_status == 'partially_paid':
-                    payment_amount = int(invoice.total_amount * 100)  # Full remaining balance
+                    payment_amount = int(invoice.payment_balance * 100)  # Full remaining balance
                     print(f"Full payment for remaining balance: {payment_amount}")
                 else:
-                    payment_amount = int(invoice.total_amount * 100)  # Full payment from the start
+                    payment_amount = int(invoice.payment_balance * 100)  # Full payment from the start
                     print(f"Full payment from start: {payment_amount}")
                 
                 # If full payment is made, update the invoice to 'paid'
@@ -279,6 +279,7 @@ class VerifyPaymentAPIView(APIView):
                     'invoice_type': invoice.invoice_type,
                     'price': invoice.price,
                     'total_amount': invoice.total_amount,
+                    'payment_balance':invoice.payment_balance,
                     'payment_status': invoice.payment_status,
                     'partial_amount': invoice.partial_amount,
                 }

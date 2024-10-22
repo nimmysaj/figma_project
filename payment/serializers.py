@@ -6,7 +6,8 @@ class InvoiceSerializer(serializers.ModelSerializer):
         model = Invoice
         fields = [
             'id', 'invoice_number', 'invoice_type', 'service_request', 
-            'sender', 'receiver', 'quantity', 'price', 'total_amount', 
+            'sender', 'receiver', 'quantity', 'price', 'total_amount',
+            'payment_balance' , 
             'payment_status', 'invoice_date', 'due_date', 
             'appointment_date', 'additional_requirements', 'accepted_terms'
         ]
