@@ -434,6 +434,44 @@ class PaymentListView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 
+# class ServiceProviderReviews(APIView):
+#     permission_classes = [IsAuthenticated]
+
+#     def get(self, request, id):
+#         # Get the service provider based on the user ID
+#         service_provider = get_object_or_404(User, id=id)
+
+#         # Fetch reviews related to this service provider
+#         reviews = CustomerReview.objects.filter(service_provider=service_provider)
+
+#         # Calculate the average rating
+#         average_rating = reviews.aggregate(Avg('rating'))['rating__avg'] or 0
+#         total_reviews = reviews.count()
+
+#         # Determine the rating description based on average rating
+#         if average_rating < 1:
+#             rating_description = "Poor"
+#         elif average_rating < 2:
+#             rating_description = "Fair"
+#         elif average_rating < 3:
+#             rating_description = "Good"
+#         elif average_rating < 4:
+#             rating_description = "Very Good"
+#         else:
+#             rating_description = "Excellent"
+        
+#         # Serialize the reviews
+#         serializer = CustomerReviewSerializer(reviews, many=True)
+
+#         # Return the response with the reviews and rating data
+#         return Response({
+#             'reviews': serializer.data,
+#             'average_rating': average_rating,
+#             'total_reviews': total_reviews,
+#             'rating_description': rating_description
+#         })
+
+
 class ServiceProviderReviews(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -448,7 +486,7 @@ class ServiceProviderReviews(APIView):
         average_rating = reviews.aggregate(Avg('rating'))['rating__avg'] or 0
         total_reviews = reviews.count()
 
-        # Determine the rating description based on average rating
+        
         if average_rating < 1:
             rating_scale = "Poor"
         elif average_rating < 2:
@@ -460,13 +498,13 @@ class ServiceProviderReviews(APIView):
         else:
             rating_scale = "Excellent"
         
-        # Serialize the reviews
+        
         serializer = CustomerReviewSerializer(reviews, many=True)
 
-        # Return the response with the reviews and rating data
+        
         return Response({
             'reviews': serializer.data,
             'average_rating': average_rating,
             'total_reviews': total_reviews,
-            'rating_scale': rating_scale
+            'rating_scale': rating_scale  
         })
