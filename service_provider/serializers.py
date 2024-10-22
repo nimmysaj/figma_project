@@ -4,7 +4,7 @@ import phonenumbers
 from rest_framework.response import Response
 from rest_framework import serializers,status
 from django.contrib.auth import authenticate
-from Accounts.models import Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User, Payment  
+from Accounts.models import Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User, Payment,CustomerReview 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
@@ -303,3 +303,9 @@ class PaymentListSerializer(serializers.ModelSerializer):
         model = Payment 
         # fields = ['transaction_id', 'sender', 'receiver', 'amount_paid', 'payment_method', 'payment_status', 'payment_date'] 
         fields = ['transaction_id', 'sender', 'receiver', 'invoice_type', 'payment_status']
+
+
+class CustomerReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomerReview
+        fields = ['id', 'rating', 'image', 'comment', 'created_at', 'customer', 'service_provider']

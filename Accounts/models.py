@@ -463,25 +463,6 @@ class PaymentRequest(models.Model):
     def __str__(self):
         return f"Request by {self.service_provider.full_name} to {self.dealer.name} for {self.amount}"
 
-class CustomerReview(models.Model):
-    RATING_CHOICES = [
-        (1, '1 Star'),
-        (2, '2 Stars'),
-        (3, '3 Stars'),
-        (4, '4 Stars'),
-        (5, '5 Stars'),
-    ]
-
-    customer = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_review')  # The customer leaving the review
-    service_provider = models.ForeignKey(User, on_delete=models.PROTECT,related_name='to_review')  # The service provider being reviewed
-    rating = models.IntegerField(choices=RATING_CHOICES)  # Rating from 1 to 5 stars
-    image = models.ImageField(upload_to='reviews/', null=True, blank=True, validators=[validate_file_size])
-    comment = models.TextField(blank=True, null=True)  # Optional comment
-    created_at = models.DateTimeField(auto_now_add=True)  # Auto-set the review date
-
-    def __str__(self):
-        return f"{self.customer.full_name} - {self.service_provider.full_name} ({self.rating} stars)"
-    
 class ServiceRequest(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
@@ -510,6 +491,27 @@ class ServiceRequest(models.Model):
         # Ensure the availability_from is before availability_to
         if self.availability_from >= self.availability_to:
             raise ValidationError('Availability "from" time must be before "to" time.')    
+
+
+class CustomerReview(models.Model):
+    RATING_CHOICES = [
+        (1, '1 Star'),
+        (2, '2 Stars'),
+        (3, '3 Stars'),
+        (4, '4 Stars'),
+        (5, '5 Stars'),
+    ]
+    service_request = models.ForeignKey(ServiceRequest,on_delete=models.SET_NULL,null=True,blank=True,related_name='servicerequest')
+    customer = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_review')  # The customer leaving the review
+    service_provider = models.ForeignKey(User, on_delete=models.PROTECT,related_name='to_review')  # The service provider being reviewed
+    rating = models.IntegerField(choices=RATING_CHOICES)  # Rating from 1 to 5 stars
+    image = models.ImageField(upload_to='reviews/', null=True, blank=True, validators=[validate_file_size])
+    comment = models.TextField(blank=True, null=True)  # Optional comment
+    created_at = models.DateTimeField(auto_now_add=True)  # Auto-set the review date
+
+    def __str__(self):
+        return f"{self.customer.full_name} - {self.service_provider.full_name} ({self.rating} stars)"
+    
 
 class Invoice(models.Model):
     INVOICE_TYPE_CHOICES = [

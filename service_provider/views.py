@@ -11,9 +11,9 @@ from rest_framework import status, permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import generics,viewsets
-from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User,Payment
+from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User,Payment,CustomerReview
 from service_provider.permissions import IsOwnerOrAdmin
-from .serializers import CustomerServiceRequestSerializer, InvoiceSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestSerializer, SetNewPasswordSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer,PaymentListSerializer
+from .serializers import CustomerServiceRequestSerializer, InvoiceSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestSerializer, SetNewPasswordSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer,PaymentListSerializer,CustomerReviewSerializer
 from django.utils.encoding import smart_bytes, smart_str
 from twilio.rest import Client
 from rest_framework.decorators import action
@@ -431,3 +431,29 @@ class PaymentListView(APIView):
         # Serialize the combined payments
         serializer = PaymentListSerializer(all_payments, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+class ServiceProviderReviews(APIView):
+
+    def get(self, request, service_provider_id):
+        # Get all reviews for the specified service provider
+        reviews = CustomerReview.objects.filter(service_provider=service_provider_id)
+        
+        # Serialize the reviews
+        serialized_reviews = CustomerReviewSerializer(reviews, many=True).data
+        
+        # Calculate the average rating
+        total_reviews = reviews.count()
+        if total_reviews > 0:
+            average_rating = sum([review.rating for review in reviews]) / total_reviews
+        else:
+            average_rating = 0
+        
+        # Create the response data
+        response_data = {
+            'reviews': serialized_reviews,
+            'average_rating': round(average_rating, 1),  # Round to 1 decimal
+            'total_reviews': total_reviews
+        }
+        
+        return Response(response_data)

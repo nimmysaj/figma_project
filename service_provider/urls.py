@@ -1,5 +1,5 @@
 from django.urls import include, path
-from .views import CustomerServiceRequestView, ServiceProviderLoginView, ServiceProviderPasswordForgotView, ServiceProviderPasswordForgotView, ResetPasswordView, ServiceProviderRequestsView, ServiceProviderViewSet, ServiceRegisterViewSet, ServiceRequestInvoiceView, SetNewPasswordView,PaymentListView
+from .views import CustomerServiceRequestView, ServiceProviderLoginView, ServiceProviderPasswordForgotView, ServiceProviderPasswordForgotView, ResetPasswordView, ServiceProviderRequestsView, ServiceProviderViewSet, ServiceRegisterViewSet, ServiceRequestInvoiceView, SetNewPasswordView,PaymentListView,ServiceProviderReviews
 from rest_framework.routers import DefaultRouter
 router = DefaultRouter()
 router.register(r'service-registers', ServiceRegisterViewSet, basename='service-register')
@@ -26,4 +26,6 @@ urlpatterns = [
 
 
      path('paymentslist/', PaymentListView.as_view(), name='payment-list'),
+
+     path('reviews/<int:service_provider_id>/', ServiceProviderReviews.as_view(), name='service-provider-reviews'),
 ]
