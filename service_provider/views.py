@@ -11,7 +11,7 @@ from rest_framework import status, permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import generics,viewsets
-from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User
+from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User,Notification
 from service_provider.permissions import IsOwnerOrAdmin
 from .serializers import CustomerServiceRequestSerializer, InvoiceSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestSerializer, SetNewPasswordSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer
 from django.utils.encoding import smart_bytes, smart_str
@@ -212,7 +212,15 @@ class ServiceRegisterViewSet(viewsets.ViewSet):
             # If no existing service is found, proceed with creation
             serializer = ServiceRegisterSerializer(data=request.data)
             if serializer.is_valid():
-                serializer.save(service_provider=service_provider)
+                service_instance=serializer.save(service_provider=service_provider)
+                #creating notification text
+                notification_text = "created new service"
+                # creating notification
+                Notification.objects.create(
+                    service_provider=service_provider,
+                    notification=notification_text,
+                    service=service_instance
+                )
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -247,6 +255,16 @@ class ServiceRegisterViewSet(viewsets.ViewSet):
         if serializer.is_valid():
             serializer.save()
             instance.save()  # Save the updated instance
+            # fetching service provider
+            service_provider = ServiceProvider.objects.get(user=request.user)
+            #creating notification text
+            notification_text = "service updated"
+                # creating notification
+            Notification.objects.create(
+                service_provider=service_provider,
+                notification=notification_text,
+                service=instance
+                )
             return Response({
                 "message": "Service updated successfully.",
                 "data": serializer.data,
