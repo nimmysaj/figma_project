@@ -632,3 +632,12 @@ class Complaint(models.Model):
         self.status = 'rejected'
         self.resolution_notes = rejection_reason
         self.save()
+
+
+
+class Notification(models.Model):
+    service_provider = models.ForeignKey(ServiceProvider, on_delete=models.PROTECT,related_name='to_notification')
+    dealer = models.ForeignKey(Dealer, on_delete=models.PROTECT,related_name='from_notification')
+    franchisee = models.ForeignKey(Franchisee, on_delete=models.PROTECT, related_name='from_notification')
+    category = models.ForeignKey(Category, on_delete=models.PROTECT,related_name='notification_category')    
+    subcategory = models.ForeignKey(Subcategory, on_delete=models.PROTECT,related_name='notification_subcategory')

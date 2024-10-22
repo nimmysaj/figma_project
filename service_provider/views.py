@@ -11,7 +11,7 @@ from rest_framework import status, permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import generics,viewsets
-from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User
+from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User,Dealer, Franchisee, Notification
 from service_provider.permissions import IsOwnerOrAdmin
 from .serializers import CustomerServiceRequestSerializer, InvoiceSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestSerializer, SetNewPasswordSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer
 from django.utils.encoding import smart_bytes, smart_str
@@ -191,7 +191,6 @@ class ServiceRegisterViewSet(viewsets.ViewSet):
             # Check if a service with the same details already exists for this provider
             existing_service = ServiceRegister.objects.filter(
                 service_provider=service_provider,
-                # Add any other fields that uniquely identify a service, for example:
                 category=request.data.get('category'),
                 subcategory=request.data.get('subcategory')
             ).exists()
@@ -201,6 +200,7 @@ class ServiceRegisterViewSet(viewsets.ViewSet):
                     {"message": "This service is already registered by the service provider."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
+
             # Check if accepted_terms is True
             accepted_terms = request.data.get('accepted_terms', False)
             if not accepted_terms:
@@ -208,15 +208,38 @@ class ServiceRegisterViewSet(viewsets.ViewSet):
                     {"message": "You must accept the terms and conditions."},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
+
             # If no existing service is found, proceed with creation
             serializer = ServiceRegisterSerializer(data=request.data)
             if serializer.is_valid():
-                serializer.save(service_provider=service_provider)
+                service_register = serializer.save(service_provider=service_provider)
+
+                # Assuming that the service provider has related dealers and franchisees
+                dealers = Dealer.objects.filter(service_provider=service_provider)
+                franchisees = Franchisee.objects.filter(service_provider=service_provider)
+
+                for dealer in dealers:
+                    Notification.objects.create(
+                        service_provider=service_provider,
+                        dealer=dealer,
+                        franchisee=None,  # You can specify if the notification is for the dealer only
+                        category=service_register.category,
+                        subcategory=service_register.subcategory
+                    )
+
+                for franchisee in franchisees:
+                    Notification.objects.create(
+                        service_provider=service_provider,
+                        dealer=None,  # You can specify if the notification is for the franchisee only
+                        franchisee=franchisee,
+                        category=service_register.category,
+                        subcategory=service_register.subcategory
+                    )
+
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
         except ServiceProvider.DoesNotExist:
             return Response(
                 {"error": "ServiceProvider not found for this user."},
@@ -228,7 +251,8 @@ class ServiceRegisterViewSet(viewsets.ViewSet):
                 {"error": "An error occurred while registering the service.", "details": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-    
+
+
     def update(self, request, pk=None):
         # Retrieve the instance or return a 404 error
         instance = get_object_or_404(ServiceRegister, pk=pk)
@@ -247,15 +271,38 @@ class ServiceRegisterViewSet(viewsets.ViewSet):
         if serializer.is_valid():
             serializer.save()
             instance.save()  # Save the updated instance
+
+            # Sending notifications for updates
+            service_provider = instance.service_provider
+            dealers = Dealer.objects.filter(service_provider=service_provider)
+            franchisees = Franchisee.objects.filter(service_provider=service_provider)
+
+            for dealer in dealers:
+                Notification.objects.create(
+                    service_provider=service_provider,
+                    dealer=dealer,
+                    franchisee=None,
+                    category=instance.category,
+                    subcategory=instance.subcategory
+                )
+
+            for franchisee in franchisees:
+                Notification.objects.create(
+                    service_provider=service_provider,
+                    dealer=None,
+                    franchisee=franchisee,
+                    category=instance.category,
+                    subcategory=instance.subcategory
+                )
+
             return Response({
                 "message": "Service updated successfully.",
                 "data": serializer.data,
                 "available_lead_balance": instance.available_lead_balance,
                 "added_lead": serializer.context.get('total_lead_quantity'),
                 "amount_to_paid": serializer.context.get('amount_to_paid'),
-                }, status=status.HTTP_200_OK)
-                
-            
+            }, status=status.HTTP_200_OK)
+
         return Response({
             "message": "Failed to update service.",
             "errors": serializer.errors
