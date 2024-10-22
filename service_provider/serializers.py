@@ -308,4 +308,4 @@ class PaymentListSerializer(serializers.ModelSerializer):
 class CustomerReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomerReview
-        fields = ['id', 'rating', 'image', 'comment', 'created_at', 'customer', 'service_provider']
+        fields = ['id', 'rating', 'image', 'comment', 'created_at', 'customer', 'service_provider','service_request']

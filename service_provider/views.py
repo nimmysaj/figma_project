@@ -450,15 +450,15 @@ class ServiceProviderReviews(APIView):
 
         # Determine the rating description based on average rating
         if average_rating < 1:
-            rating_description = "Poor"
+            rating_scale = "Poor"
         elif average_rating < 2:
-            rating_description = "Fair"
+            rating_scale = "Fair"
         elif average_rating < 3:
-            rating_description = "Good"
+            rating_scale = "Good"
         elif average_rating < 4:
-            rating_description = "Very Good"
+            rating_scale = "Very Good"
         else:
-            rating_description = "Excellent"
+            rating_scale = "Excellent"
         
         # Serialize the reviews
         serializer = CustomerReviewSerializer(reviews, many=True)
@@ -468,5 +468,5 @@ class ServiceProviderReviews(APIView):
             'reviews': serializer.data,
             'average_rating': average_rating,
             'total_reviews': total_reviews,
-            'rating_description': rating_description
+            'rating_scale': rating_scale
         })
