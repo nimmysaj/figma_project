@@ -5,7 +5,7 @@ from rest_framework import serializers
 from Accounts.models import Customer, User
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.hashers import make_password
-from Accounts.models import ServiceRequest,Customer
+from Accounts.models import ServiceRequest, Customer, Subcategory
 from django.utils import timezone
 
 
@@ -109,7 +109,7 @@ class Customerview_Serializer(serializers.ModelSerializer):
         ]
 
 
-    # func to calculate completed services
+    # func to calculate total number of completed services
 
     def get_completed_services(self,obj):
         # Count the number of completed services for this customer
@@ -117,5 +117,14 @@ class Customerview_Serializer(serializers.ModelSerializer):
 
 
 
+
+
+# ********************************  SUB CATEGORY - ADD NEW   *********************************
+
+class SubcategorySerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Subcategory
+        fields = '__all__'
 
 

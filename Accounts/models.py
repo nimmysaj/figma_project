@@ -120,7 +120,7 @@ class User(AbstractBaseUser):
     email = models.EmailField(unique=True, null=True, blank=True)
     phone_number = models.CharField(max_length=15, unique=True,validators=[phone_regex], null=True, blank=True)
     country_code = models.ForeignKey('Country_Codes', on_delete=models.SET_NULL, null=True, blank=True)
-    joining_date = models.DateField()
+    joining_date = models.DateField(auto_now_add=True)
 
     USERNAME_FIELD = 'email'  
     REQUIRED_FIELDS = []
