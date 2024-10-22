@@ -27,5 +27,5 @@ urlpatterns = [
 
      path('paymentslist/', PaymentListView.as_view(), name='payment-list'),
 
-     path('reviews/<int:service_provider_id>/', ServiceProviderReviews.as_view(), name='service-provider-reviews'),
+     path('reviews/<int:id>/', ServiceProviderReviews.as_view(), name='service-provider-reviews'),
 ]
