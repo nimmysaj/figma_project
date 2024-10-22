@@ -8,6 +8,8 @@ from Accounts.models import Invoice, ServiceProvider, ServiceRegister, ServiceRe
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
+from .models import Notification
+
 
 #service provider login
 class ServiceProviderLoginSerializer(serializers.Serializer):
@@ -295,3 +297,8 @@ class InvoiceSerializer(serializers.ModelSerializer):
                 service_request.save()
 
         return invoice
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['id', 'message', 'recipient', 'service', 'is_read', 'timestamp']

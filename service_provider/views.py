@@ -19,7 +19,19 @@ from twilio.rest import Client
 from rest_framework.decorators import action
 from copy import deepcopy
 # Create your views here.
+from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
+from .models import Notification
+from .serializers import NotificationSerializer
 
+# List notifications for the authenticated user
+class NotificationListView(generics.ListAPIView):
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Get notifications for the logged-in user
+        return Notification.objects.filter(recipient=self.request.user).order_by('-timestamp')
 #service provider login
 class ServiceProviderLoginView(APIView):
     def post(self, request):
@@ -404,3 +416,4 @@ class ServiceRequestInvoiceView(APIView):
                 {"error": "Cannot generate invoice. Accepted terms must be true."}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
+
