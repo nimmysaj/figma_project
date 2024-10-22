@@ -1,5 +1,5 @@
 from django.urls import include, path
-from service_provider.views import ResetPasswordView
+# from service_provider.views import ResetPasswordView
 from .views import CategoryListView, CustomerLoginView, CustomerPasswordForgotView, CustomerViewSet, RegisterView, ServiceProviderDetailView, ServiceProviderListView, ServiceRequestCreateView, ServiceRequestDetailView, ServiceRequestInvoiceDetailView, SubcategoryListView, UnifiedSearchView, VerifyOTPView
 from rest_framework.routers import DefaultRouter
 
@@ -11,7 +11,7 @@ urlpatterns = [
     path('login/', CustomerLoginView.as_view(), name='customer-login'),
     #forgot password
     path('password-forgot/', CustomerPasswordForgotView.as_view(), name='customer-password-forgot'),
-    path('password-reset/<uidb64>/<token>/', ResetPasswordView.as_view(), name='customer-password-reset-confirm'),
+    # path('password-reset/<uidb64>/<token>/', ResetPasswordView.as_view(), name='customer-password-reset-confirm'),
     #profile update
     path('profile/<int:pk>/', CustomerViewSet.as_view({
         'get': 'retrieve', 
