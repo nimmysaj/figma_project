@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -157,15 +158,23 @@ SIMPLE_JWT = {
 }
 
 #email smtp
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'  # SMTP server host
-EMAIL_PORT = 587  # SMTP port
-EMAIL_USE_TLS = True  # Use TLS encryption
-EMAIL_HOST_USER = ''  # Your email
-EMAIL_HOST_PASSWORD = ''  # Your email password
-DEFAULT_FROM_EMAIL = ''  # Default from email
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'  # SMTP server host
+# EMAIL_PORT = 587  # SMTP port
+# EMAIL_USE_TLS = True  # Use TLS encryption
+# EMAIL_HOST_USER = ''  # Your email
+# EMAIL_HOST_PASSWORD = ''  # Your email password
+# DEFAULT_FROM_EMAIL = ''  # Default from email
 
 # settings.py
 #TWILIO_ACCOUNT_SID = ''
 #TWILIO_AUTH_TOKEN = ''
 #TWILIO_PHONE_NUMBER = ''
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'localhost'  # smtp4dev runs locally
+EMAIL_PORT = 25  # Default port used by smtp4dev
+EMAIL_USE_TLS = False  # TLS is not needed for local testing
+EMAIL_HOST_USER = ''  # No authentication required for smtp4dev
+EMAIL_HOST_PASSWORD = ''  # No authentication required for smtp4dev
+DEFAULT_FROM_EMAIL = 'test@example.com'  # You can set any default email

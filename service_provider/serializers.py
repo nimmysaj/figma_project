@@ -4,7 +4,7 @@ import phonenumbers
 from rest_framework.response import Response
 from rest_framework import serializers,status
 from django.contrib.auth import authenticate
-from Accounts.models import Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User  
+from Accounts.models import Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User, CustomerReview
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
@@ -38,8 +38,7 @@ class ServiceProviderLoginSerializer(serializers.Serializer):
         attrs['user'] = user
         return attrs
 
-
-#forgot password and reset password
+#Forgot Password
 class ServiceProviderPasswordForgotSerializer(serializers.Serializer):
     email_or_phone = serializers.CharField(required=True)
 
@@ -49,25 +48,24 @@ class ServiceProviderPasswordForgotSerializer(serializers.Serializer):
         For now, we assume the input is either an email or phone number.
         """
         if '@' in value:
-            # Validate as email
             if not User.objects.filter(email=value, is_service_provider=True).exists():
                 raise serializers.ValidationError("This email is not registered with any service provider.")
         else:
-            # Validate as phone number
             if not User.objects.filter(phone_number=value, is_service_provider=True).exists():
                 raise serializers.ValidationError("This phone number is not registered with any service provider.")
 
         return value    
 
+
+#Set New Passwords
 class SetNewPasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(required=True, write_only=True)
     confirm_password = serializers.CharField(required=True, write_only=True)
-    
-    def validate_password(self, value):
-        # Use Django's password validators to validate the password
+
+
+    def validate_new_password(self, value):
         validate_password(value)
 
-        # Custom validation for password complexity
         if not re.search(r'[A-Z]', value):
             raise serializers.ValidationError("Password must contain at least one uppercase letter.")
         if not re.search(r'[a-z]', value):
@@ -82,6 +80,7 @@ class SetNewPasswordSerializer(serializers.Serializer):
         if attrs['new_password'] != attrs['confirm_password']:
             raise serializers.ValidationError("Passwords do not match")
         return attrs
+
 
 
 #profile updation
@@ -295,3 +294,21 @@ class InvoiceSerializer(serializers.ModelSerializer):
                 service_request.save()
 
         return invoice
+    
+    
+
+class ServiceRequestCustomSerializer(serializers.ModelSerializer):
+    customer_name = serializers.CharField(source='customer.full_name')
+    service_provider_name = serializers.CharField(source='service_provider.full_name')
+    
+    rating_value = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ServiceRequest
+        fields = ['booking_id', 'title', 'service', 'work_status', 'request_date', 'availability_from', 'availability_to', 'customer_name', 'service_provider_name', 'rating_value']
+
+    def get_rating_value(self, obj):
+        review = CustomerReview.objects.filter(service=obj).first()
+        if review:
+            return review.rating
+        return None  

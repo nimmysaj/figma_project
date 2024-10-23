@@ -478,10 +478,12 @@ class CustomerReview(models.Model):
     image = models.ImageField(upload_to='reviews/', null=True, blank=True, validators=[validate_file_size])
     comment = models.TextField(blank=True, null=True)  # Optional comment
     created_at = models.DateTimeField(auto_now_add=True)  # Auto-set the review date
+    service = models.ForeignKey("ServiceRequest", on_delete=models.PROTECT, related_name="service_name", null=True)
 
     def __str__(self):
-        return f"{self.customer.full_name} - {self.service_provider.full_name} ({self.rating} stars)"
+        return f"Rating for {self.service} by {self.service_provider.full_name} from {self.customer.full_name}"
     
+
 class ServiceRequest(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
@@ -489,56 +491,51 @@ class ServiceRequest(models.Model):
         ('completed', 'Completed'),
         ('cancelled', 'Cancelled'),
     ]
+
     
     booking_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    title = models.CharField(max_length=20,null=True,blank=True)
-    customer = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_servicerequest')
-    service_provider = models.ForeignKey(User, on_delete=models.PROTECT,related_name='to_servicerequest')
-    service = models.ForeignKey(ServiceRegister, on_delete=models.PROTECT,related_name='servicerequest')
+    title = models.CharField(max_length=20, null=True, blank=True)
+    customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='from_servicerequest')
+    service_provider = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='to_servicerequest')
+    service = models.ForeignKey('ServiceRegister', on_delete=models.PROTECT, related_name='servicerequest')
     work_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    acceptance_status = models.CharField(max_length=20,choices=[('accept', 'accept'), ('decline', 'decline'),('pending', 'pending')],default='pending')
+    acceptance_status = models.CharField(max_length=20, choices=[('accept', 'accept'), ('decline', 'decline'), ('pending', 'pending')], default='pending')
     request_date = models.DateTimeField(auto_now_add=True)
-    availability_from = models.DateTimeField()  # New field for availability start
-    availability_to = models.DateTimeField()    # New field for availability end
+    availability_from = models.DateTimeField()
+    availability_to = models.DateTimeField()
     additional_notes = models.TextField(blank=True, null=True)
-    image = models.ImageField(upload_to='service_request/', null=True, blank=True, validators=[validate_file_size])
+    image = models.ImageField(upload_to='service_request/', null=True, blank=True)
+    payment_status = models.ForeignKey('Invoice', on_delete=models.PROTECT, related_name='from_invoice', null=True, blank=True)
+
+
 
     def __str__(self):
-        return f"Request by {self.customer.full_name} for {self.service} ({self.acceptance_status})"
+        return f"{self.service}"
 
     def clean(self):
-        # Ensure the availability_from is before availability_to
         if self.availability_from >= self.availability_to:
-            raise ValidationError('Availability "from" time must be before "to" time.')    
+            raise ValidationError('Availability "from" time must be before "to" time.')
+   
 
 class Invoice(models.Model):
     INVOICE_TYPE_CHOICES = [
         ('service_request', 'Service Request'),
         ('dealer_payment', 'Dealer Payment'),
         ('provider_payment', 'Service Provider Payment'),
-        ('Ads' ,'Ads')
+        ('ads', 'Ads')
     ]
     
     invoice_number = models.PositiveIntegerField(unique=True, editable=False)
-
-    #invoice_type: This field determines whether the invoice is related to a Service Request payment (service_request), a Dealer Payment (dealer_payment), or a Service Provider Payment (provider_payment).
     invoice_type = models.CharField(max_length=20, choices=INVOICE_TYPE_CHOICES)
-    
-    #A foreign key that links to a ServiceRequest model, which is populated if the payment is related to a customer requesting a service.
-    service_request = models.ForeignKey(ServiceRequest, on_delete=models.SET_NULL, null=True, blank=True,related_name='invoices')
-
-    # Sender (user who is paying) and receiver (user receiving payment)
+    service_request = models.ForeignKey('ServiceRequest', on_delete=models.SET_NULL, null=True, blank=True, related_name='invoices')
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_payment')
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_payment')
-    
     quantity = models.IntegerField(null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('paid', 'Paid'), ('cancelled', 'Cancelled')], default='pending')
-
     invoice_date = models.DateTimeField(auto_now_add=True)
     due_date = models.DateTimeField(null=True, blank=True)
-    
     appointment_date = models.DateTimeField()
     additional_requirements = models.TextField(null=True, blank=True)
     accepted_terms = models.BooleanField(default=False)
@@ -548,14 +545,12 @@ class Invoice(models.Model):
             return f"Invoice for Service Request {self.service_request} - {self.payment_status}"
         else:
             return f"Invoice from {self.sender} to {self.receiver} - {self.payment_status}"
-        
+
     def mark_paid(self):
-        """Method to mark the invoice as paid."""
         self.payment_status = 'paid'
         self.save()
 
     def cancel_invoice(self):
-        """Method to cancel the invoice."""
         self.payment_status = 'cancelled'
         self.save()
 
@@ -563,7 +558,7 @@ class Invoice(models.Model):
         if not self.invoice_number:
             last_invoice = Invoice.objects.order_by('invoice_number').last()
             self.invoice_number = last_invoice.invoice_number + 1 if last_invoice else 1
-        super().save(*args, **kwargs)    
+        super().save(*args, **kwargs)
 
 class Payment(models.Model):
 

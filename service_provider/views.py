@@ -11,13 +11,15 @@ from rest_framework import status, permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import generics,viewsets
-from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User
+from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User, CustomerReview
 from service_provider.permissions import IsOwnerOrAdmin
-from .serializers import CustomerServiceRequestSerializer, InvoiceSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestSerializer, SetNewPasswordSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer
+from .serializers import CustomerServiceRequestSerializer, InvoiceSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestCustomSerializer, SetNewPasswordSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer, ServiceRequestSerializer
 from django.utils.encoding import smart_bytes, smart_str
 from twilio.rest import Client
 from rest_framework.decorators import action
 from copy import deepcopy
+from rest_framework.exceptions import NotFound
+
 # Create your views here.
 
 #service provider login
@@ -50,18 +52,17 @@ class ServiceProviderLoginView(APIView):
 #set new password
 class SetNewPasswordView(generics.UpdateAPIView):
     serializer_class = SetNewPasswordSerializer
-    permission_classes = [permissions.IsAuthenticated,]  # Ensure the user is authenticated
-    
-    
-    def post(self, request, *args, **kwargs):
+    permission_classes = [permissions.IsAuthenticated]  # Ensure the user is authenticated
+
+    def post(self, request, *args, **kwargs):  # You can change this to 'put' if you prefer
         user = request.user  # Get the authenticated user
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
+        serializer.is_valid(raise_exception=True)  # Validate the serializer data
+
         # Set the new password
-        user.set_password(serializer.validated_data['new_password'])
-        user.save()
-        
+        user.set_password(serializer.validated_data['new_password'])  # Set the new password
+        user.save()  # Save the user object
+
         return Response({'detail': 'Password has been updated successfully.'}, status=status.HTTP_200_OK)
 
 #forgot password
@@ -404,3 +405,44 @@ class ServiceRequestInvoiceView(APIView):
                 {"error": "Cannot generate invoice. Accepted terms must be true."}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+
+# View for completed work
+class CompletedWorkListView(generics.ListAPIView):
+    queryset = ServiceRequest.objects.filter(work_status='completed')
+    serializer_class = ServiceRequestCustomSerializer
+
+# View for ongoing work (pending or in progress)
+class OngoingWorkListView(generics.ListAPIView):
+    queryset = ServiceRequest.objects.filter(work_status__in=['pending', 'in_progress'])
+    serializer_class = ServiceRequestCustomSerializer
+
+class ServiceRequestStatusCheckView(APIView):
+    def post(self, request, *args, **kwargs):
+        booking_id = request.data.get('id')
+        work_status = request.data.get('work_status')
+
+        if not booking_id or not work_status:
+            return Response({"error": "booking_id and work_status are required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if work_status != 'completed':
+            return Response({"error": "Only 'completed' status is allowed."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            service_request = ServiceRequest.objects.get(booking_id=booking_id)
+        except ServiceRequest.DoesNotExist:
+            raise NotFound("Service request not found.")
+        
+        if service_request.work_status == 'completed':
+            return Response({"error": "This service request is already marked as completed."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+        if service_request.work_status == 'in_progress':
+            service_request.work_status = work_status
+            service_request.save()
+
+            # Serialize the updated service request
+            serializer = ServiceRequestCustomSerializer(service_request)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response({"message": "The service request is not in 'in_progress' status."}, status=status.HTTP_400_BAD_REQUEST)
