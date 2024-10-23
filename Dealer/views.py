@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework import generics, permissions
 from rest_framework.response import Response
 from Accounts.models import Dealer, Franchisee, PaymentRequest
-from .serializers import FranchiseeSerializer, PaymentRequestSerializer
+from Dealer.serializers import FranchiseeSerializer, PaymentRequestSerializer
 
 
 
