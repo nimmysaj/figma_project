@@ -3,6 +3,7 @@ from rest_framework import generics, permissions
 from rest_framework.response import Response
 from Accounts.models import Dealer, Franchisee, PaymentRequest
 from Dealer.serializers import FranchiseeSerializer, PaymentRequestSerializer
+from rest_framework.pagination import PageNumberPagination
 
 
 
@@ -22,11 +23,21 @@ class DealerFranchiseeListView(generics.ListAPIView):
     
 
 
+
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 10  # Set the default page size
+    page_size_query_param = 'page_size'  # Allow clients to set the page size
+    max_page_size = 100 
+
+
+
 # To list the transaction history of dealer
 
 class DealerPaymentHistoryView(generics.ListAPIView):
     serializer_class = PaymentRequestSerializer
     permission_classes = [permissions.IsAuthenticated]  # Ensure the user is authenticated
+    pagination_class = StandardResultsSetPagination
 
     def get_queryset(self):
         dealer = Dealer.objects.get(user=self.request.user)
