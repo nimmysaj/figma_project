@@ -637,7 +637,7 @@ class Complaint(models.Model):
 
 class Notification(models.Model):
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE)
-    notification = models.CharField(max_length=100)
+    notification = models.CharField(max_length=300)
     service = models.ForeignKey(ServiceRegister, on_delete=models.CASCADE, null=True, blank=True)
     created_date = models.DateTimeField(auto_now_add=True)
     updated_date = models.DateTimeField(auto_now=True)

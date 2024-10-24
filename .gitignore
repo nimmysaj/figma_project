@@ -4,8 +4,8 @@ __pycache__/
 
 # Django-specific files
 *.log
-db.sqlite3
-migrations/
+# db.sqlite3
+# migrations/
 
 # Environment variables
 .env
