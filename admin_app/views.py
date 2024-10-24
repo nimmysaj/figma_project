@@ -6,8 +6,10 @@ from rest_framework import status
 from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
-from Accounts.models import User ,Payment ,Franchisee
-from .serializers import UserSerializer, FranchiseeSerializer ,TransactionSerializer
+from Accounts.models import User ,Payment ,Franchisee ,Service_Type ,Collar
+from .serializers import UserSerializer, FranchiseeSerializer ,TransactionSerializer ,CollarSerializer ,ServiceTypeSerializer
+from rest_framework.views import APIView
+
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -78,3 +80,150 @@ class TransactionListView(generics.ListAPIView):
     pagination_class = TransactionPagination
 
 
+# TASK 3 SERVICE TYPE CRUD //////////////////////////////////////////////////////////////////////////////////////////////////
+
+class ServiceTypeAPIView(APIView):
+    
+    def post(self, request):
+        """Create a new service type with validation."""
+        serializer = ServiceTypeSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request):
+        """Retrieve a specific service type by ID or get all if no ID is provided."""
+        service_id = request.data.get('id')
+        
+        if service_id:
+            try:
+                service = Service_Type.objects.get(id=service_id)
+                serializer = ServiceTypeSerializer(service)
+                return Response(serializer.data)
+            except Service_Type.DoesNotExist:
+                return Response({"error": "Service type not found"}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            # If no ID is provided, return all service types.
+            services = Service_Type.objects.all()
+            serializer = ServiceTypeSerializer(services, many=True)
+            return Response(serializer.data)
+
+    def put(self, request):
+        """Update a service type (replace all fields)."""
+        service_id = request.data.get('id')
+        if not service_id:
+            return Response({"error": "ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            service = Service_Type.objects.get(id=service_id)
+            serializer = ServiceTypeSerializer(service, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Service_Type.DoesNotExist:
+            return Response({"error": "Service type not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    def patch(self, request):
+        """Partially update a service type."""
+        service_id = request.data.get('id')
+        if not service_id:
+            return Response({"error": "ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            service = Service_Type.objects.get(id=service_id)
+            serializer = ServiceTypeSerializer(service, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Service_Type.DoesNotExist:
+            return Response({"error": "Service type not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request):
+        """Delete a service type."""
+        service_id = request.data.get('id')
+        if not service_id:
+            return Response({"error": "ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            service = Service_Type.objects.get(id=service_id)
+            service.delete()
+            return Response({"message": "Service type deleted"}, status=status.HTTP_204_NO_CONTENT)
+        except Service_Type.DoesNotExist:
+            return Response({"error": "Service type not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        
+# TASK 3 Collor CRUD //////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+class CollarAPIView(APIView):
+
+    def post(self, request):
+        """Create a new collar."""
+        serializer = CollarSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request):
+        """Retrieve a specific collar by ID or all collars if no ID is provided."""
+        collar_id = request.data.get('id')
+        if collar_id:
+            try:
+                collar = Collar.objects.get(id=collar_id)
+                serializer = CollarSerializer(collar)
+                return Response(serializer.data)
+            except Collar.DoesNotExist:
+                return Response({"error": "Collar not found."}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            collars = Collar.objects.all()
+            serializer = CollarSerializer(collars, many=True)
+            return Response(serializer.data)
+
+    def put(self, request):
+        """Fully update a collar."""
+        collar_id = request.data.get('id')
+        if not collar_id:
+            return Response({"error": "ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            collar = Collar.objects.get(id=collar_id)
+            serializer = CollarSerializer(collar, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Collar.DoesNotExist:
+            return Response({"error": "Collar not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    def patch(self, request):
+        """Partially update a collar."""
+        collar_id = request.data.get('id')
+        if not collar_id:
+            return Response({"error": "ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            collar = Collar.objects.get(id=collar_id)
+            serializer = CollarSerializer(collar, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Collar.DoesNotExist:
+            return Response({"error": "Collar not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request):
+        """Delete a collar."""
+        collar_id = request.data.get('id')
+        if not collar_id:
+            return Response({"error": "ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            collar = Collar.objects.get(id=collar_id)
+            collar.delete()
+            return Response({"message": "Collar deleted."}, status=status.HTTP_204_NO_CONTENT)
+        except Collar.DoesNotExist:
+            return Response({"error": "Collar not found."}, status=status.HTTP_404_NOT_FOUND)

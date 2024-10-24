@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from Accounts.models import User, Franchisee ,Payment ,Customer ,Dealer
+from Accounts.models import User, Franchisee ,Payment ,Customer ,Dealer  ,Service_Type ,Collar
 from django.db import models 
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
@@ -212,3 +212,42 @@ class TransactionSerializer(serializers.ModelSerializer):
 #         return representation
 
 
+# TASK 3 SERVICE TYPE CRUD //////////////////////////////////////////////////////////////////////////////////////////////////
+
+class ServiceTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Service_Type
+        fields = ['id', 'name', 'details', 'currency']
+        
+    def validate_name(self, value):
+        """Ensure name uniqueness, except for the current instance."""
+        service_id = self.instance.id if self.instance else None
+
+        if Service_Type.objects.filter(name=value).exclude(id=service_id).exists():
+            raise serializers.ValidationError("A service type with this name already exists.")
+        
+        return value
+    
+# TASK 3 Collor CRUD //////////////////////////////////////////////////////////////////////////////////////////////////
+
+class CollarSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Collar
+        fields = ['id', 'name', 'lead_quantity', 'amount']
+
+    def validate_name(self, value):
+        """Check for duplicate collar names."""
+        # Allow the current instance's name to pass the validation during updates
+        if self.instance and self.instance.name == value:
+            return value
+        if Collar.objects.filter(name=value).exists():
+            raise serializers.ValidationError("A collar with this name already exists.")
+        return value
+
+    def update(self, instance, validated_data):
+        """Update the Collar object."""
+        instance.name = validated_data.get('name', instance.name)
+        instance.lead_quantity = validated_data.get('lead_quantity', instance.lead_quantity)
+        instance.amount = validated_data.get('amount', instance.amount)
+        instance.save()
+        return instance

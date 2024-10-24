@@ -336,14 +336,14 @@ class Service_Type(models.Model):
     name = models.CharField(max_length=255)
     details = models.TextField()
     #amount = models.DecimalField(max_digits=10, decimal_places=2)
-    curreny=models.CharField(max_length=10,null=True,blank=True, default="INR")
+    currency=models.CharField(max_length=10,null=True,blank=True, default="INR")
 
     def __str__(self):
         return self.name  
        
 class Collar(models.Model):
     name = models.CharField(max_length=255)
-    lead_quantity = models.IntegerField()
+    lead_quantity = models.IntegerField(null=True, blank=True)  # Allow it to be optional
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     #currency = models.CharField(max_length=50)
     def __str__(self):
