@@ -7,14 +7,24 @@ import phonenumbers
 from phonenumbers import NumberParseException
 
 
+
 class UserSerializer(serializers.ModelSerializer):
-    phone_with_code = serializers.SerializerMethodField()
+    phone_with_code = serializers.SerializerMethodField() # New field to combine phone number and country code
+
+    
     class Meta:
         model = User
-        exclude = ['password']
-        # fields = ['id','last_login','is_customer','is_service_provider','is_franchisee','is_dealer','is_active','email','full_name','nationality','designation','phone_number','is_active','is_staff']
-        # fields = '__all__'
-        # Custom validation for the full_name field
+        fields = [
+            'id','last_login','is_customer','is_service_provider','is_franchisee','is_dealer','is_active','is_superuser',
+            'is_staff','full_name','address','landmark','pin_code','nationality','designation','watsapp','email','phone_number',
+            'country_code','phone_with_code',  'district','state','groups','user_permissions',
+        ]
+        # Exclude phone_number and country_code from the response
+        extra_kwargs = {
+            'country_code': {'write_only': True,'read_only':False},
+            'phone_number': {'write_only': True,'read_only':False},  
+        }
+     
 
     def validate_full_name(self, value):
         if not value:
@@ -23,8 +33,6 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Full name must be at least 3 characters long.")
         return value
 
-        # Custom validation for the email field
-
     def validate_email(self, value):
         if not value:
             raise serializers.ValidationError("Email is required.")
@@ -32,7 +40,6 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Enter a valid email address.")
         return value
 
-        # Custom validation for the password field
 
     def validate_password(self, value):
         if not value:
@@ -41,8 +48,6 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Password must be at least 8 characters long.")
         return value
 
-        # Custom validation for the whatsapp number field
-
     def validate_whatsapp(self, value):
         if not value:
             raise serializers.ValidationError("WhatsApp number is required.")
@@ -50,7 +55,6 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Enter a valid WhatsApp number (10 digits).")
         return value
 
-        # Custom validation for the pincode field
 
     def validate_pin_code(self, value):
         if not value:
@@ -58,61 +62,56 @@ class UserSerializer(serializers.ModelSerializer):
         if not value.isdigit() or len(value) != 6:
             raise serializers.ValidationError("Enter a valid 6-digit pin code.")
         return value
-        # Custom validation for the phone number field
+    
+    
 
-    # def validate_phone_number(self, value):
-    #     if not value:
-    #         raise serializers.ValidationError("Phone number is required.")
-    #     if not value.isdigit():
-    #         raise serializers.ValidationError("Phone number must contain only digits.")
-    #     if len(value) != 10:
-    #         raise serializers.ValidationError("Phone number must be exactly 10 digits.")
-    #     return value
-
-    # def validate_phone_number(self, value):
-    #     if not value:
-    #         raise serializers.ValidationError("Phone number is required.")
-    #     # The regex requires the phone number to start with a `+` and be followed by 9 to 15 digits.
-    #     regex = r'^\+\d{9,15}$'
-    #     if not re.match(regex, value):
-    #         raise serializers.ValidationError("Enter a valid phone number with country code (e.g., +1234567890).")
-    #     return value
     def validate_phone_number(self, value):
+        """
+        Validate the phone number with the country code, if provided.
+        """
         if not value:
             raise serializers.ValidationError("Phone number is required.")
-        
-        try:
-            # Parse the phone number using the phonenumbers library
-            parsed_number = phonenumbers.parse(value, None)
-            
-            # Check if the phone number is valid
-            if not phonenumbers.is_valid_number(parsed_number):
-                raise serializers.ValidationError("Invalid phone number.")
-        except NumberParseException:
-            raise serializers.ValidationError("Invalid phone number format.")
-        
+
+        if not value.isdigit() or len(value) < 9 or len(value) > 15:
+            raise serializers.ValidationError("Phone number must be between 9 and 15 digits and numeric.")
+
+        # If country code is provided, validate the full number
+        country_code = self.initial_data.get('country_code')
+
+        if country_code:
+            try:
+                # Fetch country code object
+                country_obj = Country_Codes.objects.get(id=country_code)
+                full_number = f"{country_obj.calling_code}{value}"
+                
+                # Parse the phone number
+                parsed_number = phonenumbers.parse(full_number, None)
+                print(country_obj)
+                print(country_obj)
+                print(full_number)
+                
+                # Check if the phone number is valid
+                if not phonenumbers.is_valid_number(parsed_number):
+                    raise serializers.ValidationError("Invalid phone number.")
+            except Country_Codes.DoesNotExist:
+                raise serializers.ValidationError("Invalid country code.")
+            except NumberParseException:
+                raise serializers.ValidationError("Phone number format is incorrect.")
+
         return value
 
-    def validate_country_code(self, value):
-        try:
-            # Check if the country code exists in your Country_Codes model
-            Country_Codes.objects.get(calling_code=value)
-        except Country_Codes.DoesNotExist:
-            raise serializers.ValidationError("Can't identify country code.")
-        
-        return value
-
-    # Combine country code and phone number for display
     def get_phone_with_code(self, obj):
+        """
+        Combine phone number with country code for display.
+        """
         if obj.phone_number and obj.country_code:
-            return f"{obj.country_code.calling_code} {obj.phone_number}"
-        return None
-
+            return f"{obj.country_code.calling_code}{obj.phone_number}"
+        return obj.phone_number  # Return just the phone number if country code is not provided
 
 
 class FranchiseeSerializer(serializers.ModelSerializer):
     is_franchisee = serializers.CharField(source='user.is_franchisee')  
-    location = serializers.CharField(source='user. district')  
+    location = serializers.CharField(source='user.district')  
     contact = serializers.CharField(source='user.phone_number')  
     dealers = serializers.IntegerField(read_only=True)  
     class Meta:

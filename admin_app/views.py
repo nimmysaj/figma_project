@@ -6,6 +6,7 @@ from Accounts.models import User, Franchisee,Franchise_Type
 from .serializers import UserSerializer,FranchiseeSerializer,FranchiseTypeSerializer
 from rest_framework.decorators import action
 from django.db.models import Count
+from rest_framework.pagination import PageNumberPagination
 
 
 
@@ -30,10 +31,13 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+class FranchiseePagination(PageNumberPagination):
+    page_size = 3  # Or any size you want for this view
 
 class FranchiseeViewSet(viewsets.ModelViewSet):
     queryset = Franchisee.objects.all()
     serializer_class = FranchiseeSerializer    
+    pagination_class = FranchiseePagination  # Add the custom pagination class here
     http_method_names = ['get'] 
 
     def get_queryset(self):
