@@ -24,4 +24,5 @@ urlpatterns = [
     path('service-requests/details/<int:pk>/', CustomerServiceRequestView.as_view(), name="details"),
     path('invoice/<int:pk>/', ServiceRequestInvoiceView.as_view(), name="invoice")
     
+    
 ]

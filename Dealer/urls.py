@@ -1,0 +1,7 @@
+from django.urls import path
+from .views import ServiceProviderVerificationListCreate, ServiceProviderVerificationDetail
+
+urlpatterns = [
+    path('service-providers/', ServiceProviderVerificationListCreate.as_view(), name='service-providers-list'),
+    path('service-providers/<int:pk>/', ServiceProviderVerificationDetail.as_view(), name='service-provider-detail'),
+]
