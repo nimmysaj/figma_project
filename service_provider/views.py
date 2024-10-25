@@ -11,13 +11,14 @@ from rest_framework import status, permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import generics,viewsets
-from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User
+from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User, Franchisee
 from service_provider.permissions import IsOwnerOrAdmin
-from .serializers import CustomerServiceRequestSerializer, InvoiceSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestSerializer, SetNewPasswordSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer
-from django.utils.encoding import smart_bytes, smart_str
+from .serializers import CustomerServiceRequestSerializer, InvoiceSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestSerializer, SetNewPasswordSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer,FranchiseeSerializer
 from twilio.rest import Client
 from rest_framework.decorators import action
 from copy import deepcopy
+# from service_provider.views import ResetPasswordView
+
 # Create your views here.
 
 #service provider login
@@ -404,3 +405,13 @@ class ServiceRequestInvoiceView(APIView):
                 {"error": "Cannot generate invoice. Accepted terms must be true."}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+# franchise details
+
+# Make sure this is correct
+
+class FranchiseListView(APIView):
+    def get(self, request):
+        franchises = Franchisee.objects.all()
+        serializer = FranchiseeSerializer(franchises, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

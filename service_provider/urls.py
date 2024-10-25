@@ -3,6 +3,8 @@ from .views import CustomerServiceRequestView, ServiceProviderLoginView, Service
 from rest_framework.routers import DefaultRouter
 router = DefaultRouter()
 router.register(r'service-registers', ServiceRegisterViewSet, basename='service-register')
+from .views import FranchiseListView
+
 
 
 urlpatterns = [
@@ -22,6 +24,7 @@ urlpatterns = [
     #service request
     path('service-requests/', ServiceProviderRequestsView.as_view(), name='service-provider-requests'),
     path('service-requests/details/<int:pk>/', CustomerServiceRequestView.as_view(), name="details"),
-    path('invoice/<int:pk>/', ServiceRequestInvoiceView.as_view(), name="invoice")
-    
+    path('invoice/<int:pk>/', ServiceRequestInvoiceView.as_view(), name="invoice"),
+    path('franchisee/', FranchiseListView.as_view(), name='franchisee-list'),
 ]
+
