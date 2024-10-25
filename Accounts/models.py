@@ -151,6 +151,8 @@ class User(AbstractBaseUser):
     def has_module_perms(self, app_label):
         return self.is_superuser
 
+
+
 class Franchise_Type(models.Model):
     name = models.CharField(max_length=255)
     details = models.TextField()
@@ -273,6 +275,8 @@ class ServiceProvider(models.Model):
 
     def __str__(self):
         return self.custom_id
+    
+
 
 class Customer(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='customer')
@@ -632,3 +636,23 @@ class Complaint(models.Model):
         self.status = 'rejected'
         self.resolution_notes = rejection_reason
         self.save()
+
+
+class Notification(models.Model):
+    NOTIFICATION_TYPES = (
+        ('request', 'Request'),
+        ('review', 'Review'),
+        ('complaint', 'Complaint'),
+        ('payment', 'Payment'),
+        ('response', 'Response'),
+    )
+    
+    recipient_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    sender_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f'{self.notification_type} for {self.recipient_user}'

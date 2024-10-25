@@ -331,49 +331,117 @@ class UnifiedSearchView(APIView):
 
 
 
-#For register new request
+# #For register new request
+# class ServiceRequestCreateView(generics.CreateAPIView):
+#     serializer_class = ServiceRequestSerializer
+#     permission_classes = [IsAuthenticated]
+
+#     def post(self, request, *args, **kwargs):
+#         try:
+#             # Get the necessary fields from request data
+#             user_id = request.data.get('user_id')
+#             service_register_id = request.data.get('service')  # This is the ServiceRegister ID
+
+#             # Get the customer
+#             customer = User.objects.get(id=user_id) if user_id else None
+#             if not customer:
+#                 return Response({"error": "user_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+#             # Get the service based on service_register_id
+#             service_register = ServiceRegister.objects.get(id=service_register_id) if service_register_id else None
+#             if not service_register:
+#                 return Response({"error": "Service not found for this ID."}, status=status.HTTP_404_NOT_FOUND)
+
+#             # Check if a request for the same service by the same user already exists
+#             existing_service_request = ServiceRequest.objects.filter(
+#                 customer=customer,
+#                 service=service_register
+#             ).exists()
+
+#             if existing_service_request:
+#                 return Response({"error": "You already have a pending request for this service."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+#             # Get the service provider
+#             service_provider_id = request.data.get('service_provider_id')
+#             service_provider = User.objects.get(id=service_provider_id) if service_provider_id else None
+#             if not service_provider:
+#                 return Response({"error": "service_provider_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+#             # Create the service request (storing the ForeignKey to ServiceRegister)
+#             service_request = ServiceRequest.objects.create(
+#                 customer=customer,
+#                 service_provider=service_provider,
+#                 title=request.data.get('title'),
+#                 service=service_register,  # Store the full ServiceRegister instance (ID)
+#                 work_status='pending',
+#                 acceptance_status='pending',
+#                 availability_from=request.data.get('availability_from'),
+#                 availability_to=request.data.get('availability_to'),
+#                 additional_notes=request.data.get('additional_notes'),
+#                 image=request.data.get('image'),
+#                 booking_id=self.generate_booking_id(),
+#             )
+
+#             # Fetch related data in one query using select_related()
+#             service_request = ServiceRequest.objects.select_related(
+#                 'customer', 'service_provider', 'service'
+#             ).get(id=service_request.id)
+
+#             serializer = self.get_serializer(service_request)
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+#         except User.DoesNotExist:
+#             return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+#         except ServiceRegister.DoesNotExist:
+#             return Response({"error": "ServiceRegister not found."}, status=status.HTTP_404_NOT_FOUND)
+#         except Exception as e:
+#             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+#     def generate_booking_id(self):
+#         import uuid
+#         return str(uuid.uuid4())
+
+
+from .serializers import ServiceRequestSerializer
+from Accounts.models import Notification, User
+from rest_framework.permissions import IsAuthenticated
+
 class ServiceRequestCreateView(generics.CreateAPIView):
     serializer_class = ServiceRequestSerializer
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         try:
-            # Get the necessary fields from request data
             user_id = request.data.get('user_id')
-            service_register_id = request.data.get('service')  # This is the ServiceRegister ID
+            service_register_id = request.data.get('service')
 
-            # Get the customer
             customer = User.objects.get(id=user_id) if user_id else None
             if not customer:
                 return Response({"error": "user_id is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Get the service based on service_register_id
             service_register = ServiceRegister.objects.get(id=service_register_id) if service_register_id else None
             if not service_register:
                 return Response({"error": "Service not found for this ID."}, status=status.HTTP_404_NOT_FOUND)
 
-            # Check if a request for the same service by the same user already exists
             existing_service_request = ServiceRequest.objects.filter(
-                customer=customer,
-                service=service_register
+                customer=customer, service=service_register
             ).exists()
 
             if existing_service_request:
                 return Response({"error": "You already have a pending request for this service."}, status=status.HTTP_400_BAD_REQUEST)
 
-
-            # Get the service provider
             service_provider_id = request.data.get('service_provider_id')
             service_provider = User.objects.get(id=service_provider_id) if service_provider_id else None
             if not service_provider:
                 return Response({"error": "service_provider_id is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Create the service request (storing the ForeignKey to ServiceRegister)
+            # Create the service request
             service_request = ServiceRequest.objects.create(
                 customer=customer,
                 service_provider=service_provider,
                 title=request.data.get('title'),
-                service=service_register,  # Store the full ServiceRegister instance (ID)
+                service=service_register,
                 work_status='pending',
                 acceptance_status='pending',
                 availability_from=request.data.get('availability_from'),
@@ -383,10 +451,19 @@ class ServiceRequestCreateView(generics.CreateAPIView):
                 booking_id=self.generate_booking_id(),
             )
 
-            # Fetch related data in one query using select_related()
+            # Fetch related data
             service_request = ServiceRequest.objects.select_related(
                 'customer', 'service_provider', 'service'
             ).get(id=service_request.id)
+
+            # Create notification for the service provider
+            notification_message = f"{customer.full_name} has sent a service request to you."
+            Notification.objects.create(
+                recipient_user=service_provider,
+                sender_user=customer,
+                notification_type='request',
+                message=notification_message
+            )
 
             serializer = self.get_serializer(service_request)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -401,6 +478,7 @@ class ServiceRequestCreateView(generics.CreateAPIView):
     def generate_booking_id(self):
         import uuid
         return str(uuid.uuid4())
+
 
 
 #For the second page , The customer can view all the services that requested
@@ -489,6 +567,6 @@ class ServiceRequestInvoiceDetailView(APIView):
                 }
             else:
                 return Response({'error': 'Invoice not found for the given service request.'}, status=status.HTTP_404_NOT_FOUND)
-
-
         return Response(data, status=status.HTTP_200_OK)
+
+
