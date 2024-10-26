@@ -4,10 +4,11 @@ import phonenumbers
 from rest_framework.response import Response
 from rest_framework import serializers,status
 from django.contrib.auth import authenticate
-from Accounts.models import Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User  
+from Accounts.models import Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User  , AdManagement, AdCategory
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
+from PIL import Image as PilImage
 
 #service provider login
 class ServiceProviderLoginSerializer(serializers.Serializer):
@@ -363,3 +364,48 @@ class InvoiceSerializer(serializers.ModelSerializer):
                 service_request.save()
 
         return invoice
+
+
+class AdManagementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AdManagement
+        fields = ['title', 'description', 'ad_category', 'valid_from', 'valid_up_to', 'target_area', 'image', 'status']
+
+    def create(self, validated_data):
+        # Ensure that the user is authenticated
+        request_user = self.context['request'].user
+        if not request_user.is_authenticated:
+            raise ValidationError("User must be authenticated to create an ad.")
+
+        # Calculate the total number of days for the ad
+        valid_from = validated_data['valid_from']
+        valid_up_to = validated_data['valid_up_to']
+        total_days = (valid_up_to - valid_from).days
+
+        # Get the ad category and calculate the total amount based on the rate
+        ad_category = validated_data['ad_category']
+        total_amount = total_days * ad_category.rate
+
+        # Create the AdManagement instance
+        ad_instance = AdManagement.objects.create(
+            **validated_data,
+            total_days=total_days,
+            total_amount=total_amount
+        )
+
+        # Retrieve the admin user who will be the receiver of the payment
+        admin_user = User.objects.filter(is_staff=True).first()  # Adjust this to match your admin retrieval logic
+        if not admin_user:
+            raise ValidationError("No admin user found.")
+
+        # Create and save an invoice after the ad is registered
+        Invoice.objects.create(
+            invoice_type='Ads',  # Invoice type related to ads
+            sender=request_user,  # Service provider (the user creating the ad)
+            receiver=admin_user,  # Admin as the receiver of the payment
+            price=ad_category.rate,
+            total_amount=total_amount,
+            payment_status='pending',  # Initial status can be pending
+        )
+
+        return ad_instance

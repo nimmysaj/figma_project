@@ -11,9 +11,9 @@ from rest_framework import status, permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import generics,viewsets
-from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User
+from Accounts.models import AdManagement, ServiceProvider, ServiceRegister, ServiceRequest, User
 from service_provider.permissions import IsOwnerOrAdmin
-from .serializers import CustomerServiceRequestSerializer, InvoiceSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestSerializer, SetNewPasswordSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer
+from .serializers import AdManagementSerializer, CustomerServiceRequestSerializer, InvoiceSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestSerializer, SetNewPasswordSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer
 from django.utils.encoding import smart_bytes, smart_str
 from twilio.rest import Client
 from rest_framework.decorators import action
@@ -405,3 +405,12 @@ class ServiceRequestInvoiceView(APIView):
                 {"error": "Cannot generate invoice. Accepted terms must be true."}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+
+class AdManagementCreateView(generics.CreateAPIView):
+    queryset = AdManagement.objects.all()
+    serializer_class = AdManagementSerializer
+    permission_classes = [permissions.IsAuthenticated]  # Ensures the user must be authenticated
+
+    def perform_create(self, serializer):
+        serializer.save(sender=self.request.user)  # Save the user who is creating the ad
