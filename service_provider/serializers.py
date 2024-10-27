@@ -4,12 +4,14 @@ import phonenumbers
 from rest_framework.response import Response
 from rest_framework import serializers,status
 from django.contrib.auth import authenticate
-from Accounts.models import Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User  
+from Accounts.models import *
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
+import logging
 
 #service provider login
+logger = logging.getLogger(__name__)
 class ServiceProviderLoginSerializer(serializers.Serializer):
     email_or_phone = serializers.CharField()
     password = serializers.CharField()
@@ -23,18 +25,42 @@ class ServiceProviderLoginSerializer(serializers.Serializer):
         if not password:
             raise serializers.ValidationError('Password is required.')
 
-        user = authenticate(username=email_or_phone, password=password)
-        if user is None:
+        user = None
+
+        # First, find the user
+        if '@' in email_or_phone:
             try:
-                user = User.objects.get(phone_number=email_or_phone)  
-                if not user.check_password(password):
-                    user = None
+                user = User.objects.get(email=email_or_phone)
+                logger.debug(f"Found user by email: {user.email}")
             except User.DoesNotExist:
-                user = None
+                raise serializers.ValidationError('No account found with this email.')
+        else:
+            try:
+                fullnumber = phonenumbers.parse(email_or_phone, None)
+                code = Country_Codes.objects.get(calling_code="+" + str(fullnumber.country_code))
+                number = str(fullnumber.national_number)
+                
+                user = User.objects.get(phone_number=number, country_code=code)
+                logger.debug(f"Found user by phone: {user.email}")
+            except (phonenumbers.phonenumberutil.NumberParseException, Country_Codes.DoesNotExist):
+                raise serializers.ValidationError('Invalid phone number format')
+            except User.DoesNotExist:
+                raise serializers.ValidationError('No account found with this phone number.')
 
-        if user is None:
-            raise serializers.ValidationError('Invalid login credentials.')
+        # Check if user is active and is a customer
+        if not user.is_active:
+            raise serializers.ValidationError('This account is inactive.')
 
+        if not user.is_service_provider:
+            raise serializers.ValidationError('This account is not registered as a service provider.')
+
+        # Debugging password verification
+        if not user.check_password(password):
+            logger.debug(f"Password verification failed for user: {user.email} with provided password: {password}")
+            raise serializers.ValidationError('Invalid password.')
+
+
+        logger.debug("Authentication successful")
         attrs['user'] = user
         return attrs
 
@@ -295,3 +321,8 @@ class InvoiceSerializer(serializers.ModelSerializer):
                 service_request.save()
 
         return invoice
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['id', 'service_request', 'message', 'created_at', 'is_read']

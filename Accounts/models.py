@@ -158,7 +158,7 @@ class Franchise_Type(models.Model):
     currency = models.CharField(max_length=50)
 
 class Franchisee(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='franchisee')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='franchisee')      
     custom_id = models.CharField(max_length=10, unique=True, editable=False, blank=True) 
 
     about = models.TextField()
@@ -244,6 +244,7 @@ class ServiceProvider(models.Model):
     date_of_birth = models.DateField(null=True, blank=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
     about = models.TextField(null=True,blank=True)
+    created_at = models.DateTimeField(auto_now_add= True)
 
     dealer = models.ForeignKey(Dealer, on_delete=models.PROTECT)
     franchisee = models.ForeignKey(Franchisee, on_delete=models.PROTECT)
@@ -254,6 +255,7 @@ class ServiceProvider(models.Model):
     payout_required = models.CharField(max_length=10, choices=PAYOUT_FREQUENCY_CHOICES)  # Payout frequency field
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')])
     verification_by_dealer= models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    
 
     accepted_terms = models.BooleanField(default=False)
     
@@ -371,6 +373,7 @@ class Subcategory(models.Model):
 
 class ServiceRegister(models.Model):
     id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    service_name = models.CharField(max_length=50)
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE, related_name='services')
     description = models.TextField()
     gstcode = models.CharField(max_length=50)
@@ -511,6 +514,24 @@ class ServiceRequest(models.Model):
         if self.availability_from >= self.availability_to:
             raise ValidationError('Availability "from" time must be before "to" time.')    
 
+class Notification(models.Model):
+    NOTIFICATION_TYPES = (
+        ('request', 'Request'),
+        ('review', 'Review'),
+        ('complaint', 'Complaint'),
+        ('payment', 'Payment'),
+        ('response', 'Response'),
+    )
+    recipient_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    sender_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.NOTIFICATION_TYPES} from {self.service_request.customer} for {self.service_request.service_provider}"
+
+
 class Invoice(models.Model):
     INVOICE_TYPE_CHOICES = [
         ('service_request', 'Service Request'),
@@ -632,3 +653,4 @@ class Complaint(models.Model):
         self.status = 'rejected'
         self.resolution_notes = rejection_reason
         self.save()
+        
