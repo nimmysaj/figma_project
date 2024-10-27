@@ -371,6 +371,7 @@ class Subcategory(models.Model):
 
 class ServiceRegister(models.Model):
     id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    service_name = models.CharField(max_length=50)
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE, related_name='services')
     description = models.TextField()
     gstcode = models.CharField(max_length=50)
@@ -511,6 +512,16 @@ class ServiceRequest(models.Model):
         if self.availability_from >= self.availability_to:
             raise ValidationError('Availability "from" time must be before "to" time.')    
 
+class Notification(models.Model):
+    service_request = models.ForeignKey(ServiceRequest, on_delete=models.CASCADE, related_name='notifications')
+    message = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Notification for {self.service_request.service_provider} from {self.service_request.customer}"
+
+
 class Invoice(models.Model):
     INVOICE_TYPE_CHOICES = [
         ('service_request', 'Service Request'),
@@ -632,3 +643,4 @@ class Complaint(models.Model):
         self.status = 'rejected'
         self.resolution_notes = rejection_reason
         self.save()
+        
