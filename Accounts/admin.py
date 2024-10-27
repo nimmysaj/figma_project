@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from Accounts.models import User,Country_Codes
-from .models import User,Customer,ServiceProvider,Franchisee,Franchise_Type,Dealer,OTP,District,State,ServiceRequest,Service_Type,ServiceRegister,Category,Subcategory,Collar, Invoice, CustomerReview
+from Accounts.models import *
+from admin_app.models import *
 
 # Register your models here.
 
@@ -39,3 +39,5 @@ admin.site.register(Subcategory)
 admin.site.register(Collar)
 admin.site.register(Invoice)
 admin.site.register(CustomerReview)
+# admin.site.register(Ad_category)
+# admin.site.register(Ad_Management)

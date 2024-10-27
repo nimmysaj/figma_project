@@ -1,7 +1,8 @@
 from rest_framework import serializers
-from Accounts.models import Franchise_Type, ServiceRequest, Customer, ServiceProvider#, Franchisee
+from Accounts.models import *
 import re
 from datetime import datetime
+from admin_app.models import *
 
 class Franchise_Type_Serializer(serializers.ModelSerializer):
     class Meta:
@@ -80,28 +81,80 @@ class ServiceHistorySerializer(serializers.ModelSerializer):
             return 'Customer'
         return None
 
-# class FranchiseeDetailsSerializer(serializers.ModelSerializer):
-#     name = serializers.CharField(source='user.full_name', read_only=True)  # Assuming Franchisee model has 'name'
-#     address = serializers.CharField(source='user.address', read_only=True)  # Assuming Franchisee model has 'address'
-#     contact = serializers.CharField(source='user.phone_number', read_only=True)  # Assuming Franchisee model has 'contact'
-#     email = serializers.CharField(source='user.email', read_only=True)  # Assuming Franchisee model has 'email'
-#     watsapp = serializers.SerializerMethodField()  # Custom field to include country code prefix
+class FranchiseeDetailsSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source='user.full_name', read_only=True)  # Assuming Franchisee model has 'name'
+    address = serializers.CharField(source='user.address', read_only=True)  # Assuming Franchisee model has 'address'
+    contact = serializers.CharField(source='user.phone_number', read_only=True)  # Assuming Franchisee model has 'contact'
+    email = serializers.CharField(source='user.email', read_only=True)  # Assuming Franchisee model has 'email'
+    watsapp = serializers.SerializerMethodField()  # Custom field to include country code prefix
+
+    class Meta:
+        model = Franchisee
+        fields = [
+            'name', 'custom_id', 'profile_image', 'about', 'address', 'contact', 'email', 'watsapp'
+        ]
+
+    def get_watsapp(self, obj):
+        # Check if both country code and watsapp are present
+        country_code = obj.user.country_code.calling_code if obj.user.country_code else ''
+        watsapp = obj.user.watsapp if obj.user.watsapp else ''
+        
+        # Return the formatted phone number with country code prefix
+        if country_code and watsapp:
+            return f"{country_code} {watsapp}"
+        elif watsapp:
+            return watsapp
+        else:
+            return None
+
+# class NewAddSerializer(serializers.ModelSerializer):
+#     ad_category_name = serializers.CharField(source='ad_category.ad_type', read_only=True) 
+#     total_days = serializers.SerializerMethodField()
+#     ad_user_name = serializers.CharField(source='ad_user.full_name', read_only=True)
+#     total_amount = serializers.SerializerMethodField()
 
 #     class Meta:
-#         model = Franchisee
+#         model = Ad_Management
 #         fields = [
-#             'name', 'custom_id', 'profile_image', 'about', 'address', 'contact', 'email', 'watsapp'
+#             'title', 'description', 'ad_category_name', 'valid_from', 'valid_up_to', 'target_area', 'total_days', 'total_amount',
+#             'image', 'ad_user_name'
 #         ]
 
-#     def get_watsapp(self, obj):
-#         # Check if both country code and watsapp are present
-#         country_code = obj.user.country_code.calling_code if obj.user.country_code else ''
-#         watsapp = obj.user.watsapp if obj.user.watsapp else ''
+#    # Method to calculate total days
+#     def get_total_days(self, obj):
+#         if obj.valid_from and obj.valid_up_to:
+#             delta = obj.valid_up_to - obj.valid_from  # Calculate date difference
+#             return delta.days  # Return the number of days
+#         return 0  # Return 0 if any date is missing
+
+#     # Method to calculate total amount
+#     def get_total_amount(self, obj):
+#         total_days = self.get_total_days(obj)  # Get total days
+#         if total_days and obj.ad_category.rate:
+#             return total_days * obj.ad_category.rate  # Calculate total amount
+#         return 0  # Return 0 if any value is missing
+
+#     # Image validator to check dimensions
+#     def validate_image(self, value):
+#         image_file = Image.open(value)  # Open the uploaded image
         
-#         # Return the formatted phone number with country code prefix
-#         if country_code and watsapp:
-#             return f"{country_code} {watsapp}"
-#         elif watsapp:
-#             return watsapp
-#         else:
-#             return None
+#         # Get the ad category from the validated data
+#         ad_category_id = self.initial_data.get('ad_category')
+#         if not ad_category_id:
+#             raise serializers.ValidationError("Ad category is required.")
+
+#         # Retrieve expected dimensions from the Ad_category model
+#         try:
+#             ad_category_obj = Ad_category.objects.get(id=ad_category_id)
+#         except Ad_category.DoesNotExist:
+#             raise serializers.ValidationError("Invalid ad category.")
+
+#         expected_width = ad_category_obj.image_width
+#         expected_height = ad_category_obj.image_height
+
+#         # Check if the uploaded image matches the expected dimensions
+#         if image_file.width != expected_width or image_file.height != expected_height:
+#             raise serializers.ValidationError(
+#                 f"Image dimensions should be {expected_width}x{expected_height}px."
+#             )
+#         return value

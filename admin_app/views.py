@@ -1,9 +1,10 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from Accounts.models import Franchise_Type, ServiceRequest, ServiceProvider#, Franchisee
+from Accounts.models import Franchise_Type, ServiceRequest, ServiceProvider, Franchisee
+from admin_app.models import *
 from rest_framework import serializers
-from .serializer import Franchise_Type_Serializer, ServiceHistorySerializer#, FranchiseeDetailsSerializer
+from .serializer import Franchise_Type_Serializer, ServiceHistorySerializer, FranchiseeDetailsSerializer#, NewAddSerializer
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination  # Import pagination class
 from django.core.paginator import Paginator
@@ -139,27 +140,52 @@ class Service_HistoryView(APIView):
 #             'service_history_details': serialized_data
 #         })
 
-# class FranchiseeDetailsView(APIView):
-#     # To view franchisee details based on entered franchisee custom ID
+class FranchiseeDetailsView(APIView):
+    # To view franchisee details based on entered franchisee custom ID
     
+    def post(self, request, *args, **kwargs):
+        # Extract franchisee_cust_id from the request body
+        franchisee_cust_id = request.data.get('franchisee_cust_id')
+
+        if not franchisee_cust_id:
+            return Response(
+                {"error": "Franchisee ID is required."},status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Query the franchisee based on the given custom_id
+        franchisee = Franchisee.objects.filter(custom_id=franchisee_cust_id).first()
+
+        if not franchisee:
+            return Response(
+                {"error": "Franchisee not found."},status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Serialize the franchisee object
+        serialized_frdata = FranchiseeDetailsSerializer(franchisee).data
+
+        return Response(serialized_frdata, status=status.HTTP_200_OK)
+
+# class AdListView(APIView):
+#     """
+#     View to list all ads or filter based on query parameters.
+#     """
+
+#     def get(self, request, *args, **kwargs):
+#         # Optional filtering logic (e.g., filter ads by 'target_area' or date range)
+#         queryset = Ad_Management.objects.all()
+
+#         # Serialize the queryset
+#         serializer = NewAddSerializer(queryset, many=True)
+
+#         # Return the serialized data as response
+#         return Response(serializer.data, status=status.HTTP_200_OK)
+
 #     def post(self, request, *args, **kwargs):
-#         # Extract franchisee_cust_id from the request body
-#         franchisee_cust_id = request.data.get('franchisee_cust_id')
+#         # Deserialize and validate incoming data
+#         serializer = NewAddSerializer(data=request.data)
 
-#         if not franchisee_cust_id:
-#             return Response(
-#                 {"error": "Franchisee ID is required."},status=status.HTTP_400_BAD_REQUEST
-#             )
-
-#         # Query the franchisee based on the given custom_id
-#         franchisee = Franchisee.objects.filter(custom_id=franchisee_cust_id).first()
-
-#         if not franchisee:
-#             return Response(
-#                 {"error": "Franchisee not found."},status=status.HTTP_404_NOT_FOUND
-#             )
-
-#         # Serialize the franchisee object
-#         serialized_frdata = FranchiseeDetailsSerializer(franchisee).data
-
-#         return Response(serialized_frdata, status=status.HTTP_200_OK)
+#         if serializer.is_valid():
+#             serializer.save()  # Save the new ad to the database
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         else:
+#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
