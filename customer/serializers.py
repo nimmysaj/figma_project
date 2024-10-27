@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate
-from Accounts.models import Customer, ServiceRequest
+from Accounts.models import Customer, ServiceRequest,CustomerReview
 from django.contrib.auth.password_validation import validate_password
 from Accounts.models import ServiceRequest, Invoice
 
@@ -215,6 +215,10 @@ class CustomerSerializer(serializers.ModelSerializer):
         # Save the ServiceProvider instance with updated data
         instance.save()
         return instance
+class CustomerReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomerReview
+        fields = ['customer', 'service_provider', 'rating', 'image', 'comment', 'created_at']
 
 class InvoiceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -223,16 +227,16 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
 class ServiceRequestSerializer(serializers.ModelSerializer):
     invoices = InvoiceSerializer(many=True, read_only=True)  # Related invoices
-
+    reviews = CustomerReviewSerializer(many=True, read_only=True)
     class Meta:
         model = ServiceRequest
-        fields = [ 'customer',  'service', 'work_status', 'request_date', 'availability_from', 'availability_to', 'additional_notes', 'invoices']
+        fields = [ 'customer',  'service', 'work_status', 'request_date', 'availability_from', 'availability_to', 'additional_notes', 'invoices', 'reviews']
 
 class ServiceRequestDetailSerializer(serializers.ModelSerializer):
     invoices = InvoiceSerializer(many=True, read_only=True)
-
+    reviews = CustomerReviewSerializer(many=True, read_only=True)
     class Meta:
         model = ServiceRequest
-        fields = ['id', 'customer', 'service_provider', 'service', 'work_status', 'acceptance_status', 'availability_from', 'availability_to', 'additional_notes', 'invoices', 'image', 'is_active']
+        fields = ['id', 'customer', 'service_provider', 'service', 'work_status', 'acceptance_status', 'availability_from', 'availability_to', 'additional_notes', 'invoices', 'image', 'reviews']
 
 

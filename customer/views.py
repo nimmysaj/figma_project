@@ -180,7 +180,6 @@ class CompletedServiceRequestListView(generics.ListAPIView):
     def get_queryset(self):
         return ServiceRequest.objects.filter(work_status='completed')
 
-# View to get the details of a specific service request (second image data)
 class ServiceRequestDetailView(generics.RetrieveAPIView):
     queryset = ServiceRequest.objects.all()
     serializer_class = ServiceRequestDetailSerializer
