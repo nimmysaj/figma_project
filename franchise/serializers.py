@@ -13,11 +13,11 @@ class ServiceProviderListSerializer(serializers.ModelSerializer):
     contacts = serializers.SerializerMethodField()
     district = serializers.SerializerMethodField()
     created_at = serializers.DateTimeField(write_only= True)
-    franchisee_profile = serializers.SerializerMethodField() 
+
 
     class Meta:
         model = ServiceProvider
-        fields = ['name', 'id', 'registered_services', 'active_jobs', 'status', 'contacts', 'district', 'created_at', 'franchisee_profile']
+        fields = ['name', 'id', 'registered_services', 'active_jobs', 'status', 'contacts', 'district', 'created_at',]
 
     def get_contacts(self, obj):
         return{
@@ -33,17 +33,6 @@ class ServiceProviderListSerializer(serializers.ModelSerializer):
             acceptance_status = "accept",
             work_status = 'in_progress'
         ).count()
-    
-    def get_franchisee_profile(self, obj):
-        user = self.context.get('request').user
-        franchisee = Franchisee.objects.get(user=user)
-        return {
-            "name": franchisee.user.full_name,
-            "image": franchisee.profile_image.url
-            if franchisee.profile_image
-            else None,
-            "title": "Franchisee"
-        }
        
 # franchise login    
 logger = logging.getLogger(__name__)

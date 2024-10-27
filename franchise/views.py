@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from .serializers import *
-from Accounts.models import ServiceProvider
+from Accounts.models import *
 from django.views import generic
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
@@ -74,13 +74,14 @@ class ServiceProviderListView(ListAPIView):
             "id": f["id"],
             "name": f["user__full_name"]
         }
-        for f in Franchisee.objects.values('id', 'user__full_name')]
+          for f in Franchisee.objects.values('id', 'user__full_name')
+    ]
+
         return Response({
             "franchisee_profile": franchisee_profile,
-                "franchisee_list": franchisee_dropdown,
-                "service_providers": service_providers_data,
-            })
-
+            "franchisee_list": franchisee_dropdown,
+            "service_providers": service_providers_data,
+        }) 
 
 # franchise login view
 class FranchiseeLoginView(generics.GenericAPIView):
@@ -111,6 +112,3 @@ class FranchiseeLoginView(generics.GenericAPIView):
                 return Response({'detail': 'User is not a franchisee.'}, status=status.HTTP_403_FORBIDDEN)
         else:
             return Response({'detail': 'Invalid credentials.'}, status=status.HTTP_401_UNAUTHORIZED)
-
-def createserviceprovider(response):
-    return HttpResponse("create servive provider")
