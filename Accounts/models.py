@@ -463,7 +463,6 @@ class PaymentRequest(models.Model):
     def __str__(self):
         return f"Request by {self.service_provider.full_name} to {self.dealer.name} for {self.amount}"
 
-
 class ServiceRequest(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
