@@ -632,12 +632,13 @@ class Complaint(models.Model):
         self.status = 'rejected'
         self.resolution_notes = rejection_reason
         self.save()
+
 class ServiceProviderVerification(models.Model):
     inspector_name = models.CharField(max_length=100)
     inspector_role = models.CharField(max_length=100)
     member_name = models.CharField(max_length=100)
     date_of_verification = models.DateField()
-    supporting_documents = models.FileField(upload_to='payment-request/', blank=True, null=True, validators=[validate_file_size])
+    supporting_documents = models.FileField(upload_to='id-service-pro/', blank=True, null=True, validators=[validate_file_size])
     verification_status = models.CharField(max_length=50)
 
     def __str__(self):
