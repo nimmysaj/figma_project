@@ -1,6 +1,9 @@
 from django.core.management.base import BaseCommand
 from Accounts.models import State, District
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> mybranch
 
 states_and_districts = {
     'Andhra Pradesh': ['Anantapur', 'Chittoor', 'East Godavari', 'Guntur', 'Krishna', 'Kurnool', 'Prakasam', 'Srikakulam', 'Visakhapatnam', 'Vizianagaram', 'West Godavari', 'YSR Kadapa'],
@@ -54,6 +57,7 @@ class Command(BaseCommand):
                 else:
                     self.stdout.write(self.style.WARNING(f'District {district_name} already exists in state: {state_name}'))
 
+<<<<<<< HEAD
 =======
 states_and_districts = { 'Andhra Pradesh': ['Anantapur', 'Chittoor', 'East Godavari', 'Guntur', 'Krishna', 'Kurnool', 'Prakasam', 'Srikakulam', 'Visakhapatnam', 'Vizianagaram', 'West Godavari', 'YSR Kadapa'],
                          'Arunachal Pradesh': ['Tawang', 'West Kameng', 'East Kameng', 'Papum Pare', 'Kurung Kumey', 'Kra Daadi', 'Lower Subansiri', 'Upper Subansiri', 'West Siang', 'East Siang', 'Siang', 'Upper Siang', 'Lower Siang', 'Lower Dibang Valley', 'Dibang Valley', 'Anjaw', 'Lohit', 'Namsai', 'Changlang', 'Tirap', 'Longding'],
@@ -94,4 +98,6 @@ class Command(BaseCommand):
             if district_created: self.stdout.write(self.style.SUCCESS(f'Added district: {district_name} in state: {state_name}')) 
             else: self.stdout.write(self.style.WARNING(f'District {district_name} already exists in state: {state_name}')) 
 >>>>>>> branch_v
+=======
+>>>>>>> mybranch
         self.stdout.write(self.style.SUCCESS('States and districts population completed.'))

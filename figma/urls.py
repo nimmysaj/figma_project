@@ -25,6 +25,7 @@ urlpatterns = [
     path('service-provider/', include('service_provider.urls')),
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     path('api/',include('dealer.urls'))
 =======
     path('dealer/', include('dealer.urls')),
@@ -32,6 +33,9 @@ urlpatterns = [
 =======
     path('dealer/',include('Dealer.urls'))
 >>>>>>> branch_v
+=======
+    path('Dealer/', include('Dealer.urls')),
+>>>>>>> mybranch
 ]
 
 if settings.DEBUG:

@@ -3,6 +3,13 @@ from Accounts.models import ServiceProviderVerification
 
 from django.contrib.auth import authenticate
 from Accounts.models import *
+from rest_framework import serializers
+from Accounts.models import ServiceProvider
+from service_provider.serializers import UserSerializer,ServiceRegisterSerializer
+from Accounts.models import User
+from rest_framework.exceptions import ValidationError
+
+
 
 class DealerLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -26,14 +33,7 @@ class ServiceProviderVerificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = ServiceProviderVerification
         fields = '__all__'
-from rest_framework import serializers
-from Accounts.models import ServiceProvider
-from service_provider.serializers import UserSerializer,ServiceRegisterSerializer
-from Accounts.models import User
-from rest_framework.exceptions import ValidationError
 
-from django.contrib.auth import authenticate
-from Accounts.models import *
 
 class ServiceProviderSerializer(serializers.ModelSerializer):
     user = UserSerializer()
@@ -110,3 +110,29 @@ class DealerLoginSerializer(serializers.Serializer):
         attrs['user'] = user
         return attrs
     
+from Accounts.models import Dealer, Franchisee, Franchise_Type, PaymentRequest, Invoice, Payment
+
+class FranchiseeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Franchisee
+        fields = '__all__'
+
+
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Invoice
+        fields = ['invoice_number', 'total_amount', 'payment_status', 'invoice_date']  
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = ['amount_paid', 'payment_date', 'payment_status', 'transaction_id']  
+
+class PaymentRequestSerializer(serializers.ModelSerializer):
+    invoices = InvoiceSerializer(many=True, read_only=True)  
+    payments = PaymentSerializer(many=True, read_only=True)  
+
+    class Meta:
+        model = PaymentRequest
+        fields = '__all__' 

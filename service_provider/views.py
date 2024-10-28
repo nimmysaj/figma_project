@@ -12,6 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import generics,viewsets
 from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User, Notification
+from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User,Dealer, Franchisee
 from service_provider.permissions import IsOwnerOrAdmin
 from .serializers import CustomerServiceRequestSerializer, InvoiceSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestSerializer, SetNewPasswordSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer,NotificationSerializer,NotificationUpdateSerializer
 from django.utils.encoding import smart_bytes, smart_str
@@ -146,6 +147,7 @@ class ServiceProviderViewSet(viewsets.ModelViewSet):
         
         # Non-admins can only see their own profile
         return ServiceProvider.objects.filter(user=self.request.user)
+
 
 
 #service registration,update,lead balance
