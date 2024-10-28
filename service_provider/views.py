@@ -409,7 +409,6 @@ class ServiceRequestInvoiceView(APIView):
 # franchise details
 
 # Make sure this is correct
-
 class FranchiseListView(APIView):
     def get(self, request):
         franchises = Franchisee.objects.all()
