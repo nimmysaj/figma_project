@@ -1,15 +1,36 @@
+
 import re
+
 from django.contrib.auth.hashers import make_password
 from phonenumbers import NumberParseException, is_valid_number, parse
 import phonenumbers
 from rest_framework.response import Response
 from rest_framework import serializers,status
 from django.contrib.auth import authenticate
+from Accounts.models import Franchisee,Franchise_Type,User,FranchiseeRegister,ServiceProvider,User, Country_Codes
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
 import logging
+# Franchisee Login Serializer
+
+logger = logging.getLogger(__name__)
+
+class FranchiseeLoginSerializer(serializers.Serializer):
+    email_or_phone = serializers.CharField(required=True)
+    password = serializers.CharField(required=True, write_only=True)
+from Accounts.models import Franchisee,Franchise_Type,User,FranchiseeRegister,ServiceProvider
+from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from rest_framework.exceptions import ValidationError
+
+# Franchisee Login Serializer
+class FranchiseeLoginSerializer(serializers.Serializer):
+    email_or_phone = serializers.CharField()
+    password = serializers.CharField()
 from rest_framework import serializers
+import logging
+import phonenumbers
 from Accounts.models import *
 from django_filters import rest_framework as filters
 
@@ -22,11 +43,11 @@ class ServiceProviderListSerializer(serializers.ModelSerializer):
     contacts = serializers.SerializerMethodField()
     district = serializers.SerializerMethodField()
     created_at = serializers.DateTimeField(write_only= True)
-
+    franchisee_profile = serializers.SerializerMethodField() 
 
     class Meta:
         model = ServiceProvider
-        fields = ['name', 'id', 'registered_services', 'active_jobs', 'status', 'contacts', 'district', 'created_at',]
+        fields = ['name', 'id', 'registered_services', 'active_jobs', 'status', 'contacts', 'district', 'created_at', 'franchisee_profile']
 
     def get_contacts(self, obj):
         return{
@@ -42,11 +63,22 @@ class ServiceProviderListSerializer(serializers.ModelSerializer):
             acceptance_status = "accept",
             work_status = 'in_progress'
         ).count()
+    
+    def get_franchisee_profile(self, obj):
+        user = self.context.get('request').user
+        franchisee = Franchisee.objects.get(user=user)
+        return {
+            "name": franchisee.user.full_name,
+            "image": franchisee.profile_image.url
+            if franchisee.profile_image
+            else None,
+            "title": "Franchisee"
+        }
        
 # franchise login    
 logger = logging.getLogger(__name__)
 
-class FranchiseeLoginSerializer(serializers.Serializer):
+class FranchiseLoginSerializer(serializers.Serializer):
     email_or_phone = serializers.CharField()
     password = serializers.CharField()
 
@@ -54,6 +86,12 @@ class FranchiseeLoginSerializer(serializers.Serializer):
         email_or_phone = attrs.get('email_or_phone')
         password = attrs.get('password')
 
+        if not email_or_phone or not password:
+            raise serializers.ValidationError('Both email/phone and password are required.')
+
+        user = None
+
+        # Finding the user by email or phone
         if not email_or_phone:
             raise serializers.ValidationError('Email or phone is required.')
         if not password:
@@ -77,25 +115,45 @@ class FranchiseeLoginSerializer(serializers.Serializer):
                 user = User.objects.get(phone_number=number, country_code=code)
                 logger.debug(f"Found franchisee by phone: {user.email}")
             except (phonenumbers.phonenumberutil.NumberParseException, Country_Codes.DoesNotExist):
-                raise serializers.ValidationError('Invalid phone number format.')
+                raise serializers.ValidationError('Invalid phone number format')
             except User.DoesNotExist:
                 raise serializers.ValidationError('No account found with this phone number.')
 
-        # Validate franchisee status
+        # Check if user is active and is a franchisee
         if not user.is_active:
             raise serializers.ValidationError('This account is inactive.')
+
         if not user.is_franchisee:
             raise serializers.ValidationError('This account is not registered as a franchisee.')
 
-        # Check password
+        # Verify the password
         if not user.check_password(password):
-            logger.debug(f"Password verification failed for franchisee: {user.email}")
+            logger.debug(f"Password verification failed for franchisee: {user.email} with provided password.")
             raise serializers.ValidationError('Invalid password.')
 
-        logger.debug("Franchisee authentication successful.")
+        logger.debug("Franchisee authentication successful")
+        if not email_or_phone:
+            raise serializers.ValidationError('Email or phone is required.')
+        if not password:
+            raise serializers.ValidationError('Password is required.')
+
+        user = authenticate(username=email_or_phone, password=password)
+        if user is None:
+            try:
+                user = User.objects.get(phone_number=email_or_phone)
+                if not user.check_password(password):
+                    user = None
+            except User.DoesNotExist:
+                user = None
+
+        if user is None:
+            raise serializers.ValidationError('Invalid login credentials.')
+
+
         attrs['user'] = user
         return attrs
-    
+
+
 # Forgot Password and Reset Password for Franchisee
 class FranchiseePasswordForgotSerializer(serializers.Serializer):
     email_or_phone = serializers.CharField(required=True)
@@ -266,11 +324,6 @@ class ServiceProviderSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = ServiceProvider
 #         fields = ['id', 'name', 'email', 'phone', 'address', 'services_offered']
-
-
-
-#             is_active=True,
-#         )
         
 #         # Create the ServiceProvider linked to the franchisee and user
 #         service_provider = ServiceProvider.objects.create(

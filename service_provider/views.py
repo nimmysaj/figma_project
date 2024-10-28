@@ -11,18 +11,15 @@ from rest_framework import status, permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import generics,viewsets
-<<<<<<< HEAD
 from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User, Notification
-=======
-from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User , Notification
->>>>>>> notificationviews
 from service_provider.permissions import IsOwnerOrAdmin
 from .serializers import CustomerServiceRequestSerializer, InvoiceSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestSerializer, SetNewPasswordSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer,NotificationSerializer
 from django.utils.encoding import smart_bytes, smart_str
 from twilio.rest import Client
 from rest_framework.decorators import action
 from copy import deepcopy
-# Create your views here.
+import logging
+
 
 #service provider login
 class ServiceProviderLoginView(APIView):
@@ -408,7 +405,6 @@ class ServiceRequestInvoiceView(APIView):
                 {"error": "Cannot generate invoice. Accepted terms must be true."}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
-<<<<<<< HEAD
 
 
 class ServiceProviderDetail(APIView):
@@ -430,6 +426,8 @@ class ServiceProviderDetail(APIView):
 #         serializer = self.get_serializer(service_provider)
 #         return Response(serializer.data)   
 
+
+
 class NotificationListView(generics.ListAPIView):
     serializer_class = NotificationSerializer
     permission_classes = [IsAuthenticated]
@@ -437,7 +435,6 @@ class NotificationListView(generics.ListAPIView):
     def get_queryset(self):
         # Fetch notifications for the currently authenticated user
         return Notification.objects.filter(service_provider=self.request.user, is_read=False).order_by('-created_at')
-=======
 class ServiceProviderNotificationsView(APIView):
     permission_classes = []
 
@@ -468,4 +465,3 @@ class ServiceProviderNotificationsView(APIView):
         except Exception as e:
             print(f"Error: {str(e)}")  # Replace with actual logging
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)   
->>>>>>> notificationviews

@@ -1,28 +1,51 @@
+<<<<<<< HEAD
+<<<<<<< HEAD
+from django.shortcuts import render
+
+# Create your views here.
+=======
+>>>>>>> notificationviews
 from django.shortcuts import get_object_or_404, render
 from rest_framework.views import APIView
 from django.contrib.auth import authenticate
+from django.contrib.auth.models import update_last_login
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework import status, permissions
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from rest_framework import generics,viewsets
+from Accounts.models import Franchisee, FranchiseeRegister,User,ServiceProvider 
 from service_provider.permissions import IsOwnerOrAdmin
+<<<<<<< HEAD
+from .serializers import FranchiseePasswordForgotSerializer,FranchiseeRegisterSerializer, FranchiseeRegisterUpdateSerializer, ServiceProviderSerializer,  SetNewPasswordSerializer, FranchiseeLoginSerializer, FranchiseeSerializer
+=======
+from .serializers import FranchiseePasswordForgotSerializer,FranchiseeRegisterSerializer, FranchiseeRegisterUpdateSerializer, SetNewPasswordSerializer, FranchiseeLoginSerializer,FranchiseeSerializer,ServiceProviderSerializer
+>>>>>>> notificationviews
 from django.utils.encoding import smart_bytes, smart_str
 from twilio.rest import Client
 from rest_framework.decorators import action
 from copy import deepcopy
+# Franchisee Login
+class FranchiseeLoginView(APIView):
+    def post(self, request):
+        serializer = FranchiseeLoginSerializer(data=request.data)
+=======
+from django.shortcuts import render
 from .serializers import *
-from Accounts.models import *
+from Accounts.models import ServiceProvider
 from django.views import generic
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
+from rest_framework import filters, generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status
 from django.contrib.auth.models import update_last_login
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters
 from django.http import HttpResponse
 from django.shortcuts import render
 
@@ -36,7 +59,7 @@ class ServiceProviderListView(ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        franchisee_id = self.request.query_params.get('franchisee_id') # get service providers based on franchisee id for drop down menu
+        franchisee_id = self.request.query_params.get('franchisee_id')
 
         # only return service providers under the logged in franchisee
         if franchisee_id:
@@ -87,22 +110,22 @@ class ServiceProviderListView(ListAPIView):
             "id": f["id"],
             "name": f["user__full_name"]
         }
-          for f in Franchisee.objects.values('id', 'user__full_name')
-    ]
-
+        for f in Franchisee.objects.values('id', 'user__full_name')]
         return Response({
             "franchisee_profile": franchisee_profile,
-            "franchisee_list": franchisee_dropdown,
-            "service_providers": service_providers_data,
-        }) 
+                "franchisee_list": franchisee_dropdown,
+                "service_providers": service_providers_data,
+            })
+
 
 # franchise login view
 class FranchiseeLoginView(generics.GenericAPIView):
-    serializer_class = FranchiseeLoginSerializer
+    serializer_class = FranchiseLoginSerializer
 
 
     def post(self, request, *args, **kwargs):
-        serializer = FranchiseeLoginSerializer(data=request.data)
+        serializer = FranchiseLoginSerializer(data=request.data)
+>>>>>>> Amjith
         serializer.is_valid(raise_exception=True)
         email_or_phone = serializer.validated_data['email_or_phone']
         password = serializer.validated_data['password']
@@ -113,10 +136,15 @@ class FranchiseeLoginView(generics.GenericAPIView):
 
         if user and user.check_password(password):
             if user.is_franchisee:
+<<<<<<< HEAD
+                refresh = RefreshToken.for_user(user)
+                update_last_login(None, user)
+=======
                 # Create JWT token
                 refresh = RefreshToken.for_user(user)
                 update_last_login(None, user)
 
+>>>>>>> Amjith
                 return Response({
                     'refresh': str(refresh),
                     'access': str(refresh.access_token),
@@ -125,7 +153,8 @@ class FranchiseeLoginView(generics.GenericAPIView):
                 return Response({'detail': 'User is not a franchisee.'}, status=status.HTTP_403_FORBIDDEN)
         else:
             return Response({'detail': 'Invalid credentials.'}, status=status.HTTP_401_UNAUTHORIZED)
-        
+
+<<<<<<< HEAD
 # Set New Password
 class SetNewPasswordView(generics.UpdateAPIView):
     serializer_class = SetNewPasswordSerializer
@@ -273,6 +302,7 @@ class FranchiseeRegisterViewSet(viewsets.ViewSet):
             }, status=status.HTTP_200_OK)
 
         return Response({"message": "Failed to update .", "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+<<<<<<< HEAD
 
 class FranchiseServiceProviderDetailView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -289,11 +319,15 @@ class FranchiseServiceProviderDetailView(APIView):
 
         except AttributeError:
             return Response({"detail": "No associated service provider found for this franchise"}, status=404)
-            
+=======
 class AddServiceProviderView(generics.CreateAPIView):
     serializer_class = ServiceProviderSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
         serializer.save()
-        return Response({'detail': 'Invalid credentials.'}, status=status.HTTP_401_UNAUTHORIZED)
+>>>>>>> notificationviews
+=======
+def createserviceprovider(response):
+    return HttpResponse("create servive provider")
+>>>>>>> Amjith

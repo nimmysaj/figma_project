@@ -1,9 +1,6 @@
 from django.urls import include, path
-<<<<<<< HEAD
 from .views import CustomerServiceRequestView, ServiceProviderLoginView, ServiceProviderPasswordForgotView, ServiceProviderPasswordForgotView, ResetPasswordView, ServiceProviderRequestsView, ServiceProviderViewSet, ServiceRegisterViewSet, ServiceRequestInvoiceView, SetNewPasswordView, NotificationListView
-=======
 from .views import CustomerServiceRequestView, ServiceProviderLoginView, ServiceProviderPasswordForgotView, ServiceProviderPasswordForgotView, ResetPasswordView, ServiceProviderRequestsView, ServiceProviderViewSet, ServiceRegisterViewSet, ServiceRequestInvoiceView, SetNewPasswordView,ServiceProviderNotificationsView
->>>>>>> notificationviews
 from rest_framework.routers import DefaultRouter
 router = DefaultRouter()
 router.register(r'service-registers', ServiceRegisterViewSet, basename='service-register')
@@ -27,10 +24,6 @@ urlpatterns = [
     path('service-requests/', ServiceProviderRequestsView.as_view(), name='service-provider-requests'),
     path('service-requests/details/<int:pk>/', CustomerServiceRequestView.as_view(), name="details"),
     path('invoice/<int:pk>/', ServiceRequestInvoiceView.as_view(), name="invoice"),
-<<<<<<< HEAD
     path('notifications/', NotificationListView.as_view(), name='service-provider-notifications'),
-    
-=======
     path('notifications/', ServiceProviderNotificationsView.as_view(),name='service-provider-notifications'),
->>>>>>> notificationviews
 ]

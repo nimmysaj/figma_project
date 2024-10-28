@@ -4,24 +4,31 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny,IsAuthenticated
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from rest_framework.pagination import PageNumberPagination
+from rest_framework import status, permissions,generics,viewsets,serializers
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.decorators import action
+from rest_framework.throttling import UserRateThrottle
+
 from customer.permissions import IsOwnerOrAdmin
 from figma import settings
+
 from .utils import send_otp_via_email, send_otp_via_phone
 from django.utils.http import urlsafe_base64_encode
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import smart_bytes
-from .serializers import CustomerLoginSerializer,CustomerPasswordForgotSerializer, CustomerSerializer, ResendOTPSerializer, ServiceProviderProfileSerializer,ServiceProviderSerializer,RegisterSerializer, ServiceRequestDetailSerializer, ServiceRequestSerializer,SetNewPasswordSerializer
-from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-from rest_framework.pagination import PageNumberPagination
-from Accounts.models import OTP, Category, Country_Codes, Customer, Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User
-from rest_framework import status, permissions,generics,viewsets,serializers
-from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import update_last_login
 from django.core.mail import send_mail
+
+from Accounts.models import OTP, Category, Country_Codes, Customer, Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User, Notification
+
 from .serializers import CategorySerializer,SubcategorySerializer
 from rest_framework.decorators import action
 from rest_framework.throttling import UserRateThrottle
 from Accounts.models import Notification
+from .serializers import CustomerLoginSerializer,CustomerPasswordForgotSerializer, CustomerSerializer, ResendOTPSerializer, ServiceProviderProfileSerializer,ServiceProviderSerializer,RegisterSerializer, ServiceRequestDetailSerializer, ServiceRequestSerializer,SetNewPasswordSerializer
+
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -394,6 +401,14 @@ class ServiceRequestCreateView(generics.CreateAPIView):
                 notification_type='request',
                 message=notification_message
             )
+
+            # Create notification for the service provider
+            notification_message = f"New service request from {customer.full_name} for {service_register.service_name}"
+            Notification.objects.create(
+            service_request=service_request,
+            message=notification_message
+            )
+
 
             # Fetch related data in one query using select_related()
             service_request = ServiceRequest.objects.select_related(

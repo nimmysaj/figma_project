@@ -1,10 +1,11 @@
 import re
 from django.contrib.auth import get_user_model
 import phonenumbers
+import logging
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate
-from Accounts.models import Category, Country_Codes, Customer, CustomerReview, Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory
+from Accounts.models import Category, Country_Codes, Customer, CustomerReview, Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, Notification, User
 from django.contrib.auth.password_validation import validate_password
 from django.db.models import Avg
 from django.core.validators import validate_email
@@ -137,13 +138,7 @@ class ResendOTPSerializer(serializers.Serializer):
             return User.objects.get(phone_number=email_or_phone)
 
 #login customer
-from rest_framework import serializers
-from django.contrib.auth import authenticate
-from Accounts.models import User, Country_Codes
-import phonenumbers
-import logging
-
-logger = logging.getLogger(__name__)
+logger = logging.Logger(__name__)
 
 class CustomerLoginSerializer(serializers.Serializer):
     email_or_phone = serializers.CharField(required=True)
@@ -427,9 +422,8 @@ class ServiceRequestDetailSerializer(serializers.ModelSerializer):
             'availability_from',
             'availability_to',
             'acceptance_status'
-        ]    
-from Accounts.models import Notification
+        ]
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
-        fields =['id','recipient_user','sender_user','notification_type','message','is_read','created_at']        
+        fields =['id','recipient_user','sender_user','notification_type','message','is_read','created_at']          
