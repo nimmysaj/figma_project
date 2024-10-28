@@ -632,3 +632,29 @@ class Complaint(models.Model):
         self.status = 'rejected'
         self.resolution_notes = rejection_reason
         self.save()
+# Added by Greeshma
+class Notification(models.Model):
+    STATUS_CHOICES = [
+        ('new', 'New'),
+        ('updated', 'Updated'),
+    ]
+    service_register_id = models.ForeignKey(ServiceRegister, on_delete=models.CASCADE, related_name='service_register')
+    service_provider_id = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE, related_name='service_provider')
+    franchisee_id = models.ForeignKey(Franchisee, on_delete=models.CASCADE, related_name='franchisee')
+    dealer_id = models.ForeignKey(Dealer, on_delete=models.CASCADE, related_name='dealer')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new') 
+    last_updated = models.DateTimeField(auto_now=False)
+
+    def __str__(self):
+        return str(self.service_provider_id)
+
+class ServiceProviderVerification(models.Model):
+    inspector_name = models.CharField(max_length=100)
+    inspector_role = models.CharField(max_length=100)
+    member_name = models.CharField(max_length=100)
+    date_of_verification = models.DateField()
+    supporting_documents = models.FileField(upload_to='id-service-pro/', blank=True, null=True, validators=[validate_file_size])
+    verification_status = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.inspector_name
