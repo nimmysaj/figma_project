@@ -38,3 +38,33 @@ class ServiceProviderVerificationListCreate(generics.ListCreateAPIView):
 class ServiceProviderVerificationDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = ServiceProviderVerification.objects.all()
     serializer_class = ServiceProviderVerificationSerializer
+from django.shortcuts import render
+
+# Create your views here.
+from Accounts.models import ServiceProvider
+from Dealer.serializers import ServiceProviderSerializer,DealerLoginSerializer
+from rest_framework import generics
+from rest_framework import filters
+
+from rest_framework import generics, status
+from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import authenticate
+
+
+
+
+# get the list of all non verified service providers under the logged in dealer     
+class ServiceProviderVerificationListView(generics.ListAPIView):
+    queryset=ServiceProvider.objects.filter(verification_by_dealer='PENDING',accepted_terms=True,dealer=1)
+    serializer_class=ServiceProviderSerializer
+    filter_backends=[filters.SearchFilter]
+    search_fields=['user__full_name','user__district__name']
+    def get_queryset(self):
+        user = self.request.user
+        return ServiceProvider.objects.filter(
+            verification_by_dealer='PENDING', 
+            accepted_terms=True, 
+            dealer=user
+        )
+

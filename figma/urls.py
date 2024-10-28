@@ -24,10 +24,14 @@ urlpatterns = [
     path('customer/', include('customer.urls')),
     path('service-provider/', include('service_provider.urls')),
 <<<<<<< HEAD
+<<<<<<< HEAD
     path('api/',include('dealer.urls'))
 =======
     path('dealer/', include('dealer.urls')),
 >>>>>>> f568851c93265555359d959eef8979965dcd140b
+=======
+    path('dealer/',include('Dealer.urls'))
+>>>>>>> branch_v
 ]
 
 if settings.DEBUG:
