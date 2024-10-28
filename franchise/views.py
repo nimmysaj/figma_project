@@ -297,3 +297,18 @@ class AddServiceProviderView(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save()
         return Response({'detail': 'Invalid credentials.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+class FranchiseServiceProviderDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        try:
+            # Assuming the logged-in user is a franchisee
+            franchise = request.user.franchise
+            service_providers = franchise.service_provider.all()  # Assuming a related name here
+
+            serializer = ServiceProviderSerializer(service_providers, many=True)
+            return Response(serializer.data, status=200)
+
+        except AttributeError:
+            return Response({"detail": "No associated service provider found for this franchise."}, status=404)

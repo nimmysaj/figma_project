@@ -12,6 +12,7 @@ import logging
 from rest_framework import serializers
 from Accounts.models import *
 from django_filters import rest_framework as filters
+from django.contrib.auth.hashers import make_password
 
 class ServiceProviderListSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source= 'user.full_name')
@@ -45,7 +46,6 @@ class ServiceProviderListSerializer(serializers.ModelSerializer):
        
 # franchise login    
 logger = logging.getLogger(__name__)
-
 class FranchiseeLoginSerializer(serializers.Serializer):
     email_or_phone = serializers.CharField()
     password = serializers.CharField()
