@@ -11,13 +11,14 @@ from rest_framework import status, permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import generics,viewsets
-from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User
+from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User, Notification
 from service_provider.permissions import IsOwnerOrAdmin
-from .serializers import CustomerServiceRequestSerializer, InvoiceSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestSerializer, SetNewPasswordSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer
+from .serializers import CustomerServiceRequestSerializer, InvoiceSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestSerializer, SetNewPasswordSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer,NotificationSerializer,NotificationUpdateSerializer
 from django.utils.encoding import smart_bytes, smart_str
 from twilio.rest import Client
 from rest_framework.decorators import action
 from copy import deepcopy
+from datetime import datetime
 # Create your views here.
 
 #service provider login
@@ -212,7 +213,26 @@ class ServiceRegisterViewSet(viewsets.ViewSet):
             # If no existing service is found, proceed with creation
             serializer = ServiceRegisterSerializer(data=request.data)
             if serializer.is_valid():
-                serializer.save(service_provider=service_provider)
+                # Added by Greeshma
+                service_provider_instance=serializer.save(service_provider=service_provider)
+                service_register_id = service_provider_instance.id
+                service_provider_id = service_provider_instance.service_provider
+                current_datetime = datetime.now()
+                formatted_datetime = current_datetime.strftime('%Y-%m-%d %H:%M:%S')
+                serializer = NotificationSerializer(data={
+                    'service_register_id': service_register_id,
+                    'service_provider_id': service_provider_id.id,
+                    'franchisee_id': service_provider.franchisee.id,
+                    'dealer_id': service_provider.dealer.id,
+                    'status': 'new',
+                    'last_updated': formatted_datetime,
+                })
+                if serializer.is_valid():
+                    serializer.save()  # Save the notification instance
+                    # return Response(serializer.data, status=status.HTTP_201_CREATED)
+                else:
+                    return Response(serializer.errors, status=400)
+                # Added by Greeshma
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -232,7 +252,6 @@ class ServiceRegisterViewSet(viewsets.ViewSet):
     def update(self, request, pk=None):
         # Retrieve the instance or return a 404 error
         instance = get_object_or_404(ServiceRegister, pk=pk)
-
         # Check if accepted_terms is True
         accepted_terms = request.data.get('accepted_terms', False)
         if not accepted_terms:
@@ -243,10 +262,25 @@ class ServiceRegisterViewSet(viewsets.ViewSet):
 
         # Update the instance using the serializer
         serializer = ServiceRegisterUpdateSerializer(instance, data=request.data, partial=True)
-
+        print(serializer)
         if serializer.is_valid():
             serializer.save()
             instance.save()  # Save the updated instance
+            # Added by Greeshma 
+            service_notification = Notification.objects.get(service_register_id = pk)
+            if service_notification:
+                current_datetime = datetime.now()
+                formatted_datetime = current_datetime.strftime('%Y-%m-%d %H:%M:%S')
+                serializer = NotificationUpdateSerializer(instance=service_notification,data={
+                    'status' : 'updated',
+                    'last_updated': formatted_datetime    
+                })
+                if serializer.is_valid():
+                    serializer.save()  # Save the notification instance
+                    # return Response(serializer.data, status=status.HTTP_201_CREATED)
+                else:
+                    return Response(serializer.errors, status=400) 
+            # Added by Greeshma
             return Response({
                 "message": "Service updated successfully.",
                 "data": serializer.data,
