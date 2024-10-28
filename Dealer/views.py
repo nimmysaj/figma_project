@@ -16,10 +16,17 @@ from django.contrib.auth import authenticate
 
 # get the list of all non verified service providers under the logged in dealer     
 class ServiceProviderVerificationListView(generics.ListAPIView):
-    queryset=ServiceProvider.objects.filter(verification_by_dealer='PENDING',accepted_terms=True,dealer_id=1)
+    queryset=ServiceProvider.objects.filter(verification_by_dealer='PENDING',accepted_terms=True,dealer=1)
     serializer_class=ServiceProviderSerializer
     filter_backends=[filters.SearchFilter]
     search_fields=['user__full_name','user__district__name']
+    def get_queryset(self):
+        user = self.request.user
+        return ServiceProvider.objects.filter(
+            verification_by_dealer='PENDING', 
+            accepted_terms=True, 
+            dealer=user
+        )
 
 
 
