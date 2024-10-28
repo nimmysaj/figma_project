@@ -1,9 +1,6 @@
-<<<<<<< HEAD
 from django.shortcuts import render
 
 # Create your views here.
-=======
->>>>>>> notificationviews
 from django.shortcuts import get_object_or_404, render
 from rest_framework.views import APIView
 from django.contrib.auth import authenticate
@@ -19,11 +16,7 @@ from rest_framework.response import Response
 from rest_framework import generics,viewsets
 from Accounts.models import Franchisee, FranchiseeRegister,User,ServiceProvider 
 from service_provider.permissions import IsOwnerOrAdmin
-<<<<<<< HEAD
-from .serializers import FranchiseePasswordForgotSerializer,FranchiseeRegisterSerializer, FranchiseeRegisterUpdateSerializer, ServiceProviderSerializer,  SetNewPasswordSerializer, FranchiseeLoginSerializer, FranchiseeSerializer
-=======
 from .serializers import FranchiseePasswordForgotSerializer,FranchiseeRegisterSerializer, FranchiseeRegisterUpdateSerializer, SetNewPasswordSerializer, FranchiseeLoginSerializer,FranchiseeSerializer,ServiceProviderSerializer
->>>>>>> notificationviews
 from django.utils.encoding import smart_bytes, smart_str
 from twilio.rest import Client
 from rest_framework.decorators import action
@@ -200,7 +193,6 @@ class FranchiseeRegisterViewSet(viewsets.ViewSet):
             }, status=status.HTTP_200_OK)
 
         return Response({"message": "Failed to update .", "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-<<<<<<< HEAD
 
 class FranchiseServiceProviderDetailView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -217,11 +209,10 @@ class FranchiseServiceProviderDetailView(APIView):
 
         except AttributeError:
             return Response({"detail": "No associated service provider found for this franchise"}, status=404)
-=======
+            
 class AddServiceProviderView(generics.CreateAPIView):
     serializer_class = ServiceProviderSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
         serializer.save()
->>>>>>> notificationviews
