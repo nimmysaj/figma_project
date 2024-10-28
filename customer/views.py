@@ -24,6 +24,12 @@ from django.core.mail import send_mail
 from Accounts.models import OTP, Category, Country_Codes, Customer, Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User, Notification
 
 from .serializers import CategorySerializer,SubcategorySerializer
+<<<<<<< HEAD
+=======
+from rest_framework.decorators import action
+from rest_framework.throttling import UserRateThrottle
+from Accounts.models import Notification
+>>>>>>> notificationviews
 from .serializers import CustomerLoginSerializer,CustomerPasswordForgotSerializer, CustomerSerializer, ResendOTPSerializer, ServiceProviderProfileSerializer,ServiceProviderSerializer,RegisterSerializer, ServiceRequestDetailSerializer, ServiceRequestSerializer,SetNewPasswordSerializer
 
 
@@ -386,6 +392,26 @@ class ServiceRequestCreateView(generics.CreateAPIView):
                 image=request.data.get('image'),
                 booking_id=self.generate_booking_id(),
             )
+            # Fetch relted data
+            service_request = ServiceRequest.objects.select_related(
+                'customer','service_provider','service'
+            ).get(id=service_request.id)
+            #create notification for the service provider
+            notification_message = f"{customer.full_name}sent a request "
+            Notification.objects.create(
+                recipient_user=service_provider,
+                sender_user=customer,
+                notification_type='request',
+                message=notification_message
+            )
+
+            # Create notification for the service provider
+            notification_message = f"New service request from {customer.full_name} for {service_register.service_name}"
+            Notification.objects.create(
+            service_request=service_request,
+            message=notification_message
+            )
+
 
             # Create notification for the service provider
             notification_message = f"New service request from {customer.full_name} for {service_register.service_name}"

@@ -422,4 +422,12 @@ class ServiceRequestDetailSerializer(serializers.ModelSerializer):
             'availability_from',
             'availability_to',
             'acceptance_status'
+<<<<<<< HEAD
         ]    
+=======
+        ]
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields =['id','recipient_user','sender_user','notification_type','message','is_read','created_at']          
+>>>>>>> notificationviews

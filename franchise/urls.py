@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from django.urls import path
 from .views import FranchiseeLoginView,AddServiceView
 
@@ -5,3 +6,32 @@ urlpatterns = [
     path('add-service/', AddServiceView.as_view(), name='add_service'),
     path('login-franchise/', FranchiseeLoginView.as_view(), name='franchise-login'),
 ]
+=======
+from django.urls import include, path
+from .views import FranchiseServiceProviderDetailView, FranchiseeLoginView, FranchiseePasswordForgotView, ResetPasswordView,  FranchiseeViewSet, FranchiseeRegisterViewSet, SetNewPasswordView,FranchiseeRegister,Franchisee, AddServiceProviderView, ServiceProviderListView
+from .views import  FranchiseeLoginView, FranchiseePasswordForgotView, ResetPasswordView,  FranchiseeViewSet, FranchiseeRegisterViewSet, SetNewPasswordView,FranchiseeRegister,Franchisee,AddServiceProviderView,FranchiseServiceProviderDetailView
+from rest_framework.routers import DefaultRouter
+router = DefaultRouter()
+router.register(r'franchisee-registers', FranchiseeRegisterViewSet, basename='service-register')
+
+urlpatterns=[
+    path('login/', FranchiseeLoginView.as_view(), name='franchisee-login'),
+    path('set-new-password/', SetNewPasswordView.as_view(), name='set-new-password'),
+    #forgot password
+    path('password-forgot/', FranchiseePasswordForgotView.as_view(), name='franchisee-password-forgot'),
+    path('password-reset/<uidb64>/<token>/', ResetPasswordView.as_view(), name='franchisee-password-reset-confirm'),
+    #profile update
+    path('profile/<int:pk>/', FranchiseeViewSet.as_view({
+        'get': 'retrieve', 
+        'put': 'update',
+        'patch': 'partial_update'
+        }), name='profile_update'),
+    path('service-provider/', FranchiseServiceProviderDetailView.as_view(), name='franchise-service-provider-detail'),
+    path('franchisee-dashboard/add-service-provider/', AddServiceProviderView.as_view(), name='add-service-provider'),
+     path('login/', FranchiseeLoginView.as_view(), name='franchise_login'),
+    path('service-providers-list/', ServiceProviderListView.as_view(), name='service-providers-list'),
+    # path('service-providers/create/', createserviceprovider, name='create-service-provider') # redirects to the create service provider page from the list page
+    path('franchisee-dashboard/add-service-provider/', AddServiceProviderView.as_view(), name='add-service-provider'),
+    path('service-provider/',FranchiseServiceProviderDetailView.as_view(),name='servicer-provider-details'),
+]    
+>>>>>>> notificationviews

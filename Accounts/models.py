@@ -158,7 +158,7 @@ class Franchise_Type(models.Model):
     currency = models.CharField(max_length=50)
 
 class Franchisee(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='franchisee')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='franchisee')      
     custom_id = models.CharField(max_length=10, unique=True, editable=False, blank=True) 
 
     about = models.TextField()
@@ -190,7 +190,20 @@ class Franchisee(models.Model):
     @property
     def franchise_amount(self):
         """Return the amount defined in the Franchise_type."""
-        return self.type.amount  
+        return self.type.amount 
+
+class FranchiseeRegister(models.Model):
+    id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    franchisee = models.ForeignKey(Franchisee, on_delete=models.CASCADE, related_name='services')
+    description = models.TextField()
+    gstcode = models.CharField(max_length=50)
+    license = models.FileField(upload_to='franchisee-license/', blank=True, null=True, validators=[validate_file_size])
+    image = models.ImageField(upload_to='franchisee-images/', null=True, blank=True, validators=[validate_file_size])
+    status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')],default='Active')
+    accepted_terms = models.BooleanField(default=False)
+    available_lead_balance = models.IntegerField(default=0)
+    def __str__(self):
+        return self.franchise_name     
 
 
 class Dealer(models.Model):
@@ -225,7 +238,7 @@ class Dealer(models.Model):
 class ServiceProvider(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='service_provider')
     custom_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)  # Custom ID field
-
+    franchisee = models.ForeignKey(Franchisee, on_delete=models.CASCADE, related_name="service_providers")
     # Service provider-specific fields
     PAYOUT_FREQUENCY_CHOICES = [
         ('Daily', 'Daily'),
@@ -244,6 +257,7 @@ class ServiceProvider(models.Model):
     date_of_birth = models.DateField(null=True, blank=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
     about = models.TextField(null=True,blank=True)
+    created_at = models.DateTimeField(auto_now_add= True)
 
     dealer = models.ForeignKey(Dealer, on_delete=models.PROTECT)
     franchisee = models.ForeignKey(Franchisee, on_delete=models.PROTECT)
@@ -441,6 +455,19 @@ class ServiceRegister(models.Model):
             # No collar is needed for 'Daily Work' service type
             self.available_lead_balance = 0  # You can adjust logic for infinite leads here
         super(ServiceRegister, self).save(*args, **kwargs) 
+#franchisee register
+class FranchiseeRegister(models.Model):
+    id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    franchisee = models.ForeignKey(Franchisee, on_delete=models.CASCADE, related_name='services')
+    description = models.TextField()
+    gstcode = models.CharField(max_length=50)
+    license = models.FileField(upload_to='franchisee-license/', blank=True, null=True, validators=[validate_file_size])
+    image = models.ImageField(upload_to='franchisee-images/', null=True, blank=True, validators=[validate_file_size])
+    status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')],default='Active')
+    accepted_terms = models.BooleanField(default=False)
+    available_lead_balance = models.IntegerField(default=0)
+    def __str__(self):
+        return self.franchise_name    
    
 class PaymentRequest(models.Model):
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.PROTECT,related_name='from_paymentrequest')
@@ -513,13 +540,30 @@ class ServiceRequest(models.Model):
             raise ValidationError('Availability "from" time must be before "to" time.')    
 
 class Notification(models.Model):
+<<<<<<< HEAD
     service_request = models.ForeignKey(ServiceRequest, on_delete=models.CASCADE, related_name='notifications')
     message = models.CharField(max_length=255)
+=======
+    NOTIFICATION_TYPES = (
+        ('request', 'Request'),
+        ('review', 'Review'),
+        ('complaint', 'Complaint'),
+        ('payment', 'Payment'),
+        ('response', 'Response'),
+    )
+    recipient_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    sender_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    message = models.TextField()
+>>>>>>> notificationviews
     created_at = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
 
     def __str__(self):
+<<<<<<< HEAD
         return f"Notification for {self.service_request.service_provider} from {self.service_request.customer}"
+=======
+        return f"{self.NOTIFICATION_TYPES} from {self.service_request.customer} for {self.service_request.service_provider}"
+>>>>>>> notificationviews
 
 
 class Invoice(models.Model):
@@ -643,4 +687,30 @@ class Complaint(models.Model):
         self.status = 'rejected'
         self.resolution_notes = rejection_reason
         self.save()
+<<<<<<< HEAD
         
+=======
+
+
+class NotificationType(models.TextChoices):
+    SERVICE_REQUESTED = 'SERVICE_REQUESTED', 'Service Requested'
+    SERVICE_ACCEPTED = 'SERVICE_ACCEPTED', 'Service Accepted'
+    SERVICE_COMPLETED = 'SERVICE_COMPLETED', 'Service Completed'
+    
+class Notification(models.Model):
+    recipient_user = models.ForeignKey(User, related_name='notifications', on_delete=models.CASCADE)
+    sender_user = models.ForeignKey(User, related_name='sent_notifications', on_delete=models.CASCADE)
+    notification_type = models.CharField(max_length=50, choices=NotificationType.choices)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"Notification from {self.sender_user} to {self.recipient_user} - {self.notification_type}"
+
+    def mark_as_read(self):
+        self.is_read = True
+        self.save()
+        
+
+>>>>>>> notificationviews
