@@ -234,9 +234,8 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
 
 class ServiceRequestDetailSerializer(serializers.ModelSerializer):
     invoices = InvoiceSerializer(many=True, read_only=True)
-    reviews = CustomerReviewSerializer(many=True, read_only=True)
     class Meta:
         model = ServiceRequest
-        fields = ['id', 'customer', 'service_provider', 'service', 'work_status', 'acceptance_status', 'availability_from', 'availability_to', 'additional_notes', 'invoices', 'image', 'reviews']
+        fields = ['id', 'customer', 'service_provider', 'service', 'work_status', 'acceptance_status', 'availability_from', 'availability_to', 'additional_notes', 'invoices', 'image']
 
 
