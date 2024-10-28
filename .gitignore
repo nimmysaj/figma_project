@@ -13,3 +13,20 @@ migrations/
 # IDEs
 .vscode/
 .idea/
+# Ignore audio files
+*.mp3
+*.wav
+*.flac
+*.aac
+*.ogg
+*.m4a
+
+
+# Ignore all media files in the media/ directory
+media/*.jpg
+media/*.png
+media/*.mp4
+media/*.mp3
+media/*
+#venv file
+figma/

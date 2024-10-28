@@ -30,7 +30,8 @@ class Country_Codes(models.Model):
         return f"{self.country_name} ({self.calling_code})"
     
     class Meta:
-        ordering = ['calling_code']
+        #ordering = ['calling_code']
+        ordering =[ 'country_name']
 
 class State(models.Model):
     name = models.CharField(max_length=255)
@@ -632,3 +633,71 @@ class Complaint(models.Model):
         self.status = 'rejected'
         self.resolution_notes = rejection_reason
         self.save()
+
+
+from django.db import models
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+
+from django.core.exceptions import ValidationError
+
+
+# Validator for ad image size
+def validate_ad_size(image):
+    file_size = image.file.size
+    limit_kb = 500  # Setting a file size limit (in KB), adjust as per your need
+    if file_size > limit_kb * 1024:
+        raise ValidationError("Image size should not exceed 500KB.")
+
+class AdCategory(models.Model):  # Avoid spaces in class names
+    AD_TYPE_CHOICES = [
+        ('card', 'Card Ad'),
+        ('banner', 'Banner Ad'),
+    ]
+    
+    ad_title = models.CharField(max_length=100)
+    ad_type = models.CharField(max_length=50, choices=AD_TYPE_CHOICES)
+    description = models.CharField(max_length=200)
+    rate = models.DecimalField(max_digits=7, decimal_places=2)
+    currency = models.CharField(max_length=10, default="INR")
+    ad_image = models.ImageField(upload_to='ad_images/', validators=[validate_ad_size])  # Adjusted upload_to path
+    status = models.CharField(max_length=28, choices=[('Active', 'Active'), ('Inactive', 'Inactive')], default='Active')
+    total_views = models.IntegerField(null=True, blank=True)
+    total_hits = models.IntegerField(null=True, blank=True)
+    image_width = models.IntegerField()
+    image_height = models.IntegerField()
+
+    def __str__(self):
+        return self.ad_title
+
+class AdManagement(models.Model):  # Avoid spaces in class names
+    TARGET_AREA_CHOICES = [
+        ('up_to_5_km', 'Up to 5 km'),
+        ('up_to_10_km', 'Up to 10 km'),
+        ('up_to_20_km', 'Up to 20 km'),
+    ]
+    
+    title = models.CharField(max_length=100)
+    description = models.CharField(max_length=200)
+    ad_category = models.ForeignKey(AdCategory, on_delete=models.CASCADE, related_name='ads')  # Fixed the syntax
+    valid_from = models.DateTimeField()
+    valid_up_to = models.DateTimeField()
+
+    target_area = models.CharField(max_length=100, choices=TARGET_AREA_CHOICES, default='up_to_5_km')
+    total_days = models.IntegerField()
+    total_amount = models.DecimalField(max_digits=5, decimal_places=2)
+
+    def is_active(self):
+        now = timezone.now()
+        return self.valid_from <= now <= self.valid_up_to
+
+    def get_status(self):
+        now = timezone.now()
+        if self.valid_from <= now <= self.valid_up_to:
+            return 'Active'
+        elif now > self.valid_up_to:
+            return 'saved'
+        return 'unknown'
+
+    def __str__(self):
+        return self.title

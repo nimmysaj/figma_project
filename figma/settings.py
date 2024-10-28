@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
-
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -161,9 +161,9 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'  # SMTP server host
 EMAIL_PORT = 587  # SMTP port
 EMAIL_USE_TLS = True  # Use TLS encryption
-EMAIL_HOST_USER = ''  # Your email
-EMAIL_HOST_PASSWORD = ''  # Your email password
-DEFAULT_FROM_EMAIL = ''  # Default from email
+EMAIL_HOST_USER = 'abhishekkalarikkal666@gmail.com'  # Your email
+EMAIL_HOST_PASSWORD = 'vgzm lpqp ahzm wcgv'  # Your email password
+DEFAULT_FROM_EMAIL = 'abhishekkalarikkal666@gmail.com'  # Default from email
 
 # settings.py
 #TWILIO_ACCOUNT_SID = ''

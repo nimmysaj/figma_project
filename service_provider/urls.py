@@ -1,5 +1,5 @@
 from django.urls import include, path
-from .views import CustomerServiceRequestView, ServiceProviderLoginView, ServiceProviderPasswordForgotView, ServiceProviderPasswordForgotView, ResetPasswordView, ServiceProviderRequestsView, ServiceProviderViewSet, ServiceRegisterViewSet, ServiceRequestInvoiceView, SetNewPasswordView
+from .views import CustomerServiceRequestView, ServiceProviderLoginView, ServiceProviderPasswordForgotView, ServiceProviderPasswordForgotView, ResetPasswordView, ServiceProviderRequestsView, ServiceProviderViewSet, ServiceRegisterViewSet, ServiceRequestInvoiceView, SetNewPasswordView, AdManagementListView
 from rest_framework.routers import DefaultRouter
 router = DefaultRouter()
 router.register(r'service-registers', ServiceRegisterViewSet, basename='service-register')
@@ -22,6 +22,7 @@ urlpatterns = [
     #service request
     path('service-requests/', ServiceProviderRequestsView.as_view(), name='service-provider-requests'),
     path('service-requests/details/<int:pk>/', CustomerServiceRequestView.as_view(), name="details"),
-    path('invoice/<int:pk>/', ServiceRequestInvoiceView.as_view(), name="invoice")
+    path('invoice/<int:pk>/', ServiceRequestInvoiceView.as_view(), name="invoice"),
+    path('ads/', AdManagementListView.as_view(), name='ad-list'),
     
 ]

@@ -4,7 +4,7 @@ import phonenumbers
 from rest_framework.response import Response
 from rest_framework import serializers,status
 from django.contrib.auth import authenticate
-from Accounts.models import Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User  
+from Accounts.models import Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User , AdCategory, AdManagement 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
@@ -295,3 +295,27 @@ class InvoiceSerializer(serializers.ModelSerializer):
                 service_request.save()
 
         return invoice
+
+
+from rest_framework import serializers
+#from .models import AdCategory, AdManagement
+
+class AdCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AdCategory
+        fields = '__all__'
+
+class AdManagementSerializer(serializers.ModelSerializer):
+    ad_title = serializers.CharField(source='ad_category.ad_title', read_only=True)
+    description = serializers.CharField(source='ad_category.description', read_only=True) 
+    ad_image = serializers.ImageField(source='ad_category.ad_image', read_only=True)
+    total_views = serializers.IntegerField(source='ad_category.total_views', read_only=True)
+    total_hits = serializers.IntegerField(source='ad_category.total_hits', read_only=True)
+    status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AdManagement
+        fields = ['id', 'ad_title','ad_image' , 'description', 'ad_category', 'total_views', 'total_hits', 'status']
+
+    def get_status(self, obj):
+        return obj.get_status()
