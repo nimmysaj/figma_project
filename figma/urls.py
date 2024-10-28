@@ -23,7 +23,11 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('customer/', include('customer.urls')),
     path('service-provider/', include('service_provider.urls')),
+<<<<<<< HEAD
     path('api/',include('dealer.urls'))
+=======
+    path('dealer/', include('dealer.urls')),
+>>>>>>> f568851c93265555359d959eef8979965dcd140b
 ]
 
 if settings.DEBUG:
