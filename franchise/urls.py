@@ -1,6 +1,7 @@
 from django.urls import path
-from . import views
+from .views import FranchiseeLoginView,AddServiceView
 
 urlpatterns = [
-    path('add-service/', views.add_service, name='add_service'),
+    path('add-service/', AddServiceView.as_view(), name='add_service'),
+    path('login-franchise/', FranchiseeLoginView.as_view(), name='franchise-login'),
 ]
