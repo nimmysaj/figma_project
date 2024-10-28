@@ -1,5 +1,5 @@
 from django.urls import include, path
-from .views import FranchiseeLoginView, FranchiseePasswordForgotView, ResetPasswordView,  FranchiseeViewSet, FranchiseeRegisterViewSet, SetNewPasswordView,FranchiseeRegister,Franchisee,AddServiceProviderView
+from .views import  FranchiseeLoginView, FranchiseePasswordForgotView, ResetPasswordView,  FranchiseeViewSet, FranchiseeRegisterViewSet, SetNewPasswordView,FranchiseeRegister,Franchisee,AddServiceProviderView,FranchiseServiceProviderDetailView
 from rest_framework.routers import DefaultRouter
 router = DefaultRouter()
 router.register(r'franchisee-registers', FranchiseeRegisterViewSet, basename='service-register')
@@ -16,5 +16,6 @@ urlpatterns=[
         'put': 'update',
         'patch': 'partial_update'
         }), name='profile_update'),
-    path('franchisee-dashboard/add-service-provider/', AddServiceProviderView.as_view(), name='add-service-provider'),    
+    path('franchisee-dashboard/add-service-provider/', AddServiceProviderView.as_view(), name='add-service-provider'),
+    path('service-provider/',FranchiseServiceProviderDetailView.as_view(),name='servicer-provider-details'),    
 ]

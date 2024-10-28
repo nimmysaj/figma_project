@@ -8,6 +8,8 @@ from Accounts.models import Franchisee,Franchise_Type,User,FranchiseeRegister,Se
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
+from django.contrib.auth.hashers import make_password
+
 
 # Franchisee Login Serializer
 class FranchiseeLoginSerializer(serializers.Serializer):
