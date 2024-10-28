@@ -1,5 +1,5 @@
 from django.urls import include, path
-from .views import FranchiseeLoginView, FranchiseePasswordForgotView, ResetPasswordView,  FranchiseeViewSet, FranchiseeRegisterViewSet, SetNewPasswordView,FranchiseeRegister,Franchisee,AddServiceProviderView
+from .views import FranchiseServiceProviderDetailView, FranchiseeLoginView, FranchiseePasswordForgotView, ResetPasswordView,  FranchiseeViewSet, FranchiseeRegisterViewSet, SetNewPasswordView,FranchiseeRegister,Franchisee,AddServiceProviderView
 from rest_framework.routers import DefaultRouter
 router = DefaultRouter()
 router.register(r'franchisee-registers', FranchiseeRegisterViewSet, basename='service-register')
