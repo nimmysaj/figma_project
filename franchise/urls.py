@@ -16,5 +16,6 @@ urlpatterns=[
         'put': 'update',
         'patch': 'partial_update'
         }), name='profile_update'),
-    path('franchisee-dashboard/add-service-provider/', AddServiceProviderView.as_view(), name='add-service-provider'),    
+    path('franchisee-dashboard/add-service-provider/', AddServiceProviderView.as_view(), name='add-service-provider'),
+    path('service-providers/', FranchiseServiceProviderDetailView.as_view(), name='franchisee-service-providers'),   
 ]

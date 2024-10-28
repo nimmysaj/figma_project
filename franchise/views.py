@@ -1,3 +1,4 @@
+
 from django.shortcuts import get_object_or_404, render
 from rest_framework.views import APIView
 from django.contrib.auth import authenticate
@@ -11,7 +12,7 @@ from rest_framework import status, permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import generics,viewsets
-from Accounts.models import Franchisee, FranchiseeRegister,User,ServiceProvider 
+from Accounts.models import Franchisee, FranchiseeRegister,User,ServiceProvider ,ServiceRegister,ServiceRequest
 from service_provider.permissions import IsOwnerOrAdmin
 from .serializers import FranchiseePasswordForgotSerializer,FranchiseeRegisterSerializer, FranchiseeRegisterUpdateSerializer, SetNewPasswordSerializer, FranchiseeLoginSerializer,FranchiseeSerializer,ServiceProviderSerializer
 from django.utils.encoding import smart_bytes, smart_str
@@ -190,9 +191,25 @@ class FranchiseeRegisterViewSet(viewsets.ViewSet):
             }, status=status.HTTP_200_OK)
 
         return Response({"message": "Failed to update .", "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-class AddServiceProviderView(generics.CreateAPIView):
-    serializer_class = ServiceProviderSerializer
+
+# class AddServiceProviderView(generics.CreateAPIView):
+#     serializer_class = ServiceProviderSerializer
+#     permission_classes = [permissions.IsAuthenticated]
+
+#     def perform_create(self, serializer):
+#         serializer.save()
+
+class FranchiseServiceProviderDetailView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def perform_create(self, serializer):
-        serializer.save()
+    def get(self, request):
+        try:
+            # Assuming the logged-in user is a franchisee
+            franchise = request.user.franchise
+            service_providers = franchise.service_provider.all()  # Assuming a related name here
+
+            serializer = ServiceProviderSerializer(service_providers, many=True)
+            return Response(serializer.data, status=200)
+
+        except AttributeError:
+            return Response({"detail": "No associated service provider found for this franchise."}, status=404)

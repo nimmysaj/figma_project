@@ -8,6 +8,8 @@ from Accounts.models import Franchisee,Franchise_Type,User,FranchiseeRegister,Se
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
+from django.contrib.auth.hashers import make_password
+
 
 # Franchisee Login Serializer
 class FranchiseeLoginSerializer(serializers.Serializer):
@@ -170,6 +172,49 @@ class FranchiseeRegisterUpdateSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
+    
+
+
+
+
+# class ServiceProviderSerializer(serializers.ModelSerializer):
+#      password = serializers.CharField(write_only=True)
+#      franchise_name = serializers.CharField(source='franchisee.franchise_name', read_only=True)
+#      class Meta:
+#         model = ServiceProvider
+#         fields = [
+#             'photo', 'full_name', 'date_of_birth', 'email', 'phone_number', 'password',
+#             'franchise_name', 'gender', 'house_name', 'landmark', 'pincode', 'district', 
+#             'state', 'verification_id', 'verification_number', 'verification_type'
+#         ]
+    
+
+#      def validate(self, attrs):
+#         # Validate that the password meets complexity requirements (optional)
+#         password = attrs.get('password')
+#         if len(password) < 8:
+#             raise serializers.ValidationError("Password must be at least 8 characters long.")
+#         return attrs
+
+#      def create(self, validated_data):
+#         franchisee = self.context['request'].user.franchisee  # Franchisee making the request
+
+#         # Pop password from validated data and create user
+#         password = validated_data.pop('password')
+#         user = User.objects.create(
+#             username=validated_data['email'],
+#             email=validated_data['email'],
+#             password=make_password(password),
+#             is_active=True,
+#         )
+        
+#         # Create the ServiceProvider linked to the franchisee and user
+#         service_provider = ServiceProvider.objects.create(
+#             franchisee=franchisee,
+#             **validated_data
+#         )
+#         return service_provider
+     
 class ServiceProviderSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     franchise_name = serializers.CharField(source='franchisee.franchise_name', read_only=True)
