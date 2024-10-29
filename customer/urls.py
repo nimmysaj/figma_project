@@ -19,6 +19,6 @@ urlpatterns = [
         }), name='profile_update'),
     path('service-requests/ongoing/', OngoingServiceRequestListView.as_view(), name='ongoing-service-requests'),
     path('service-requests/completed/', CompletedServiceRequestListView.as_view(), name='completed-service-requests'),
-    path('service-requests/<int:id>/', ServiceRequestDetailView.as_view(), name='service-request-detail')
+    path('service-requests/', ServiceRequestDetailView.as_view(), name='service-request-detail')
 
 ]

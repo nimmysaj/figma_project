@@ -163,25 +163,44 @@ class CustomerPasswordForgotView(generics.GenericAPIView):
 
 
 class CustomerViewSet(viewsets.ModelViewSet):
-    permission_class =[IsAuthenticated]
+    permission_class = [IsAuthenticated]
     queryset =Customer.objects.all()
     serializer_class = CustomerSerializer
     
 class OngoingServiceRequestListView(generics.ListAPIView):
     serializer_class = ServiceRequestSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return ServiceRequest.objects.filter(work_status='in_progress')
 
-
 class CompletedServiceRequestListView(generics.ListAPIView):
     serializer_class = ServiceRequestSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return ServiceRequest.objects.filter(work_status='completed')
 
 class ServiceRequestDetailView(generics.RetrieveAPIView):
-    queryset = ServiceRequest.objects.all()
+    # queryset = 
     serializer_class = ServiceRequestDetailSerializer
-    lookup_field = 'id'  # Fetch details using ServiceRequest ID
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        queryset = self.request.user.from_servicerequest.filter(work_status='in_progress')
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+        # user = request.user
+        # # customer = Customer.objects.filter(user__id=user_id)
+        # # print(customer)
+
+        # try:
+        #     sr = ServiceRequest.objects.filter(customer__id=user.id, work_status='in_progress')
+        #     # sr = self.request.user.from_servicerequest.filter(work_status='in_progress')
+        #     print(sr.values())
+        #     return sr
+        # except ServiceRequest.DoesNotExist:
+        #     return Response({'detail': 'Service Request not exist.'}, status=404)
+
+        # return ServiceRequest.objects.filter(work_status='in_progress', customer__id=self.request.user.id)
 
