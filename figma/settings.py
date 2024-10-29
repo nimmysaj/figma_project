@@ -165,6 +165,8 @@ EMAIL_HOST_USER = ''  # Your email
 EMAIL_HOST_PASSWORD = ''  # Your email password
 DEFAULT_FROM_EMAIL = ''  # Default from email
 
+
+
 # settings.py
 #TWILIO_ACCOUNT_SID = ''
 #TWILIO_AUTH_TOKEN = ''

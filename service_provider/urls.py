@@ -1,5 +1,5 @@
 from django.urls import include, path
-from .views import CustomerServiceRequestView, ServiceProviderLoginView, ServiceProviderPasswordForgotView, ServiceProviderPasswordForgotView, ResetPasswordView, ServiceProviderRequestsView, ServiceProviderViewSet, ServiceRegisterViewSet, ServiceRequestInvoiceView, SetNewPasswordView, CompletedWorkListView, OngoingWorkListView, ServiceRequestStatusCheckView
+from .views import CustomerServiceRequestView, ServiceProviderLoginView, RequestOTPView, ServiceProviderRequestsView, ServiceProviderViewSet, ServiceRegisterViewSet, ServiceRequestInvoiceView, ChangePasswordView, CompletedWorkListView, OngoingWorkListView, ServiceRequestStatusCheckView, VerifyOTPAndSetPasswordView
 from rest_framework.routers import DefaultRouter
 router = DefaultRouter()
 router.register(r'service-registers', ServiceRegisterViewSet, basename='service-register')
@@ -7,10 +7,10 @@ router.register(r'service-registers', ServiceRegisterViewSet, basename='service-
 
 urlpatterns = [
     path('login/', ServiceProviderLoginView.as_view(), name='service-provider-login'),
-    path('set-new-password/', SetNewPasswordView.as_view(), name='set-new-password'),
+    path('set-new-password/', ChangePasswordView.as_view(), name='set-new-password'),
     #forgot password
-    path('password-forgot/', ServiceProviderPasswordForgotView.as_view(), name='service-provider-password-forgot'),
-    path('password-reset/<uidb64>/<token>/', ResetPasswordView.as_view(), name='service-provider-password-reset-confirm'),
+    path('password-forgot/', RequestOTPView.as_view(), name='service-provider-password-forgot'),
+    path('password-reset/', VerifyOTPAndSetPasswordView.as_view(), name='service-provider-password-reset-confirm'),
     #profile update
     path('profile/<int:pk>/', ServiceProviderViewSet.as_view({
         'get': 'retrieve', 

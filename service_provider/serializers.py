@@ -4,7 +4,7 @@ import phonenumbers
 from rest_framework.response import Response
 from rest_framework import serializers,status
 from django.contrib.auth import authenticate
-from Accounts.models import Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User, CustomerReview
+from Accounts.models import Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User, CustomerReview, OTP
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
@@ -38,6 +38,41 @@ class ServiceProviderLoginSerializer(serializers.Serializer):
         attrs['user'] = user
         return attrs
 
+#change password
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True, write_only=True)
+    new_password = serializers.CharField(required=True, write_only=True)
+    confirm_password = serializers.CharField(required=True, write_only=True)
+
+    def validate_old_password(self, value):
+        user = self.context['user']
+        if not user.check_password(value):
+            raise serializers.ValidationError("Old password is incorrect.")
+        return value
+
+    def validate_new_password(self, value):
+        validate_password(value)
+
+        if not re.search(r'[A-Z]', value):
+            raise serializers.ValidationError("Password must contain at least one uppercase letter.")
+        if not re.search(r'[a-z]', value):
+            raise serializers.ValidationError("Password must contain at least one lowercase letter.")
+        if not re.search(r'\d', value):
+            raise serializers.ValidationError("Password must contain at least one digit.")
+        if not re.search(r'[!@#$%^&*(),.?\":{}|<>]', value):
+            raise serializers.ValidationError("Password must contain at least one special character.")
+        return value
+
+    def validate(self, attrs):
+        if attrs['new_password'] != attrs['confirm_password']:
+            raise serializers.ValidationError("New password and confirm password do not match.")
+        return attrs
+
+    def save(self):
+        user = self.context['user']
+        user.set_password(self.validated_data['new_password'])
+        user.save()
+
 #Forgot Password
 class ServiceProviderPasswordForgotSerializer(serializers.Serializer):
     email_or_phone = serializers.CharField(required=True)
@@ -57,11 +92,29 @@ class ServiceProviderPasswordForgotSerializer(serializers.Serializer):
         return value    
 
 
-#Set New Passwords
-class SetNewPasswordSerializer(serializers.Serializer):
+#OTP verification
+class VerifyOTPAndSetPasswordSerializer(serializers.Serializer):
+    email_or_phone = serializers.CharField(required=True)
+    otp_code = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True, write_only=True)
     confirm_password = serializers.CharField(required=True, write_only=True)
 
+    def validate_email_or_phone(self, value):
+        if '@' in value:
+            if not re.match(r"[^@]+@[^@]+\.[^@]+", value):
+                raise serializers.ValidationError("Invalid email format.")
+        elif not re.match(r"^\+?\d{10,15}$", value):
+            raise serializers.ValidationError("Invalid phone number format.")
+        return value
+
+    def validate_otp_code(self, otp_code):
+        try:
+            otp = OTP.objects.get(user=self.context['user'], otp_code=otp_code)
+            if otp.is_expired():
+                raise serializers.ValidationError("OTP has expired.")
+        except OTP.DoesNotExist:
+            raise serializers.ValidationError("Invalid OTP code.")
+        return otp_code
 
     def validate_new_password(self, value):
         validate_password(value)
@@ -72,16 +125,22 @@ class SetNewPasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError("Password must contain at least one lowercase letter.")
         if not re.search(r'\d', value):
             raise serializers.ValidationError("Password must contain at least one digit.")
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', value):
+        if not re.search(r'[!@#$%^&*(),.?\":{}|<>]', value):
             raise serializers.ValidationError("Password must contain at least one special character.")
         return value
 
     def validate(self, attrs):
         if attrs['new_password'] != attrs['confirm_password']:
-            raise serializers.ValidationError("Passwords do not match")
+            raise serializers.ValidationError("Passwords do not match.")
+        
+        # Verify OTP code
+        self.validate_otp_code(attrs['otp_code'])
         return attrs
 
-
+    def save(self):
+        user = self.context['user']
+        user.set_password(self.validated_data['new_password'])
+        user.save()
 
 #profile updation
 class UserSerializer(serializers.ModelSerializer):
