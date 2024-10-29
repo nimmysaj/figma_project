@@ -4,7 +4,7 @@ import phonenumbers
 from rest_framework.response import Response
 from rest_framework import serializers,status
 from django.contrib.auth import authenticate
-from Accounts.models import Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User  
+from Accounts.models import Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User ,Notification
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
@@ -295,3 +295,14 @@ class InvoiceSerializer(serializers.ModelSerializer):
                 service_request.save()
 
         return invoice
+
+# Added by Greeshma
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['service_register_id', 'service_provider_id','franchisee_id','dealer_id','status','last_updated']
+
+class NotificationUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['status','last_updated']
