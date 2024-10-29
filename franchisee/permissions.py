@@ -21,4 +21,8 @@ class IsOwner(BasePermission):
     """
     def has_object_permission(self, request, view, obj):
         # Allow if the user is the owner
+<<<<<<< HEAD
         return obj.user == request.user
+=======
+        return obj.user == request.user
+>>>>>>> origin/notificationviews

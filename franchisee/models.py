@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # from django.db import models
 # from Accounts.models import ServiceProvider,Category,Subcategory
 # import uuid
@@ -32,3 +33,8 @@
 
 #     def __str__(self):
 #         return f"{self.subcategory.title} by {self.service_provider}"
+=======
+from django.db import models
+
+# Create your models here.
+>>>>>>> origin/notificationviews
