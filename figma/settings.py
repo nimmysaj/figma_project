@@ -166,8 +166,3 @@ EMAIL_USE_TLS = True  # Use TLS encryption
 EMAIL_HOST_USER = 'navyadas129@gmail.com'  # Your email
 EMAIL_HOST_PASSWORD = 'ragf fbzl uemx avqi'  # Your email password
 DEFAULT_FROM_EMAIL = ''  # Default from email
-
-# settings.py
-#TWILIO_ACCOUNT_SID = 'AC469cf91deaa610aff0147a60367b0723'
-#TWILIO_AUTH_TOKEN = '54b4703af41a6594f87ac084649773c7'
-#TWILIO_PHONE_NUMBER = '9446882619'
