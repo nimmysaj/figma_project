@@ -1,5 +1,4 @@
 from django.shortcuts import render
-<<<<<<< HEAD
 
 # Create your views here.
 from Accounts.models import ServiceProviderVerification
@@ -51,18 +50,10 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
-=======
-from rest_framework import generics, permissions
-from rest_framework.response import Response
-from Accounts.models import Dealer, Franchisee, PaymentRequest
-from Dealer.serializers import FranchiseeSerializer, PaymentRequestSerializer
-from rest_framework.pagination import PageNumberPagination
->>>>>>> mybranch
 
 
 
 
-<<<<<<< HEAD
 # get the list of all non verified service providers under the logged in dealer     
 class ServiceProviderVerificationListView(generics.ListAPIView):
     queryset=ServiceProvider.objects.filter(verification_by_dealer='PENDING',accepted_terms=True,dealer=1)
@@ -77,40 +68,3 @@ class ServiceProviderVerificationListView(generics.ListAPIView):
             dealer=user
         )
 
-=======
-
-# To list the franchisee details of the logged-in dealer
-
-class DealerFranchiseeListView(generics.ListAPIView):
-    serializer_class = FranchiseeSerializer
-    permission_classes = [permissions.IsAuthenticated]  # Ensure the user is authenticated
-
-    def get_queryset(self):
-        # Get the logged-in dealer
-        dealer = Dealer.objects.get(user=self.request.user)
-        # Return the corresponding franchisee for this dealer
-        return Franchisee.objects.filter(id=dealer.franchisee.id)
-    
-
-
-
-
-class StandardResultsSetPagination(PageNumberPagination):
-    page_size = 10  # Set the default page size
-    page_size_query_param = 'page_size'  # Allow clients to set the page size
-    max_page_size = 100 
-
-
-
-# To list the transaction history of dealer
-
-class DealerPaymentHistoryView(generics.ListAPIView):
-    serializer_class = PaymentRequestSerializer
-    permission_classes = [permissions.IsAuthenticated]  # Ensure the user is authenticated
-    pagination_class = StandardResultsSetPagination
-
-    def get_queryset(self):
-        dealer = Dealer.objects.get(user=self.request.user)
-        # Return the payment requests associated with this dealer
-        return PaymentRequest.objects.filter(dealer=dealer).order_by('-created_at')
->>>>>>> mybranch
