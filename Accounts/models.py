@@ -9,6 +9,7 @@ from django.core.validators import RegexValidator
 import phonenumbers
 from django.conf import settings
 import uuid
+from PIL import Image
 
 # Create your models here.
 phone_regex = RegexValidator(
@@ -632,3 +633,32 @@ class Complaint(models.Model):
         self.status = 'rejected'
         self.resolution_notes = rejection_reason
         self.save()
+        
+class Ad(models.Model):
+    FIXED_DIMENSIONS = {
+        'banner': (728, 90),
+        'card': (300, 250),
+        'popup': (400, 500),
+    }
+    AD_TYPE_CHOICES = [
+        ('banner', 'Banner'),
+        ('card', 'Card'),
+        ('popup', 'Popup'),
+    ]
+    ad_type = models.CharField(max_length=20, choices=AD_TYPE_CHOICES)
+    price = models.DecimalField(max_digits=6, decimal_places=2)
+    image = models.ImageField(upload_to='ads/', null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    def clean(self):
+        if self.image:
+            image = Image.open(self.image)
+            expected_dimensions = self.FIXED_DIMENSIONS.get(self.ad_type)
+            if expected_dimensions and image.size != expected_dimensions:
+                raise ValidationError(
+                    f"{self.get_ad_type_display()} requires an image of size "
+                    f"{expected_dimensions[0]}x{expected_dimensions[1]} pixels."
+                )
+    def __str__(self):
+    
+        return f"{self.get_ad_type_display()} - ₹{self.price}"

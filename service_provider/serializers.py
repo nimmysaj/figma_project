@@ -4,11 +4,11 @@ import phonenumbers
 from rest_framework.response import Response
 from rest_framework import serializers,status
 from django.contrib.auth import authenticate
-from Accounts.models import Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User  
+from Accounts.models import Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User ,Ad 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
-
+from PIL import Image
 #service provider login
 class ServiceProviderLoginSerializer(serializers.Serializer):
     email_or_phone = serializers.CharField()
@@ -295,3 +295,26 @@ class InvoiceSerializer(serializers.ModelSerializer):
                 service_request.save()
 
         return invoice
+class AdSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Ad
+        fields = ['id', 'ad_type', 'image', 'price', 'is_active']
+    
+
+    def validate(self, data):
+        if not data.get('ad_type') or not data.get('price'):
+            raise serializers.ValidationError("Ad type and price are required.")
+        image = data.get('image')
+        expected_dimensions = Ad.FIXED_DIMENSIONS.get(ad_type)
+
+        if image and expected_dimensions:
+            img = Image.open(image)
+            if img.size != expected_dimensions:
+                raise serializers.ValidationError(
+                    f"{dict(Ad.AD_TYPE_CHOICES).get(ad_type)} requires an image of size "
+                    f"{expected_dimensions[0]}x{expected_dimensions[1]} pixels."
+                )
+        
+        return data
+    
+    

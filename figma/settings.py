@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import os
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -161,11 +163,11 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'  # SMTP server host
 EMAIL_PORT = 587  # SMTP port
 EMAIL_USE_TLS = True  # Use TLS encryption
-EMAIL_HOST_USER = ''  # Your email
-EMAIL_HOST_PASSWORD = ''  # Your email password
+EMAIL_HOST_USER = 'navyadas129@gmail.com'  # Your email
+EMAIL_HOST_PASSWORD = 'ragf fbzl uemx avqi'  # Your email password
 DEFAULT_FROM_EMAIL = ''  # Default from email
 
 # settings.py
-#TWILIO_ACCOUNT_SID = ''
-#TWILIO_AUTH_TOKEN = ''
-#TWILIO_PHONE_NUMBER = ''
+#TWILIO_ACCOUNT_SID = 'AC469cf91deaa610aff0147a60367b0723'
+#TWILIO_AUTH_TOKEN = '54b4703af41a6594f87ac084649773c7'
+#TWILIO_PHONE_NUMBER = '9446882619'
