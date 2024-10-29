@@ -6,8 +6,8 @@ from rest_framework import status
 from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
-from Accounts.models import User ,Payment ,Franchisee ,Service_Type ,Collar
-from .serializers import UserSerializer, FranchiseeSerializer ,TransactionSerializer ,CollarSerializer ,ServiceTypeSerializer
+from Accounts.models import User ,Payment ,Franchisee ,Service_Type ,Collar ,Ad_category
+from .serializers import AdCategorySerializer, UserSerializer, FranchiseeSerializer ,TransactionSerializer ,CollarSerializer ,ServiceTypeSerializer
 from rest_framework.views import APIView
 
 
@@ -227,3 +227,78 @@ class CollarAPIView(APIView):
             return Response({"message": "Collar deleted."}, status=status.HTTP_204_NO_CONTENT)
         except Collar.DoesNotExist:
             return Response({"error": "Collar not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+# TASK 4 Ad Category CRUD Operations //////////////////////////////////////////////////////////////////////////////////////////////////
+
+        
+class AdCategoryAPIView(APIView):
+
+    def get_ad_category(self, pk):
+        """Helper method to retrieve Ad Category by ID."""
+        try:
+            return Ad_category.objects.get(pk=pk)
+        except Ad_category.DoesNotExist:
+            return None
+
+    def get(self, request):
+        """Retrieve an Ad Category by ID or all Ad Categories."""
+        pk = request.data.get('id', None)
+        if pk:
+            ad_category = self.get_ad_category(pk)
+            if ad_category:
+                serializer = AdCategorySerializer(ad_category)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response({"error": "Ad Category not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        ad_categories = Ad_category.objects.all()
+        serializer = AdCategorySerializer(ad_categories, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        """Create a new Ad Category."""
+        serializer = AdCategorySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request):
+        """Update an Ad Category completely using ID from the request body."""
+        pk = request.data.get('id', None)  # Extract ID from the request body
+        ad_category = self.get_ad_category(pk)  # Retrieve the current Ad Category
+
+        if ad_category:
+            # Pass the existing instance to the serializer
+            serializer = AdCategorySerializer(ad_category, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({"error": "Ad Category not found or ID not provided"}, status=status.HTTP_404_NOT_FOUND)
+
+    def patch(self, request):
+        """Partially update an Ad Category using ID from the request body."""
+        pk = request.data.get('id', None)
+        ad_category = self.get_ad_category(pk)
+
+        if ad_category:
+            serializer = AdCategorySerializer(ad_category, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response({"error": "Ad Category not found or ID not provided"}, status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request):
+        """Delete an Ad Category using ID from the request body."""
+        pk = request.data.get('id', None)
+        ad_category = self.get_ad_category(pk)
+
+        if ad_category:
+            ad_category.delete()
+            return Response({"message": "Ad Category deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+        
+        return Response({"error": "Ad Category not found or ID not provided"}, status=status.HTTP_404_NOT_FOUND)

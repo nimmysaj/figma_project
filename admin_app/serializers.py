@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from Accounts.models import User, Franchisee ,Payment ,Customer ,Dealer  ,Service_Type ,Collar
+from Accounts.models import Ad_category, User, Franchisee ,Payment ,Customer ,Dealer  ,Service_Type ,Collar
 from django.db import models 
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
@@ -251,3 +251,22 @@ class CollarSerializer(serializers.ModelSerializer):
         instance.amount = validated_data.get('amount', instance.amount)
         instance.save()
         return instance
+    
+# TASK 4 Ad category //////////////////////////////////////////////////////////////////////////////////////////////////
+
+class AdCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Ad_category
+        fields = '__all__'
+    def validate_type(self, value):
+        """Ensure that the same ad type cannot be posted more than once."""
+        if self.instance:  # If this is an update
+            # If the 'type' is unchanged, allow it
+            if self.instance.type == value:
+                return value
+        
+        # For both new and changed types, check for duplicates
+        if Ad_category.objects.filter(type=value).exists():
+            raise serializers.ValidationError(f"An Ad Category with type '{value}' already exists.")
+
+        return value
