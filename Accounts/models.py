@@ -632,3 +632,34 @@ class Complaint(models.Model):
         self.status = 'rejected'
         self.resolution_notes = rejection_reason
         self.save()
+
+class Notification(models.Model):
+    service_provider = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE)
+    notification = models.CharField(max_length=300)
+    service = models.ForeignKey(ServiceRegister, on_delete=models.CASCADE, null=True, blank=True)
+    created_date = models.DateTimeField(auto_now_add=True)
+    updated_date = models.DateTimeField(auto_now=True)
+
+    def _str_(self):
+        return f"{self.service_provider.name} - {self.notification}"
+    
+class PaymentRequestform(models.Model):
+    dealer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payment_requests')
+    full_name = models.CharField(max_length=100)
+    contact_number = models.CharField(max_length=15)
+    email_address = models.EmailField()
+    payment_method = models.CharField(max_length=50)
+    account_holder_name = models.CharField(max_length=100)
+    bank_name = models.CharField(max_length=100)
+    bank_branch = models.CharField(max_length=100)
+    account_number = models.CharField(max_length=20)
+    ifsc_code = models.CharField(max_length=11)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    supporting_documents = models.FileField(upload_to='supporting_documents/', blank=True, null=True)
+    reason = models.TextField()
+    status = models.CharField(max_length=20, choices=[('Pending', 'Pending'), ('Approved', 'Approved'), ('Rejected', 'Rejected')], default='Pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Payment Request from {self.full_name} - {self.status}"

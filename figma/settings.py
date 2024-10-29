@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'Accounts',
     'customer',
     'service_provider',
+    'Dealer',
 ]
 
 MIDDLEWARE = [
@@ -130,7 +131,7 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
-
+import os
 STATIC_URL = 'static/'
 
 MEDIA_URL = '/media/'  # The base URL to access media files

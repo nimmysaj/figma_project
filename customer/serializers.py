@@ -410,3 +410,4 @@ class ServiceRequestDetailSerializer(serializers.ModelSerializer):
             'availability_to',
             'acceptance_status'
         ]    
+
