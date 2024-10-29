@@ -1,6 +1,5 @@
 from rest_framework import serializers
-from Accounts.models import ServiceProviderVerification
-
+from Accounts.models import ServiceProviderVerification, Dealer, Franchisee, Franchise_Type, PaymentRequest, Invoice, Payment
 from django.contrib.auth import authenticate
 from Accounts.models import *
 from rest_framework import serializers
@@ -110,7 +109,7 @@ class DealerLoginSerializer(serializers.Serializer):
         attrs['user'] = user
         return attrs
     
-from Accounts.models import Dealer, Franchisee, Franchise_Type, PaymentRequest, Invoice, Payment
+
 
 class FranchiseeSerializer(serializers.ModelSerializer):
     class Meta:

@@ -632,7 +632,7 @@ class Complaint(models.Model):
         self.status = 'rejected'
         self.resolution_notes = rejection_reason
         self.save()
-# Added by Greeshma
+
 class Notification(models.Model):
     STATUS_CHOICES = [
         ('new', 'New'),

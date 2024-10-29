@@ -1,7 +1,4 @@
 from django.shortcuts import render
-<<<<<<< HEAD
-
-# Create your views here.
 from Accounts.models import ServiceProviderVerification
 from .serializers import ServiceProviderVerificationSerializer
 from rest_framework import generics, status
@@ -9,6 +6,20 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from .serializers import DealerLoginSerializer
+from Accounts.models import ServiceProvider
+from Dealer.serializers import ServiceProviderSerializer,DealerLoginSerializer
+from rest_framework import generics
+from rest_framework import filters
+
+from rest_framework import generics, status
+from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import authenticate
+from rest_framework import generics, permissions
+from rest_framework.response import Response
+from Accounts.models import Dealer, Franchisee, PaymentRequest
+from Dealer.serializers import FranchiseeSerializer, PaymentRequestSerializer
+from rest_framework.pagination import PageNumberPagination
 
 class DealerLoginView(generics.GenericAPIView):
     serializer_class = DealerLoginSerializer
@@ -41,28 +52,7 @@ class ServiceProviderVerificationDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ServiceProviderVerificationSerializer
 from django.shortcuts import render
 
-# Create your views here.
-from Accounts.models import ServiceProvider
-from Dealer.serializers import ServiceProviderSerializer,DealerLoginSerializer
-from rest_framework import generics
-from rest_framework import filters
 
-from rest_framework import generics, status
-from rest_framework.response import Response
-from rest_framework.authtoken.models import Token
-from django.contrib.auth import authenticate
-=======
-from rest_framework import generics, permissions
-from rest_framework.response import Response
-from Accounts.models import Dealer, Franchisee, PaymentRequest
-from Dealer.serializers import FranchiseeSerializer, PaymentRequestSerializer
-from rest_framework.pagination import PageNumberPagination
->>>>>>> mybranch
-
-
-
-
-<<<<<<< HEAD
 # get the list of all non verified service providers under the logged in dealer     
 class ServiceProviderVerificationListView(generics.ListAPIView):
     queryset=ServiceProvider.objects.filter(verification_by_dealer='PENDING',accepted_terms=True,dealer=1)
@@ -77,7 +67,6 @@ class ServiceProviderVerificationListView(generics.ListAPIView):
             dealer=user
         )
 
-=======
 
 # To list the franchisee details of the logged-in dealer
 
@@ -113,4 +102,3 @@ class DealerPaymentHistoryView(generics.ListAPIView):
         dealer = Dealer.objects.get(user=self.request.user)
         # Return the payment requests associated with this dealer
         return PaymentRequest.objects.filter(dealer=dealer).order_by('-created_at')
->>>>>>> mybranch
