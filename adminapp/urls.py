@@ -1,9 +1,12 @@
-from django.urls import path
+from django.urls import path, include
 from .views import ServiceRequestDetailView
 from .views import UserDetailsView,UserPaymentHistoryView
-from .views import category_list, category_detail
+from .views import category_list, category_detail,dashboard_view
 from django.conf import settings
 from django.conf.urls.static import static
+from rest_framework.routers import DefaultRouter
+
+
 
 urlpatterns = [
     path('service-request-detail/', ServiceRequestDetailView.as_view(), name='service-request-detail'),
@@ -11,5 +14,8 @@ urlpatterns = [
     path('user-payment-history-service/', UserPaymentHistoryView.as_view(), name='user-payment-history-service'),
     path('categories/', category_list, name='category-list'),
     path('categories-detail/', category_detail, name='category-detail'),
-
+    path('dashboard/',dashboard_view, name='dashboard'),
+    
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

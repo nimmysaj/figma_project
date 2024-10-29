@@ -101,6 +101,7 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser):
+    created_at = models.DateTimeField(auto_now_add = True)
     # Role-based fields
     is_customer = models.BooleanField(default=False)
     is_service_provider = models.BooleanField(default=False)

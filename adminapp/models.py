@@ -15,3 +15,7 @@ from Accounts.models import User
 from Accounts.models import District
 from Accounts.models import State
 from Accounts.models import Country_Codes
+from Accounts.models import Franchisee
+from Accounts.models import Dealer
+from Accounts.models import ServiceProvider
+from Accounts.models import Customer

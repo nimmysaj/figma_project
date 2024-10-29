@@ -12,8 +12,6 @@ from .models import Payment
 from .models import Complaint
 from .models import CustomerReview
 
-
-
 admin.site.register(ServiceRequest)
 admin.site.register(ServiceRegister)
 admin.site.register(Collar)
