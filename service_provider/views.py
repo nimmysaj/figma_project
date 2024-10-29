@@ -1,8 +1,6 @@
-<<<<<<< Updated upstream
 from django.shortcuts import render
 
 # Create your views here.
-=======
 from django.shortcuts import get_object_or_404, render
 from rest_framework.views import APIView
 from django.contrib.auth import authenticate
@@ -420,4 +418,3 @@ class NotificationListView(generics.ListAPIView):
     def get_queryset(self):
         # Fetch notifications for the currently authenticated user
         return Notification.objects.filter(service_provider=self.request.user, is_read=False).order_by('-created_at')
->>>>>>> Stashed changes
