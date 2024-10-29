@@ -19,4 +19,10 @@ from django.urls import path
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+<<<<<<< Updated upstream
+=======
+    path('customer/', include('customer.urls')),
+    path('service-provider/', include('service_provider.urls')),
+    path('franchisee/', include('franchisee.urls')),
+>>>>>>> Stashed changes
 ]
