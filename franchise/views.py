@@ -274,41 +274,14 @@ class FranchiseeRegisterViewSet(viewsets.ViewSet):
 
         return Response({"message": "Failed to update .", "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-class FranchiseServiceProviderDetailView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request):
-        try:
-            # Assuming the logged-in user is a franchise with a related service provider
-            franchise = request.user.franchise
-            service_provider = franchise.service_provider
-
-            # Serialize and return the service provider details
-            serializer = ServiceProviderSerializer(service_provider)
-            return Response(serializer.data, status=200)
-
-        except AttributeError:
-            return Response({"detail": "No associated service provider found for this franchise"}, status=404)
-            
-class AddServiceProviderView(generics.CreateAPIView):
+class ServiceProviderListView(generics.ListAPIView):
     serializer_class = ServiceProviderSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['name']
 
-    def perform_create(self, serializer):
-        serializer.save()
-        return Response({'detail': 'Invalid credentials.'}, status=status.HTTP_401_UNAUTHORIZED)
-
-class FranchiseServiceProviderDetailView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request):
-        try:
-            # Assuming the logged-in user is a franchisee
-            franchise = request.user.franchise
-            service_providers = franchise.service_provider.all()  # Assuming a related name here
-
-            serializer = ServiceProviderSerializer(service_providers, many=True)
-            return Response(serializer.data, status=200)
-
-        except AttributeError:
-            return Response({"detail": "No associated service provider found for this franchise."}, status=404)
+    def get_queryset(self):
+        # Get the franchise of the logged-in user
+        franchise = get_object_or_404(franchise, user=self.request.user)
+        # Filter service providers under the franchise
+        return ServiceProvider.objects.filter(franchise=franchise)

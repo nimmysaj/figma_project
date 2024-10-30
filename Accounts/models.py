@@ -699,5 +699,18 @@ class Notification(models.Model):
     def mark_as_read(self):
         self.is_read = True
         self.save()
-        
+
+class Review(models.Model):
+    service_provider = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE, related_name="reviews")
+    rating = models.IntegerField()
+
+    def clean(self):
+        if self.rating < 1 or self.rating > 5:
+            raise ValidationError('Rating must be between 1 and 5.')
+
+    comment = models.TextField()
+    date = models.DateTimeField(default=timezone.now)  # Track submission time
+
+    def __str__(self):
+        return f"Review for {self.service_provider} - Rating: {self.rating} on {self.date}"        
 

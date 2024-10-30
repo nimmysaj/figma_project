@@ -260,39 +260,27 @@ class ServiceProviderSerializer(serializers.ModelSerializer):
 
 
 
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+       model = Review
+       fields = ['id', 'rating', 'comment', 'date']
 
+class ServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Service_Type
+        fields = ['id', 'name', 'date']
 
-# class ServiceProviderSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = ServiceProvider
-#         fields = ['id', 'name', 'email', 'phone', 'address', 'services_offered']
+class ServiceProviderSerializer(serializers.ModelSerializer):
+    services = ServiceSerializer(many=True, read_only=True)
+    reviews = ReviewSerializer(many=True, read_only=True)
 
-
-
-#             is_active=True,
-#         )
+    class Meta:
+        model = ServiceProvider
+        fields = ['id', 'name', 'services', 'reviews']
         
-#         # Create the ServiceProvider linked to the franchisee and user
-#         service_provider = ServiceProvider.objects.create(
-#             franchisee=franchisee,
-#             **validated_data
-#         )
-#         return service_provider
-#                 raise serializers.ValidationError('Invalid phone number format.')
-#             except User.DoesNotExist:
-#                 raise serializers.ValidationError('No account found with this phone number.')
+class ServiceProviderFilter(filters.FilterSet):
+    search = filters.CharFilter(field_name='name', lookup_expr='icontains')
 
-#         # Validate franchisee status
-#         if not user.is_active:
-#             raise serializers.ValidationError('This account is inactive.')
-#         if not user.is_franchisee:
-#             raise serializers.ValidationError('This account is not registered as a franchisee.')
-
-#         # Check password
-#         if not user.check_password(password):
-#             logger.debug(f"Password verification failed for franchisee: {user.email}")
-#             raise serializers.ValidationError('Invalid password.')
-
-#         logger.debug("Franchisee authentication successful.")
-#         attrs['user'] = user
-#         return attrs
+    class Meta:
+        model = ServiceProvider
+        fields = ['search'] 

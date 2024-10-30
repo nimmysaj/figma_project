@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set VIRTUAL_ENV=D:\MERN\figma_project\myvnv_new
+set VIRTUAL_ENV=D:\my project\figma_project\myvnv_new
 
 if not defined PROMPT set PROMPT=$P$G
 
