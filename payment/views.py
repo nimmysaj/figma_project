@@ -68,16 +68,16 @@ class CreatePaymentOrderAPIView(APIView):
                 
 
                 # Update the invoice with the new remaining amount and payment status
-                invoice.payment_status = 'partially_paid'
-                invoice.payment_balance = remaining_amount
-                invoice.partial_amount = partial_amount + payment_amount
-                print(f"The invoice table partial amount:{invoice.partial_amount}")
+                #invoice.payment_status = 'partially_paid'
+                #invoice.payment_balance = remaining_amount
+                #invoice.partial_amount = partial_amount + payment_amount
+                #print(f"The invoice table partial amount:{invoice.partial_amount}")
                 payment_amount = int(payment_amount * 100)
                 print(payment_amount)
 
                 # Save the invoice after updates
-                invoice.save(update_fields=['payment_status', 'payment_balance', 'partial_amount'])
-                print(f"Invoice updated with remaining amount: {remaining_amount}, Status: Partially Paid")
+                #invoice.save(update_fields=['payment_status', 'payment_balance', 'partial_amount'])
+                #print(f"Invoice updated with remaining amount: {remaining_amount}, Status: Partially Paid")
 
             # Handling full payment
             elif payment_type == 'full':
@@ -95,12 +95,16 @@ class CreatePaymentOrderAPIView(APIView):
                     print(f"Full payment from start: {payment_amount}")
                 
                 # If full payment is made, update the invoice to 'paid'
-                invoice.payment_status = 'paid'
+                #invoice.payment_status = 'paid'
+                # If full payment is mde, update the payment balance to be 0
+                #invoice.payment_balance = 0
 
                 # Save the invoice with the new status
-                invoice.save(update_fields=['payment_status'])
-                print("Invoice updated to Paid status")
-
+                #invoice.save(update_fields=['payment_status', 'payment_balance'])
+                #print("Invoice updated to Paid status")
+            
+            
+            
             # Create the order in Razorpay
             payment_data = {
                 'amount': payment_amount,
@@ -124,7 +128,9 @@ class CreatePaymentOrderAPIView(APIView):
                 payment_status='pending',
             )
             print(f"Payment record created: {payment}")
+        
 
+            
             # Serialize payment and invoice data
             payment_serializer = PaymentSerializer(payment)
             invoice_serializer = InvoiceSerializer(invoice)
@@ -224,6 +230,7 @@ class VerifyPaymentAPIView(APIView):
             razorpay_payment_id = request.data.get('razorpay_payment_id')
             razorpay_order_id = request.data.get('razorpay_order_id')
             razorpay_signature = request.data.get('razorpay_signature')
+            
 
             if not all([razorpay_payment_id, razorpay_order_id, razorpay_signature]):
                 return Response({"error": "Required fields are missing"}, status=status.HTTP_400_BAD_REQUEST)
@@ -239,7 +246,6 @@ class VerifyPaymentAPIView(APIView):
                 msg=bytes(f"{razorpay_order_id}|{razorpay_payment_id}", 'utf-8'),
                 digestmod=hashlib.sha256
             ).hexdigest()
-
             if generated_signature != razorpay_signature:
                 return Response({"error": "Invalid signature"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -255,17 +261,36 @@ class VerifyPaymentAPIView(APIView):
 
             # Process payment status
             payment_status = payment_details['status']
+
+            # Fetch the related invoice details
+            invoice = payment_record.invoice
+
+
             if payment_status == 'captured':
                 payment_record.mark_completed()  # Set status to 'completed'
+
+                # Update the invoice status and balance only after successful payment
+                if invoice.payment_status == 'pending' and payment_record.amount_paid < invoice.total_amount:
+                    invoice.payment_status = 'partially_paid'
+                    invoice.payment_balance -= payment_record.amount_paid
+                    invoice.partial_amount = payment_record.amount_paid
+                elif payment_record.amount_paid == invoice.payment_balance:
+                    invoice.payment_status = 'paid'
+                    invoice.payment_balance = 0
+                
+                # Save updated invoice status
+                invoice.save(update_fields=['payment_status', 'payment_balance', 'partial_amount'])
+                print("updated invoice table")
             elif payment_status == 'failed':
                 payment_record.mark_failed()
             else:
                 payment_record.payment_status = 'pending'
 
             payment_record.save()
+           
 
             # Fetch the related invoice details
-            invoice = payment_record.invoice
+            #invoice = payment_record.invoice
 
             # Return both payment and invoice details in the response
             return Response({
