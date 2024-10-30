@@ -1,15 +1,5 @@
 import re
 from django.contrib.auth import get_user_model
-<<<<<<< HEAD
-from rest_framework import serializers
-from django.core.exceptions import ValidationError
-from django.contrib.auth import authenticate
-from Accounts.models import Customer
-from django.contrib.auth.password_validation import validate_password
-
-User = get_user_model()
-
-=======
 import phonenumbers
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
@@ -23,7 +13,6 @@ from rest_framework.exceptions import ValidationError
 User = get_user_model()
 
 #registration and otp verification
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 class RegisterSerializer(serializers.ModelSerializer):
     email_or_phone = serializers.CharField(required=True)
     password = serializers.CharField(write_only=True, min_length=8)
@@ -34,7 +23,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = ['email_or_phone', 'password', 'confirm_password']
     
-    def validate_new_password(self, value):
+    def validate_password(self, value):
         # Use Django's built-in password validators to validate the password
         validate_password(value)
 
@@ -62,17 +51,11 @@ class RegisterSerializer(serializers.ModelSerializer):
         # Validate email or phone number format
         if '@' in email_or_phone:
             # Check if email is already registered
-<<<<<<< HEAD
-=======
             validate_email(email_or_phone)
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
             if User.objects.filter(email=email_or_phone).exists():
                 raise serializers.ValidationError("Email is already in use")
         else:
             # Check if phone number is already registered
-<<<<<<< HEAD
-            if User.objects.filter(phone_number=email_or_phone).exists():
-=======
             #if User.objects.filter(phone_number=email_or_phone).exists():
             try:
                 parsed_number = phonenumbers.parse(email_or_phone, None)
@@ -85,9 +68,8 @@ class RegisterSerializer(serializers.ModelSerializer):
             try:
                 code=Country_Codes.objects.get(calling_code="+"+str(fullnumber.country_code))
             except Country_Codes.DoesNotExist:
-                raise serializers.ValidationError("Can't idntify country code")
+                raise serializers.ValidationError("Can't identify country code")
             if User.objects.filter(phone_number=str(fullnumber.national_number),country_code=code).exists():    
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
                 raise serializers.ValidationError("Phone number is already in use")
 
         return data
@@ -98,12 +80,6 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         # Create user based on whether email or phone is provided
         if '@' in email_or_phone:
-<<<<<<< HEAD
-            user = User.objects.create_user(email=email_or_phone, password=password)
-        else:
-            user = User.objects.create_user(phone_number=email_or_phone, password=password)
-        
-=======
             #user = User.objects.create_user(email=email_or_phone, password=password)
             user = User.objects.create(email=email_or_phone)
         else:
@@ -114,7 +90,6 @@ class RegisterSerializer(serializers.ModelSerializer):
             user = User.objects.create(country_code=code,phone_number=number)
         
         user.set_password(password)
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
         # Ensure that is_customer is always set to True during registration
         user.is_active = False  # User is inactive until OTP is verified
         user.is_customer = True
@@ -125,9 +100,6 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         return user
     
-<<<<<<< HEAD
-
-=======
 class ResendOTPSerializer(serializers.Serializer):
     email_or_phone = serializers.CharField(required=True)
 
@@ -162,10 +134,19 @@ class ResendOTPSerializer(serializers.Serializer):
         if '@' in email_or_phone:
             return User.objects.get(email=email_or_phone)
         else:
-            return User.objects.get(phone_number=email_or_phone)
+            fullnumber=phonenumbers.parse(email_or_phone,None)
+            code=Country_Codes.objects.get(calling_code="+"+str(fullnumber.country_code))
+            number=str(fullnumber.national_number)
+            return User.objects.get(country_code=code,phone_number=number)
+
+    # def get_user(self):
+    #     email_or_phone = self.validated_data['email_or_phone']
+    #     if '@' in email_or_phone:
+    #         return User.objects.get(email=email_or_phone)
+    #     else:
+    #         return User.objects.get(phone_number=email_or_phone)
 
 #login customer
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 class CustomerLoginSerializer(serializers.Serializer):
     email_or_phone = serializers.CharField(required=True)
     password = serializers.CharField(required=True, write_only=True)
@@ -188,11 +169,6 @@ class CustomerLoginSerializer(serializers.Serializer):
         else:
             # If input is phone number
             try:
-<<<<<<< HEAD
-                user = User.objects.get(phone_number=email_or_phone)
-                if not user.check_password(password):
-                    raise serializers.ValidationError('Invalid credentials.')
-=======
                 #user = User.objects.get(phone_number=email_or_phone)
                 fullnumber=phonenumbers.parse(email_or_phone,None)
                 code=Country_Codes.objects.get(calling_code="+"+str(fullnumber.country_code))
@@ -202,7 +178,6 @@ class CustomerLoginSerializer(serializers.Serializer):
                     raise serializers.ValidationError('Invalid credentials.')
             except phonenumbers.phonenumberutil.NumberParseException:
                 raise serializers.ValidationError('Wrong phone number or email format')    
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
             except User.DoesNotExist:
                 raise serializers.ValidationError('Invalid login credentials.')
 
@@ -211,12 +186,8 @@ class CustomerLoginSerializer(serializers.Serializer):
 
         attrs['user'] = user
         return attrs    
-<<<<<<< HEAD
-    
-=======
 
 #forgot password and set new pasword    
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 class CustomerPasswordForgotSerializer(serializers.Serializer):
     email_or_phone = serializers.CharField(required=True)
 
@@ -231,9 +202,6 @@ class CustomerPasswordForgotSerializer(serializers.Serializer):
                 raise serializers.ValidationError("This email is not registered with any customer.")
         else:
             # Validate as phone number
-<<<<<<< HEAD
-            if not User.objects.filter(phone_number=value, is_customer=True).exists():
-=======
             #if not User.objects.filter(phone_number=value, is_customer=True).exists():
             try:
                 fullnumber=phonenumbers.parse(value,None)
@@ -242,20 +210,15 @@ class CustomerPasswordForgotSerializer(serializers.Serializer):
             except phonenumbers.phonenumberutil.NumberParseException:
                 raise serializers.ValidationError('Wrong phone number or email format')
             if not User.objects.filter(phone_number=number,country_code=code, is_customer=True).exists():
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
                 raise serializers.ValidationError("This phone number is not registered with any customer.")
 
         return value    
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 class SetNewPasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(required=True, write_only=True)
     confirm_password = serializers.CharField(required=True, write_only=True)
     
-    def validate_password(self, value):
+    def validate_new_password(self, value):
         # Use Django's password validators to validate the password
         validate_password(value)
 
@@ -277,11 +240,7 @@ class SetNewPasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError("Passwords do not match")
         return attrs
     
-<<<<<<< HEAD
-
-=======
 #for profile creation of customers
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -312,11 +271,6 @@ class CustomerSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # Extract the nested user data from the validated data
         user_data = validated_data.pop('user')
-<<<<<<< HEAD
-        user = User.objects.create(**user_data)
-        service_provider = Customer.objects.create(user=user, **validated_data)
-        return service_provider
-=======
         
         # Check if accepted_terms is False
         if not validated_data.get('accepted_terms'):
@@ -325,17 +279,12 @@ class CustomerSerializer(serializers.ModelSerializer):
         user = User.objects.create(**user_data)
         customer = Customer.objects.create(user=user, **validated_data)
         return customer
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 
     def update(self, instance, validated_data):
         # Extract user data and handle separately
         user_data = validated_data.pop('user', None)
 
-<<<<<<< HEAD
-        # Update ServiceProvider fields
-=======
         # Update customer fields
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
@@ -350,24 +299,6 @@ class CustomerSerializer(serializers.ModelSerializer):
                 setattr(user, attr, value)
             user.save()
 
-<<<<<<< HEAD
-        # Save the ServiceProvider instance with updated data
-        instance.save()
-        return instance
-    
-
-
-
-
-
-
-
-from rest_framework import serializers
-
-class LocationSerializer(serializers.Serializer):
-    latitude = serializers.DecimalField(max_digits=10, decimal_places=6)
-    longitude = serializers.DecimalField(max_digits=10, decimal_places=6)
-=======
         # Save the customer instance with updated data
         instance.save()
         return instance
@@ -489,4 +420,52 @@ class ServiceRequestDetailSerializer(serializers.ModelSerializer):
             'availability_to',
             'acceptance_status'
         ]    
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
+#__________________________________________________________________________________________________________________________________
+
+
+class PopularServiceSerializer(serializers.ModelSerializer):
+
+    class Meta:
+
+        model=ServiceRegister
+        fields=['id','service_provider','rating','comment','created_at','available_lead_balance']
+
+class CustomerRatingSerilaizer(serializers.ModelSerializer):   #this serializer from the CustomerReview Model
+
+    class Meta:
+
+        model=CustomerReview
+        fields = ['customer','service_provider','rating','comment','created_at']
+
+# ======================================================================================================================
+
+
+class PopularServiceDetailSerializer(serializers.ModelSerializer):
+    subcategory_title = serializers.CharField(source='subcategory.title', read_only=True)
+    reviews_count = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ServiceRegister
+        fields = ['subcategory_title', 'reviews_count', 'rating']
+
+    def get_reviews_count(self, obj):
+        try:
+            # Retrieve service provider and then associated user
+            service_provider = obj.service_provider
+            user = service_provider.user  # Assuming ServiceProvider has a field 'user'
+            return CustomerReview.objects.filter(service_provider=user, rating__gte=4).count()
+        except (AttributeError, User.DoesNotExist):
+            return 0
+
+    def get_rating(self, obj):
+        try:
+            # Retrieve service provider and then associated user
+            service_provider = obj.service_provider
+            user = service_provider.user  # Assuming ServiceProvider has a field 'user'
+            avg_rating = CustomerReview.objects.filter(service_provider=user, rating__gte=4).aggregate(avg_rating=Avg('rating'))['avg_rating']
+            return avg_rating if avg_rating is not None else None
+        except (AttributeError, User.DoesNotExist):
+            return None
+# __________________________________________________________________________________________________________________________________________________-
+

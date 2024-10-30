@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-from django.shortcuts import render
-=======
 from django.shortcuts import get_object_or_404, render
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 from rest_framework.views import APIView
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import update_last_login
@@ -15,13 +11,6 @@ from rest_framework import status, permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import generics,viewsets
-<<<<<<< HEAD
-from Accounts.models import ServiceProvider, User
-from .serializers import ServiceProviderPasswordForgotSerializer, SetNewPasswordSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer
-from django.utils.encoding import smart_bytes, smart_str
-from twilio.rest import Client
-# Create your views here.
-=======
 from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User
 from service_provider.permissions import IsOwnerOrAdmin
 from .serializers import CustomerServiceRequestSerializer, InvoiceSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestSerializer, SetNewPasswordSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer
@@ -32,7 +21,6 @@ from copy import deepcopy
 # Create your views here.
 
 #service provider login
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 class ServiceProviderLoginView(APIView):
     def post(self, request):
         serializer = ServiceProviderLoginSerializer(data=request.data)
@@ -59,20 +47,12 @@ class ServiceProviderLoginView(APIView):
         else:
             return Response({'detail': 'Invalid credentials.'}, status=status.HTTP_401_UNAUTHORIZED)
 
-<<<<<<< HEAD
-
-class SetNewPasswordView(generics.UpdateAPIView):
-    serializer_class = SetNewPasswordSerializer
-    permission_classes = [permissions.IsAuthenticated]  # Ensure the user is authenticated
-
-=======
 #set new password
 class SetNewPasswordView(generics.UpdateAPIView):
     serializer_class = SetNewPasswordSerializer
     permission_classes = [permissions.IsAuthenticated,]  # Ensure the user is authenticated
     
     
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
     def post(self, request, *args, **kwargs):
         user = request.user  # Get the authenticated user
         serializer = self.get_serializer(data=request.data)
@@ -84,11 +64,7 @@ class SetNewPasswordView(generics.UpdateAPIView):
         
         return Response({'detail': 'Password has been updated successfully.'}, status=status.HTTP_200_OK)
 
-<<<<<<< HEAD
-
-=======
 #forgot password
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 class ServiceProviderPasswordForgotView(generics.GenericAPIView):
     serializer_class = ServiceProviderPasswordForgotSerializer
     permission_classes = [permissions.AllowAny]
@@ -132,16 +108,10 @@ class ServiceProviderPasswordForgotView(generics.GenericAPIView):
         #     to=user.phone_number,
         #     )
         #     print(message.sid)
-<<<<<<< HEAD
-            return Response({'details': 'Password reset link has been sent to your phone.'}, status=status.HTTP_200_OK)
-
-
-=======
             print(reset_link)
             return Response({'details': 'Password reset link has been sent to your phone.'}, status=status.HTTP_200_OK)
 
 #reset password
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 class ResetPasswordView(generics.GenericAPIView):
     serializer_class = SetNewPasswordSerializer
     permission_classes = [permissions.AllowAny]
@@ -150,6 +120,9 @@ class ResetPasswordView(generics.GenericAPIView):
         try:
             uid = smart_str(urlsafe_base64_decode(uidb64))
             user = User.objects.get(pk=uid)
+            print(uid)
+            print(user)
+            print(token)
         except (TypeError, ValueError, OverflowError, User.DoesNotExist):
             user = None
 
@@ -162,13 +135,6 @@ class ResetPasswordView(generics.GenericAPIView):
         return Response({'details': 'Invalid token or User ID'}, status=status.HTTP_400_BAD_REQUEST)
     
 
-<<<<<<< HEAD
-class ServiceProviderViewSet(viewsets.ModelViewSet):
-    permission_class =[IsAuthenticated]
-    queryset =ServiceProvider.objects.all()
-    serializer_class = ServiceProviderSerializer
-    
-=======
 #profile updation of service providers
 class ServiceProviderViewSet(viewsets.ModelViewSet):
     permission_class =[IsAuthenticated, IsOwnerOrAdmin]
@@ -441,4 +407,3 @@ class ServiceRequestInvoiceView(APIView):
                 {"error": "Cannot generate invoice. Accepted terms must be true."}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3

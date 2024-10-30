@@ -43,9 +43,5 @@ def send_otp_via_phone(user):
     # Send OTP via SMS
   #  send_otp_via_sms(user, otp.otp_code)  # Implemented earlier
     print(otp.otp_code)
-<<<<<<< HEAD
-    return otp
-=======
     return otp
 
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3

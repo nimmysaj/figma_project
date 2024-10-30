@@ -32,8 +32,4 @@ class Command(BaseCommand):
                 calling_code=f"+{calling_code}"
             )
             
-<<<<<<< HEAD
         self.stdout.write(self.style.SUCCESS('Successfully populated Country_codes model'))
-=======
-        self.stdout.write(self.style.SUCCESS('Successfully populated Country_codes model'))
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3

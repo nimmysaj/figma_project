@@ -1,14 +1,6 @@
 import re
 from phonenumbers import NumberParseException, is_valid_number, parse
 import phonenumbers
-<<<<<<< HEAD
-from rest_framework import serializers
-from django.contrib.auth import authenticate
-from Accounts.models import ServiceProvider, User  
-from django.contrib.auth import get_user_model
-from django.contrib.auth.password_validation import validate_password
-
-=======
 from rest_framework.response import Response
 from rest_framework import serializers,status
 from django.contrib.auth import authenticate
@@ -18,7 +10,6 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
 
 #service provider login
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 class ServiceProviderLoginSerializer(serializers.Serializer):
     email_or_phone = serializers.CharField()
     password = serializers.CharField()
@@ -48,11 +39,7 @@ class ServiceProviderLoginSerializer(serializers.Serializer):
         return attrs
 
 
-<<<<<<< HEAD
-
-=======
 #forgot password and reset password
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 class ServiceProviderPasswordForgotSerializer(serializers.Serializer):
     email_or_phone = serializers.CharField(required=True)
 
@@ -72,10 +59,6 @@ class ServiceProviderPasswordForgotSerializer(serializers.Serializer):
 
         return value    
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 class SetNewPasswordSerializer(serializers.Serializer):
     new_password = serializers.CharField(required=True, write_only=True)
     confirm_password = serializers.CharField(required=True, write_only=True)
@@ -93,11 +76,6 @@ class SetNewPasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError("Password must contain at least one digit.")
         if not re.search(r'[!@#$%^&*(),.?":{}|<>]', value):
             raise serializers.ValidationError("Password must contain at least one special character.")
-<<<<<<< HEAD
-
-
-=======
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
         return value
 
     def validate(self, attrs):
@@ -106,10 +84,7 @@ class SetNewPasswordSerializer(serializers.Serializer):
         return attrs
 
 
-<<<<<<< HEAD
-=======
 #profile updation
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -147,14 +122,11 @@ class ServiceProviderSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # Extract the nested user data from the validated data
         user_data = validated_data.pop('user')
-<<<<<<< HEAD
-=======
 
         # Check if accepted_terms is False
         if not validated_data.get('accepted_terms'):
             raise ValidationError({"accepted_terms": "You must accept the terms and conditions to create a profile."})
         
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
         user = User.objects.create(**user_data)
         service_provider = ServiceProvider.objects.create(user=user, **validated_data)
         return service_provider
@@ -180,9 +152,6 @@ class ServiceProviderSerializer(serializers.ModelSerializer):
 
         # Save the ServiceProvider instance with updated data
         instance.save()
-<<<<<<< HEAD
-        return instance
-=======
         return instance
     
 
@@ -326,4 +295,3 @@ class InvoiceSerializer(serializers.ModelSerializer):
                 service_request.save()
 
         return invoice
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3

@@ -1,32 +1,16 @@
-<<<<<<< HEAD
-=======
 from django.shortcuts import get_object_or_404
 import phonenumbers
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny,IsAuthenticated
-<<<<<<< HEAD
-=======
 from customer.permissions import IsOwnerOrAdmin
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 from figma import settings
 from .utils import send_otp_via_email, send_otp_via_phone
 from django.utils.http import urlsafe_base64_encode
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import smart_bytes
-<<<<<<< HEAD
-from .serializers import CustomerPasswordForgotSerializer, CustomerSerializer,RegisterSerializer,SetNewPasswordSerializer
-from Accounts.models import OTP, Customer, User
-from rest_framework import status, permissions,generics,viewsets
-from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth.models import update_last_login
-from django.core.mail import send_mail
-from .serializers import CustomerLoginSerializer
-
-=======
-from .serializers import CustomerLoginSerializer,CustomerPasswordForgotSerializer, CustomerSerializer, ResendOTPSerializer, ServiceProviderProfileSerializer,ServiceProviderSerializer,RegisterSerializer, ServiceRequestDetailSerializer, ServiceRequestSerializer,SetNewPasswordSerializer
+from .serializers import CustomerLoginSerializer,CustomerPasswordForgotSerializer, CustomerSerializer, ResendOTPSerializer, ServiceProviderProfileSerializer,ServiceProviderSerializer,RegisterSerializer, ServiceRequestDetailSerializer, ServiceRequestSerializer,SetNewPasswordSerializer,PopularServiceSerializer
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.pagination import PageNumberPagination
 from Accounts.models import OTP, Category, Country_Codes, Customer, Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User
@@ -37,9 +21,10 @@ from django.core.mail import send_mail
 from .serializers import CategorySerializer,SubcategorySerializer
 from rest_framework.decorators import action
 from rest_framework.throttling import UserRateThrottle
+# from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+# from django.utils.encoding import smart_bytes, smart_str
 
 
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
@@ -70,10 +55,6 @@ class VerifyOTPView(APIView):
         if '@' in email_or_phone:
             user = User.objects.filter(email=email_or_phone).first()
         else:
-<<<<<<< HEAD
-            user = User.objects.filter(phone_number=email_or_phone).first()
-
-=======
             try:
                 fullnumber=phonenumbers.parse(email_or_phone,None)
                 code=Country_Codes.objects.get(calling_code="+"+str(fullnumber.country_code))
@@ -82,7 +63,6 @@ class VerifyOTPView(APIView):
                 raise serializers.ValidationError('Wrong phone number or email format')
             user = User.objects.filter(phone_number=number,country_code=code).first()
             
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
         if not user:
             return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -107,8 +87,6 @@ class VerifyOTPView(APIView):
 
         return Response({"detail": "OTP verified. Account activated."}, status=status.HTTP_200_OK)
 
-<<<<<<< HEAD
-=======
 class OTPResendThrottle(UserRateThrottle):
     rate = '3/hour'  # Allows 3 requests per hour
 
@@ -132,7 +110,6 @@ class ResendOTPView(APIView):
             return Response({'message': 'OTP resent successfully.'}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 
 class CustomerLoginView(APIView):
     def post(self, request):
@@ -167,6 +144,32 @@ class SetNewPasswordView(generics.UpdateAPIView):
         user.save()
         
         return Response({'detail': 'Password has been updated successfully.'}, status=status.HTTP_200_OK)
+    
+
+# -----------------------------------------------------------------------------------------------------------------------------
+    # serializer_class = SetNewPasswordSerializer
+    # permission_classes = [permissions.AllowAny]
+
+    # def post(self, request, uidb64, token):
+    #     try:
+    #         uid = smart_str(urlsafe_base64_decode(uidb64))
+    #         user = User.objects.get(pk=uid)
+    #         print(uid)
+    #         print(user)
+    #         print(token)
+    #     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+    #         user = None
+
+    #     if user is not None and default_token_generator.check_token(user, token):
+    #         serializer = self.get_serializer(data=request.data)
+    #         serializer.is_valid(raise_exception=True)
+    #         user.set_password(serializer.validated_data['new_password'])
+    #         user.save()
+    #         return Response({'details': 'Password has been reset successfully'}, status=status.HTTP_200_OK)
+    #     return Response({'details': 'Invalid token or User ID'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# --------------------------------------------------------------------------------------------------------------------
 
 
 class CustomerPasswordForgotView(generics.GenericAPIView):
@@ -183,10 +186,7 @@ class CustomerPasswordForgotView(generics.GenericAPIView):
         if '@' in email_or_phone:
             user = User.objects.get(email=email_or_phone, is_customer=True)
         else:
-<<<<<<< HEAD
-            user = User.objects.get(phone_number=email_or_phone, is_customer=True)
-=======
-            #user = User.objects.get(phone_number=email_or_phone, is_customer=True)
+            # user = User.objects.get(phone_number=email_or_phone, is_customer=True)
             try:
                 fullnumber=phonenumbers.parse(email_or_phone,None)
                 code=Country_Codes.objects.get(calling_code="+"+str(fullnumber.country_code))
@@ -194,7 +194,6 @@ class CustomerPasswordForgotView(generics.GenericAPIView):
                 user = User.objects.get(phone_number=number,country_code=code)
             except phonenumbers.phonenumberutil.NumberParseException:
                 raise serializers.ValidationError('Wrong phone number or email format')    
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 
         # Generate the password reset token
         token = default_token_generator.make_token(user)
@@ -212,10 +211,7 @@ class CustomerPasswordForgotView(generics.GenericAPIView):
                 [user.email],
                 fail_silently=False,
             )
-<<<<<<< HEAD
-=======
             print(reset_link)
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
             return Response({'details': 'Password reset link has been sent to your email.'}, status=status.HTTP_200_OK)
         else:
             # For testing purposes, we are not sending an SMS yet, but this is where SMS logic would go
@@ -227,70 +223,11 @@ class CustomerPasswordForgotView(generics.GenericAPIView):
         #     to=user.phone_number,
         #     )
         #     print(message.sid)
-<<<<<<< HEAD
-=======
             print(reset_link)
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
             return Response({'details': 'Password reset link has been sent to your phone.'}, status=status.HTTP_200_OK)
 
 
 class CustomerViewSet(viewsets.ModelViewSet):
-<<<<<<< HEAD
-    permission_class =[IsAuthenticated]
-    queryset =Customer.objects.all()
-    serializer_class = CustomerSerializer
-    
-
-
-
-
-
-
-
-
-from django.contrib.gis.db.models.functions import Distance
-from geopy.distance import geodesic
-from django.contrib.gis.geos import Point
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from Accounts.models import ServiceProvider
-from customer.serializers import LocationSerializer
-
-class NearbyServiceProviders(APIView):
-    def post(self, request, *args, **kwargs):
-        serializer = LocationSerializer(data=request.data)
-        if serializer.is_valid():
-            user_latitude = serializer.validated_data['latitude']
-            user_longitude = serializer.validated_data['longitude']
-
-            # Create a Point for the user's current location
-            # user_location = Point(float(user_longitude), float(user_latitude))
-
-            user_location = Point(float(user_longitude), float(user_latitude), srid=4326)
-            providers_within_10km = ServiceProvider.objects.filter(
-                location__distance_lte=(user_location, Distance(km=10))
-            ).annotate(distance=Distance('location', user_location)).order_by('distance')
-                        
-
-            # Find service providers and calculate distance
-            nearby_providers = []
-            for provider in ServiceProvider.objects.filter(location__isnull=False):
-                provider_location = (provider.location.y, provider.location.x)  # (latitude, longitude)
-                user_coords = (user_latitude, user_longitude)
-
-                # Calculate distance using Geopy
-                distance = geodesic(user_coords, provider_location).km
-                if distance <= 10:  # Within 10 km radius
-                    nearby_providers.append({
-                        'service_provider_id': provider.id,
-                        'name': provider.user,
-                        'distance': distance
-                    })
-
-            return Response({'nearby_providers': nearby_providers}, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-=======
     permission_class =[IsAuthenticated,IsOwnerOrAdmin]
     queryset =Customer.objects.all()
     serializer_class = CustomerSerializer
@@ -583,4 +520,32 @@ class ServiceRequestInvoiceDetailView(APIView):
 
 
         return Response(data, status=status.HTTP_200_OK)
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
+    
+
+
+from customer.serializers import CustomerReviewSerializer,PopularServiceDetailSerializer
+from Accounts.models import ServiceRegister, CustomerReview
+from django.db.models import Avg
+
+
+class PopluarServicesListView(generics.ListAPIView):
+
+    serializer_class=PopularServiceDetailSerializer
+
+    def get_queryset(self):
+        
+        popular_registers = CustomerReview.objects.filter(rating__gt=4).values('service_provider').annotate(avg_rating=Avg('rating')).filter(avg_rating__gt=4)
+        popular_providers_ids=[item['service_provider']for item in popular_registers]
+        return ServiceRegister.objects.filter(service_provider__id__in=popular_providers_ids)
+    
+class PopularServiceProvidersView(APIView):
+
+    def get(self, request, *args, **kwargs):
+        popular_providers = CustomerReview.objects.filter(rating__gt=4).values('service_provider').annotate(avg_rating=Avg('rating')).filter(avg_rating__gt=4)
+        response_data = [{'service_provider': item['service_provider'], 'avg_rating': item['avg_rating']} for item in popular_providers]
+
+        return Response(response_data)
+
+    
+
+

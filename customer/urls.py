@@ -1,19 +1,13 @@
-<<<<<<< HEAD
-from django.urls import path
-
-from service_provider.views import ResetPasswordView
-from .views import CustomerLoginView, CustomerPasswordForgotView, CustomerViewSet, RegisterView, VerifyOTPView,NearbyServiceProviders
-=======
 from django.urls import include, path
 from service_provider.views import ResetPasswordView
-from .views import CategoryListView, CustomerLoginView, CustomerPasswordForgotView, CustomerViewSet, RegisterView, ServiceProviderDetailView, ServiceProviderListView, ServiceRequestCreateView, ServiceRequestDetailView, ServiceRequestInvoiceDetailView, SubcategoryListView, UnifiedSearchView, VerifyOTPView
+from .views import CategoryListView, CustomerLoginView, CustomerPasswordForgotView, CustomerViewSet, RegisterView, ServiceProviderDetailView, ServiceProviderListView, ServiceRequestCreateView, ServiceRequestDetailView, ServiceRequestInvoiceDetailView, SubcategoryListView, UnifiedSearchView, VerifyOTPView,ResendOTPView,SetNewPasswordView,PopluarServicesListView,PopularServiceProvidersView,GetLocationView
 from rest_framework.routers import DefaultRouter
 
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register_customer'),
     path('verify-otp/', VerifyOTPView.as_view(), name='verify-otp'),
+    path('resend-otp/', ResendOTPView.as_view(), name='resend_otp'),
     #login
     path('login/', CustomerLoginView.as_view(), name='customer-login'),
     #forgot password
@@ -25,11 +19,6 @@ urlpatterns = [
         'put': 'update',
         'patch': 'partial_update'
         }), name='profile_update'),
-<<<<<<< HEAD
-
-    path('service-providers/nearby/',NearbyServiceProviders.as_view(), name='nearby_service_providers'),
-]
-=======
     #category, subcategory, service_providers_list, detailed view of service providers
     path('categories/', CategoryListView.as_view(), name='category-list'),
     path('categories/<int:category_id>/subcategories/', SubcategoryListView.as_view(), name='subcategory-list'),
@@ -41,5 +30,7 @@ urlpatterns = [
     path('service-request/', ServiceRequestCreateView.as_view(), name='service-request-create'),
     path('view-request-user/', ServiceRequestDetailView.as_view(), name='view-request-user'),
     path('service-request-invoice/', ServiceRequestInvoiceDetailView.as_view(), name='service-request-invoice-detail'),
+    path('popular-service-registers/', PopluarServicesListView.as_view(), name='popular-service-registers'),
+    path('popular-service-providers/', PopularServiceProvidersView.as_view(), name='popular-service-providers'),
+    
 ]
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3

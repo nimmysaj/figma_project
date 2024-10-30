@@ -7,13 +7,8 @@ from django.utils import timezone
 import random
 from django.core.validators import RegexValidator
 import phonenumbers
-<<<<<<< HEAD
-from figma import settings
-from django.contrib.gis.db import models
-=======
 from django.conf import settings
 import uuid
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 
 # Create your models here.
 phone_regex = RegexValidator(
@@ -123,11 +118,7 @@ class User(AbstractBaseUser):
 
     watsapp = models.CharField(max_length=15, blank=True, null=True)
     email = models.EmailField(unique=True, null=True, blank=True)
-<<<<<<< HEAD
-    phone_number = models.CharField(max_length=15, unique=True, null=True, blank=True)
-=======
     phone_number = models.CharField(max_length=15, unique=True,validators=[phone_regex], null=True, blank=True)
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
     country_code = models.ForeignKey('Country_Codes', on_delete=models.SET_NULL, null=True, blank=True)
 
     USERNAME_FIELD = 'email'  
@@ -252,13 +243,7 @@ class ServiceProvider(models.Model):
     profile_image = models.ImageField(upload_to='s-profile-images/', null=True, blank=True, validators=[validate_file_size])
     date_of_birth = models.DateField(null=True, blank=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
-<<<<<<< HEAD
-    about = models.TextField()
-
-    location = models.PointField(geography=True, blank=True, null=True)
-=======
     about = models.TextField(null=True,blank=True)
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 
     dealer = models.ForeignKey(Dealer, on_delete=models.PROTECT)
     franchisee = models.ForeignKey(Franchisee, on_delete=models.PROTECT)
@@ -302,22 +287,29 @@ class Customer(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.custom_id:
-            # Find the last existing custom ID
-            last_custom_id = Customer.objects.order_by('custom_id').last()
-            if last_custom_id:
-                # Extract the numeric part and increment
-                match = re.match(r'USER(\d+)', last_custom_id.custom_id)
-                if match:
-                    customer_number = int(match.group(1)) + 1
-                else:
-                    customer_number = 1  # Start from 1 if no previous ID found
-            else:
-                customer_number = 1  # Start from 1 if no previous ID found
-
-            # Create the custom ID with the USER prefix
-            self.custom_id = f'USER{customer_number}'  # No leading zeros
+            # Combine to form the custom ID
+            self.custom_id = f'USER{self.user.id}'  
 
         super(Customer, self).save(*args, **kwargs)
+
+    # def save(self, *args, **kwargs):
+    #     if not self.custom_id:
+    #         # Find the last existing custom ID
+    #         last_custom_id = Customer.objects.order_by('custom_id').last()
+    #         if last_custom_id:
+    #             # Extract the numeric part and increment
+    #             match = re.match(r'USER(\d+)', last_custom_id.custom_id)
+    #             if match:
+    #                 customer_number = int(match.group(1)) + 1
+    #             else:
+    #                 customer_number = 1  # Start from 1 if no previous ID found
+    #         else:
+    #             customer_number = 1  # Start from 1 if no previous ID found
+
+    #         # Create the custom ID with the USER prefix
+    #         self.custom_id = f'USER{customer_number}'  # No leading zeros
+
+    #     super(Customer, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.custom_id
@@ -348,12 +340,8 @@ class OTP(models.Model):
 class Service_Type(models.Model):
     name = models.CharField(max_length=255)
     details = models.TextField()
-<<<<<<< HEAD
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-=======
     #amount = models.DecimalField(max_digits=10, decimal_places=2)
     curreny=models.CharField(max_length=10,null=True,blank=True, default="INR")
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 
     def __str__(self):
         return self.name  
@@ -362,11 +350,7 @@ class Collar(models.Model):
     name = models.CharField(max_length=255)
     lead_quantity = models.IntegerField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-<<<<<<< HEAD
-    currency = models.CharField(max_length=50)
-=======
     #currency = models.CharField(max_length=50)
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 
     def __str__(self):
         return self.name  
@@ -386,57 +370,25 @@ class Subcategory(models.Model):
     image = models.ImageField(upload_to='subcategory-images/', null=True, blank=True, validators=[validate_file_size])  
     description = models.TextField() 
     service_type = models.ForeignKey(Service_Type, on_delete=models.PROTECT,related_name='service_type')
-<<<<<<< HEAD
-=======
     collar = models.ForeignKey(Collar,on_delete=models.PROTECT,related_name='collar')
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')]) 
 
     def __str__(self):
         return self.title  
 
 class ServiceRegister(models.Model):
-<<<<<<< HEAD
-=======
     id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE, related_name='services')
     description = models.TextField()
     gstcode = models.CharField(max_length=50)
     category = models.ForeignKey(Category, on_delete=models.PROTECT,related_name='serviceregister_category')    
     subcategory = models.ForeignKey(Subcategory, on_delete=models.PROTECT,related_name='serviceregister_subcategory') 
-<<<<<<< HEAD
-    collar = models.ForeignKey(Collar, on_delete=models.PROTECT,related_name='collar') 
-    amount_forthis_service = models.DecimalField(max_digits=10, decimal_places=2)
-=======
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
     license = models.FileField(upload_to='service-license/', blank=True, null=True, validators=[validate_file_size])
     image = models.ImageField(upload_to='service-images/', null=True, blank=True, validators=[validate_file_size])
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')],default='Active')
     accepted_terms = models.BooleanField(default=False)
-<<<<<<< HEAD
-
-    def __str__(self):
-        return self.title  
-    
-    def basic_amount(self):
-        # Get the base amount from the subcategory's service_type amount
-        basic_amount = self.subcategory.service_type.amount
-
-        # Only add collar amount if the subcategory is 'one time lead' and collar is not None
-        if self.subcategory == 'one_time_lead' and self.collar:
-            basic_amount += self.collar.amount
-
-        return basic_amount
-    
-    def save(self, *args, **kwargs):
-        # If subcategory is not 'one_time_lead', set collar to None
-        if self.subcategory != 'one_time_lead':
-            self.collar = None
-        super().save(*args, **kwargs)
-
-=======
     available_lead_balance = models.IntegerField(default=0)
+    # rating = models.FloatField(default=0.0)
 
     def __str__(self):
         return f"{self.subcategory.title} by {self.service_provider}"
@@ -497,7 +449,6 @@ class ServiceRegister(models.Model):
             self.available_lead_balance = 0  # You can adjust logic for infinite leads here
         super(ServiceRegister, self).save(*args, **kwargs) 
    
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 class PaymentRequest(models.Model):
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.PROTECT,related_name='from_paymentrequest')
     dealer = models.ForeignKey(Dealer, on_delete=models.PROTECT,related_name='to_paymentrequest')
@@ -520,24 +471,25 @@ class PaymentRequest(models.Model):
     def __str__(self):
         return f"Request by {self.service_provider.full_name} to {self.dealer.name} for {self.amount}"
 
-class CustomerReview(models.Model):
-    RATING_CHOICES = [
-        (1, '1 Star'),
-        (2, '2 Stars'),
-        (3, '3 Stars'),
-        (4, '4 Stars'),
-        (5, '5 Stars'),
-    ]
+# class CustomerReview(models.Model):
+    # RATING_CHOICES = [
+    #     (1, '1 Star'),
+    #     (2, '2 Stars'),
+    #     (3, '3 Stars'),
+    #     (4, '4 Stars'),
+    #     (5, '5 Stars'),
+    # ]
 
-    customer = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_review')  # The customer leaving the review
-    service_provider = models.ForeignKey(User, on_delete=models.PROTECT,related_name='to_review')  # The service provider being reviewed
-    rating = models.IntegerField(choices=RATING_CHOICES)  # Rating from 1 to 5 stars
-    image = models.ImageField(upload_to='reviews/', null=True, blank=True, validators=[validate_file_size])
-    comment = models.TextField(blank=True, null=True)  # Optional comment
-    created_at = models.DateTimeField(auto_now_add=True)  # Auto-set the review date
+    # customer = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_review')  # The customer leaving the review
+    # service_provider = models.ForeignKey(User, on_delete=models.PROTECT,related_name='to_review')  # The service provider being reviewed
+    # service_request = models.ForeignKey(ServiceRequest,on_delete=models.SET_NULL,null=True,blank=True,related_name='servicerequest')
+    # rating = models.IntegerField(choices=RATING_CHOICES)  # Rating from 1 to 5 stars
+    # image = models.ImageField(upload_to='reviews/', null=True, blank=True, validators=[validate_file_size])
+    # comment = models.TextField(blank=True, null=True)  # Optional comment
+    # created_at = models.DateTimeField(auto_now_add=True)  # Auto-set the review date
 
-    def __str__(self):
-        return f"{self.customer.full_name} - {self.service_provider.full_name} ({self.rating} stars)"
+    # def __str__(self):
+    #     return f"{self.customer.full_name} - {self.service_provider.full_name} ({self.rating} stars)"
     
 class ServiceRequest(models.Model):
     STATUS_CHOICES = [
@@ -546,13 +498,9 @@ class ServiceRequest(models.Model):
         ('completed', 'Completed'),
         ('cancelled', 'Cancelled'),
     ]
-<<<<<<< HEAD
-
-=======
     
     booking_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     title = models.CharField(max_length=20,null=True,blank=True)
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
     customer = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_servicerequest')
     service_provider = models.ForeignKey(User, on_delete=models.PROTECT,related_name='to_servicerequest')
     service = models.ForeignKey(ServiceRegister, on_delete=models.PROTECT,related_name='servicerequest')
@@ -565,32 +513,45 @@ class ServiceRequest(models.Model):
     image = models.ImageField(upload_to='service_request/', null=True, blank=True, validators=[validate_file_size])
 
     def __str__(self):
-<<<<<<< HEAD
-        return f"Request by {self.customer.full_name} for {self.service.title} ({self.acceptance_status})"
-=======
         return f"Request by {self.customer.full_name} for {self.service} ({self.acceptance_status})"
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 
     def clean(self):
         # Ensure the availability_from is before availability_to
         if self.availability_from >= self.availability_to:
             raise ValidationError('Availability "from" time must be before "to" time.')    
 
+class CustomerReview(models.Model):
+    RATING_CHOICES = [
+        (1, '1 Star'),
+        (2, '2 Stars'),
+        (3, '3 Stars'),
+        (4, '4 Stars'),
+        (5, '5 Stars'),
+    ]
+
+    customer = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_review')  # The customer leaving the review
+    service_provider = models.ForeignKey(User, on_delete=models.PROTECT,related_name='to_review')  # The service provider being reviewed
+    service_request = models.ForeignKey(ServiceRequest,on_delete=models.SET_NULL,null=True,blank=True,related_name='servicerequest')
+    rating = models.IntegerField(choices=RATING_CHOICES)  # Rating from 1 to 5 stars
+    image = models.ImageField(upload_to='reviews/', null=True, blank=True, validators=[validate_file_size])
+    comment = models.TextField(blank=True, null=True)  # Optional comment
+    created_at = models.DateTimeField(auto_now_add=True)  # Auto-set the review date
+
+    def __str__(self):
+        return f"{self.customer.full_name} - {self.service_provider.full_name} ({self.rating} stars)"
+    
+
+
+
 class Invoice(models.Model):
     INVOICE_TYPE_CHOICES = [
         ('service_request', 'Service Request'),
         ('dealer_payment', 'Dealer Payment'),
         ('provider_payment', 'Service Provider Payment'),
-<<<<<<< HEAD
-    ]
-    
-    invoice_number = models.IntegerField()
-=======
         ('Ads' ,'Ads')
     ]
     
     invoice_number = models.PositiveIntegerField(unique=True, editable=False)
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 
     #invoice_type: This field determines whether the invoice is related to a Service Request payment (service_request), a Dealer Payment (dealer_payment), or a Service Provider Payment (provider_payment).
     invoice_type = models.CharField(max_length=20, choices=INVOICE_TYPE_CHOICES)
@@ -599,13 +560,8 @@ class Invoice(models.Model):
     service_request = models.ForeignKey(ServiceRequest, on_delete=models.SET_NULL, null=True, blank=True,related_name='invoices')
 
     # Sender (user who is paying) and receiver (user receiving payment)
-<<<<<<< HEAD
-    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_invoices')
-    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_invoices')
-=======
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_payment')
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_payment')
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
     
     quantity = models.IntegerField(null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -635,24 +591,18 @@ class Invoice(models.Model):
         self.payment_status = 'cancelled'
         self.save()
 
-<<<<<<< HEAD
-=======
     def save(self, *args, **kwargs):
         if not self.invoice_number:
             last_invoice = Invoice.objects.order_by('invoice_number').last()
             self.invoice_number = last_invoice.invoice_number + 1 if last_invoice else 1
         super().save(*args, **kwargs)    
 
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 class Payment(models.Model):
 
     PAYMENT_STATUS_CHOICES = [
         ('pending', 'Pending'),
-<<<<<<< HEAD
-=======
         ('rescheduled', 'rescheduled'),
         ('partially paid', 'partially paid'),
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
         ('completed', 'Completed'),
         ('failed', 'Failed'),
     ]
@@ -686,13 +636,8 @@ class Complaint(models.Model):
         ('rejected', 'Rejected'),
     ]
     
-<<<<<<< HEAD
-    customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_compliant')  
-    service_provider = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_compliant')  
-=======
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_compliant')  
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_compliant')  
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
     service_request = models.ForeignKey(ServiceRequest, on_delete=models.SET_NULL, null=True, blank=True, related_name='complaints')  # Optional link to service request
     subject = models.CharField(max_length=255)
     description = models.TextField()
@@ -703,11 +648,7 @@ class Complaint(models.Model):
     resolution_notes = models.TextField(null=True, blank=True)
 
     def __str__(self):
-<<<<<<< HEAD
-        return f"Complaint by {self.customer} - {self.subject} ({self.status})"
-=======
         return f"Complaint by {self.sender} - {self.subject} ({self.status})"
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
     
     def mark_as_resolved(self, resolution_notes=''):
         self.status = 'resolved'
@@ -723,25 +664,40 @@ class Complaint(models.Model):
         self.status = 'rejected'
         self.resolution_notes = rejection_reason
         self.save()
-<<<<<<< HEAD
 
 
 
-class CurrentLocation(models.Model):
+# def save(self, *args, **kwargs):
+#         if not self.custom_id:
+#             # Combine to form the custom ID
+#             self.custom_id = f'USER{self.user.id}'  
 
-    user = models.ForeignKey(User, on_delete=models.PROTECT,related_name='user_location')
-    location = models.PointField(geography=True, blank=True, null=True)
-    latitude = models.DecimalField(max_digits=10,decimal_places=6,null=True,blank=True)
-    longitude = models.DecimalField(max_digits=10,decimal_places=6,null=True,blank=True)
-    country = models.CharField(max_length=100,null=True,blank=True)
-    state = models.CharField(max_length=100,null=True,blank=True)
+#         super(Customer, self).save(*args, **kwargs)
+
+
+
+
+# Location models
+
+class Location(models.Model):
+
+    ip_address = models.GenericIPAddressField(null=True,blank=True)
     city = models.CharField(max_length=100,null=True,blank=True)
-    address = models.CharField(max_length=100,null=True,blank=True)
-    landmark = models.CharField(max_length=100,null=True,blank=True)
-    pincode = models.CharField(max_length=100,null=True,blank=True)
+    region = models.CharField(max_length=100,null=True,blank=True)
+    country = models.CharField(max_length=100,null=True,blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    postal_code = models.CharField(max_length=20, null=True, blank=True)
+    timezone = models.CharField(max_length=50, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user}'s Location"
-=======
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
+        return f"{self.city}, {self.country} ({self.ip_address})"
+    
+class UserLocation(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='locations')
+    location = models.ForeignKey(Location, on_delete=models.CASCADE)
+    accessed_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.location.city}, {self.location.country}"

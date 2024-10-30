@@ -1,14 +1,9 @@
-<<<<<<< HEAD
-from django.urls import path
-from .views import ServiceProviderLoginView, ServiceProviderPasswordForgotView, ServiceProviderPasswordForgotView, ResetPasswordView, ServiceProviderViewSet, SetNewPasswordView
-=======
 from django.urls import include, path
 from .views import CustomerServiceRequestView, ServiceProviderLoginView, ServiceProviderPasswordForgotView, ServiceProviderPasswordForgotView, ResetPasswordView, ServiceProviderRequestsView, ServiceProviderViewSet, ServiceRegisterViewSet, ServiceRequestInvoiceView, SetNewPasswordView
 from rest_framework.routers import DefaultRouter
 router = DefaultRouter()
 router.register(r'service-registers', ServiceRegisterViewSet, basename='service-register')
 
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
 
 urlpatterns = [
     path('login/', ServiceProviderLoginView.as_view(), name='service-provider-login'),
@@ -21,10 +16,6 @@ urlpatterns = [
         'get': 'retrieve', 
         'put': 'update',
         'patch': 'partial_update'
-<<<<<<< HEAD
-        }), name='profile_update')
-]
-=======
         }), name='profile_update'),
     #service register,edit,lead balance
     path('', include(router.urls)),
@@ -34,4 +25,3 @@ urlpatterns = [
     path('invoice/<int:pk>/', ServiceRequestInvoiceView.as_view(), name="invoice")
     
 ]
->>>>>>> 6b1fe2019943d7f52171a342930b23a0f63528d3
