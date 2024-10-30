@@ -24,7 +24,7 @@ class ServiceProviderVerificationListView(generics.ListAPIView):
         return ServiceProvider.objects.filter(
             verification_by_dealer='PENDING', 
             accepted_terms=True, 
-            dealer=user
+            dealer__user=user
         )
 
 
