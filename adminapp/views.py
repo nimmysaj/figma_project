@@ -12,6 +12,8 @@ from django.shortcuts import get_object_or_404
 from .models import User,Category,Subcategory,Franchisee, Dealer, ServiceProvider, User,Customer,Complaint
 from .serializers import UserSerializer,PaginationSerializer,CategorySerializer,CustomerDashboardSerializer
 from .serializers import CategoryDashboardSerializer,ComplaintDashboardSerializer,IncompleteBookingsDashboardSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
+from .serializers import CustomTokenObtainPairSerializer
 
 class ServiceRequestDetailView(APIView):
     def post(self, request, *args, **kwargs):
@@ -224,3 +226,6 @@ def dashboard_view(request):
     }
 
     return Response(response_data)
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer

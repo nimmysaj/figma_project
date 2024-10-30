@@ -5,6 +5,7 @@ from .views import category_list, category_detail,dashboard_view
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
+from .views import CustomTokenObtainPairView
 
 
 
@@ -15,6 +16,7 @@ urlpatterns = [
     path('categories/', category_list, name='category-list'),
     path('categories-detail/', category_detail, name='category-detail'),
     path('dashboard/',dashboard_view, name='dashboard'),
+    path('login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

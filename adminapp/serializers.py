@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import ServiceRequest, Invoice,Complaint,CustomerReview,Payment,Category,Customer
 from .models import User, District, State, Country_Codes
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 
 class InvoiceSerializer(serializers.ModelSerializer):
@@ -150,3 +151,20 @@ class CategoryDashboardSerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ['id', 'title','image']
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        user = self.user
+
+        # Check the user's access level and include it in the response
+        if user.is_franchisee:
+            data['role'] = 'franchisee'
+        elif user.is_dealer:
+            data['role'] = 'dealer'
+        elif user.is_superuser:
+            data['role'] = 'admin'
+        else:
+            raise serializers.ValidationError("User role not authorized.")
+
+        return data
