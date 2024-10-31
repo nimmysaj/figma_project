@@ -128,3 +128,40 @@ class SubcategorySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+
+
+# *******************************  Financial Management  ***********************************
+
+# --> View Total expense
+class ExpensesSerializer(serializers.Serializer):
+    total_expenses = serializers.DecimalField(max_digits=10, decimal_places=2)
+
+
+# --> View total earnings
+class EarningsSerializer(serializers.Serializer):
+    total_earnings = serializers.DecimalField(max_digits=10, decimal_places=2)
+
+
+# --> View user details of Ads invoice
+class AdsInvoiceSerializer(serializers.Serializer):
+    transaction_id = serializers.CharField()
+    sender = serializers.CharField()
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    sender_user_type = serializers.CharField()
+    payment_date = serializers.DateTimeField()
+
+
+# --> View Expense Table
+class ExpenseTableSerializer(serializers.Serializer):
+    transaction_id = serializers.CharField()
+    invoice_type = serializers.CharField()
+    amount_paid = serializers.DecimalField(max_digits=10, decimal_places=2)
+    transaction_date = serializers.DateTimeField()
+
+
+
+class UnifiedResponseSerializer(serializers.Serializer):
+    total_expenses = ExpensesSerializer()
+    total_earnings = EarningsSerializer()
+    ads_invoices = AdsInvoiceSerializer(many=True)
+    expense_table = ExpenseTableSerializer(many=True)
