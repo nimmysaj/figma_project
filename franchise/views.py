@@ -25,6 +25,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from django.http import HttpResponse
 from django.shortcuts import render
+from .serializers import RecentActivitySerializer
+from Accounts.models import RecentActivity
 
 # list all service providers
 class ServiceProviderListView(ListAPIView):
@@ -285,3 +287,13 @@ class ServiceProviderListView(generics.ListAPIView):
         franchise = get_object_or_404(franchise, user=self.request.user)
         # Filter service providers under the franchise
         return ServiceProvider.objects.filter(franchise=franchise)
+
+
+class RecentActivityListCreateView(generics.ListCreateAPIView):
+    queryset = RecentActivity.objects.all()
+    serializer_class = RecentActivitySerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)  # Automatically assigns the current user
+

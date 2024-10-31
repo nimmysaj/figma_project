@@ -9,6 +9,8 @@ from django.core.validators import RegexValidator
 import phonenumbers
 from django.conf import settings
 import uuid
+from django.contrib.auth.models import User
+
 
 # Create your models here.
 phone_regex = RegexValidator(
@@ -714,3 +716,20 @@ class Review(models.Model):
     def __str__(self):
         return f"Review for {self.service_provider} - Rating: {self.rating} on {self.date}"        
 
+
+class ActivityType(models.TextChoices):
+    SERVICE_UPDATE = 'service_update', 'Service Updated'
+    PROFILE_UPDATE = 'profile_update', 'Profile Updated'
+    NEW_DEALER = 'new_dealer', 'New Dealer Added'
+    OTHER = 'other', 'Other Activity'
+
+class RecentActivity(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='recent_activities')
+    activity_type = models.CharField(max_length=50, choices=ActivityType.choices)
+    description = models.TextField()
+    related_entity_id = models.IntegerField(null=True, blank=True)
+    related_entity_type = models.CharField(max_length=50, null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.user} - {self.activity_type} at {self.created_at}"

@@ -13,6 +13,10 @@ from rest_framework import serializers
 from Accounts.models import *
 from django_filters import rest_framework as filters
 from django.contrib.auth.hashers import make_password
+from Accounts.models import RecentActivity
+
+
+
 
 class ServiceProviderListSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source= 'user.full_name')
@@ -284,3 +288,10 @@ class ServiceProviderFilter(filters.FilterSet):
     class Meta:
         model = ServiceProvider
         fields = ['search'] 
+
+class RecentActivitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RecentActivity
+        fields = ['id', 'user', 'activity_type', 'description', 'related_entity_id', 'related_entity_type', 'created_at']
+
+
