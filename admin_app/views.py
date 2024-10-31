@@ -2,12 +2,12 @@ from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from Accounts.models import User, Franchisee,Franchise_Type
-from .serializers import UserSerializer,FranchiseeSerializer,FranchiseTypeSerializer
+from Accounts.models import User, Franchisee,Franchise_Type,Ad_Management,Invoice
+from .serializers import UserSerializer,FranchiseeSerializer,FranchiseTypeSerializer,AdManagementSerializer
 from rest_framework.decorators import action
 from django.db.models import Count
 from rest_framework.pagination import PageNumberPagination
-
+from django.db.models import Sum
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -64,17 +64,30 @@ class FranchiseeViewSet(viewsets.ModelViewSet):
             "inactive_franchisees": inactive_count, 
             "franchisees": serializer.data 
         })
-        # # Serialize all franchisees (you can filter if needed)
-        # serializer = self.get_serializer(franchisees, many=True)
-
-        # # Return the response with counts
-        # return Response({
-        #     "franchisees_count":franchisees_count,
-        #     "active_franchisees": active_count, 
-        #     "inactive_franchisees": inactive_count, 
-        #     "franchisees": serializer.data 
-        # })
-
+    
 class FranchiseTypeViewSet(viewsets.ModelViewSet):
     queryset = Franchise_Type.objects.all()
-    serializer_class = FranchiseTypeSerializer    
+    serializer_class = FranchiseTypeSerializer
+
+class AdManagementTypeViewSet(viewsets.ModelViewSet):
+    queryset = Ad_Management.objects.all()
+    serializer_class = AdManagementSerializer 
+    
+    def list(self, request, *args, **kwargs):
+        # Get the standard paginated response data
+        response = super().list(request, *args, **kwargs)
+        
+        # Calculate total ads and revenue for 'Ads' type with paid status
+        total_ads = self.queryset.count()
+        total_revenue = Invoice.objects.filter(
+            invoice_type='Ads',
+            payment_status='paid'
+        ).aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+
+        custom_response = {
+            "total_ads": total_ads,
+            "total_revenue": total_revenue,
+            "results": response.data
+        }
+
+        return Response(custom_response)

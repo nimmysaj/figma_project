@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from Accounts.models import User,Franchisee,Franchise_Type,Country_Codes
+from Accounts.models import User,Franchisee,Franchise_Type,Country_Codes,Ad_category,Ad_Management
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 import re  # For regex validation
@@ -11,7 +11,6 @@ from phonenumbers import NumberParseException
 class UserSerializer(serializers.ModelSerializer):
     phone_with_code = serializers.SerializerMethodField() # New field to combine phone number and country code
 
-    
     class Meta:
         model = User
         fields = [
@@ -117,17 +116,18 @@ class FranchiseeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Franchisee
         fields = [
-            'is_franchisee',  
-            'custom_id',       
-            'revenue', 
-            'dealers',          
-            'service_providers',
-            'location',        
-            'contact',          
-            'valid_up_to',     
-            'status'            
+            'is_franchisee','service_providers','location','contact','valid_up_to','status'            
         ]
+
 class FranchiseTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Franchise_Type
         fields = ['id', 'name', 'details', 'amount', 'currency']
+
+class AdManagementSerializer(serializers.ModelSerializer):
+    type = serializers.CharField(source='ad_category.type',read_only=True)
+    total_views = serializers.IntegerField(source='ad_category.total_views',read_only=True)
+    total_hits = serializers.IntegerField(source='ad_category.total_hits',read_only=True)
+    class Meta:
+        model = Ad_Management
+        fields = ['type','title','ad_id','image','total_views','total_hits']   
