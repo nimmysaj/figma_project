@@ -681,14 +681,4 @@ class Notification(models.Model):
     def __str__(self):
         return str(self.service_provider_id)
 
-class ServiceProviderVerification(models.Model):
-    inspector_name = models.CharField(max_length=100)
-    inspector_role = models.CharField(max_length=100)
-    member_name = models.CharField(max_length=100)
-    date_of_verification = models.DateField()
-    supporting_documents = models.FileField(upload_to='id-service-pro/', blank=True, null=True, validators=[validate_file_size])
-    verification_status = models.CharField(max_length=50)
 
-    def __str__(self):
-        return self.inspector_name
->>>>>>> 71e1ae1a8e69921af81f6a16cac16c250fd80e25
