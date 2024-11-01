@@ -10,6 +10,7 @@ import phonenumbers
 from django.conf import settings
 import uuid
 
+
 # Create your models here.
 phone_regex = RegexValidator(
         regex=r'^\d{9,15}$', 
@@ -208,6 +209,8 @@ class Dealer(models.Model):
     verification_id = models.CharField(max_length=255, blank=True, null=True)  
     verificationid_number = models.CharField(max_length=50, blank=True, null=True)  # ID number field
     id_copy = models.FileField(upload_to='id-dealer/', blank=True, null=True, validators=[validate_file_size]) 
+
+    craeted_date = models.DateTimeField(default=timezone.now)
     
     
     def save(self, *args, **kwargs):
@@ -258,6 +261,8 @@ class ServiceProvider(models.Model):
     verification_by_dealer= models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
 
     accepted_terms = models.BooleanField(default=False)
+
+    created_date = models.DateTimeField(default=timezone.now)
     
     
     def save(self, *args, **kwargs):
@@ -275,7 +280,6 @@ class ServiceProvider(models.Model):
 
     def __str__(self):
         return self.custom_id
-    
 
 
 class Customer(models.Model):
@@ -445,15 +449,38 @@ class ServiceRegister(models.Model):
             self.available_lead_balance = 0  # You can adjust logic for infinite leads here
         super(ServiceRegister, self).save(*args, **kwargs) 
    
+# class PaymentRequest(models.Model):
+#     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.PROTECT,related_name='from_paymentrequest')
+#     dealer = models.ForeignKey(Dealer, on_delete=models.PROTECT,related_name='to_paymentrequest')
+#     amount = models.DecimalField(max_digits=10, decimal_places=2)
+#     description = models.TextField()
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     email = models.EmailField()
+#     country_code = models.ForeignKey(Country_Codes,max_length=25,on_delete=models.SET_NULL,null=True,blank=True)
+#     phone = models.CharField(validators=[phone_regex],max_length=15)
+
+#     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES)
+#     account_holder_name = models.CharField(max_length=50)
+#     bank_name = models.CharField(max_length=50)
+#     bank_branch = models.CharField(max_length=50)
+#     account_number = models.CharField(max_length=50)
+#     ifsc_code = models.CharField(max_length=50)
+#     supporting_documents = models.FileField(upload_to='payment-request/', blank=True, null=True, validators=[validate_file_size])
+
+
+#     def __str__(self):
+#         return f"Request by {self.service_provider.full_name} to {self.dealer.name} for {self.amount}"
+
+
 class PaymentRequest(models.Model):
-    service_provider = models.ForeignKey(ServiceProvider, on_delete=models.PROTECT,related_name='from_paymentrequest')
-    dealer = models.ForeignKey(Dealer, on_delete=models.PROTECT,related_name='to_paymentrequest')
+    sernder = models.ForeignKey(Dealer, on_delete=models.PROTECT, related_name='from_paymentrequest')
+    receiver = models.ForeignKey(User, on_delete=models.PROTECT, related_name='to_paymentrequest')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     email = models.EmailField()
-    country_code = models.ForeignKey(Country_Codes,max_length=25,on_delete=models.SET_NULL,null=True,blank=True)
-    phone = models.CharField(validators=[phone_regex],max_length=15)
+    country_code = models.ForeignKey(Country_Codes, max_length=25, on_delete=models.SET_NULL, null=True, blank=True)
+    phone = models.CharField(validators=[phone_regex], max_length=15)
 
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES)
     account_holder_name = models.CharField(max_length=50)
@@ -463,9 +490,9 @@ class PaymentRequest(models.Model):
     ifsc_code = models.CharField(max_length=50)
     supporting_documents = models.FileField(upload_to='payment-request/', blank=True, null=True, validators=[validate_file_size])
 
-
     def __str__(self):
-        return f"Request by {self.service_provider.full_name} to {self.dealer.name} for {self.amount}"
+        return f"Request by {self.sernder.user.full_name} to {self.receiver.full_name} for {self.amount}"
+
 
 class CustomerReview(models.Model):
     RATING_CHOICES = [
@@ -477,6 +504,7 @@ class CustomerReview(models.Model):
     ]
 
     customer = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_review')  # The customer leaving the review
+    # service_provider = models.ForeignKey(ServiceProvider, related_name='customer_reviews', on_delete=models.CASCADE)
     service_provider = models.ForeignKey(User, on_delete=models.PROTECT,related_name='to_review')  # The service provider being reviewed
     rating = models.IntegerField(choices=RATING_CHOICES)  # Rating from 1 to 5 stars
     image = models.ImageField(upload_to='reviews/', null=True, blank=True, validators=[validate_file_size])
@@ -656,3 +684,21 @@ class Notification(models.Model):
     
     def __str__(self):
         return f'{self.notification_type} for {self.recipient_user}'
+
+
+
+
+class Ads(models.Model):
+    title = models.CharField(max_length=255)
+    ad_type = models.CharField(max_length=100)  # Using ad_type to avoid conflict with Python's type keyword
+    service = models.ForeignKey(ServiceRegister, on_delete=models.CASCADE, related_name="ads")
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    starting_date = models.DateTimeField(default=timezone.now)
+    ending_date = models.DateTimeField()
+    payment = models.CharField(max_length=100)
+    status = models.CharField(max_length=100)
+    service_provider = models.ForeignKey(ServiceProvider, on_delete=models.CASCADE, related_name="ads")
+    created = models.DateTimeField(auto_now_add=True)  # Automatically set to now when the ad is created
+
+    def __str__(self):
+        return self.title
