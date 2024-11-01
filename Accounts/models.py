@@ -256,6 +256,16 @@ class ServiceProvider(models.Model):
     verification_by_dealer= models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
 
     accepted_terms = models.BooleanField(default=False)
+
+    #  Verification fields
+    inspector_name = models.CharField(max_length=255, blank=True, null=True)
+    inspector_role = models.CharField(max_length=255, blank=True, null=True)
+    verification_date = models.DateField(blank=True, null=True)
+    supporting_documents = models.FileField(upload_to='id-service-pro/', blank=True, null=True)
+    verification_status = models.CharField(max_length=50,default='PENDING')
+
+    def __str__(self):
+        return self.inspector_name
     
     
     def save(self, *args, **kwargs):
