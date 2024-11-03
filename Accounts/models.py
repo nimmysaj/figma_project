@@ -206,6 +206,7 @@ class Dealer(models.Model):
     verification_id = models.CharField(max_length=255, blank=True, null=True)  
     verificationid_number = models.CharField(max_length=50, blank=True, null=True)  # ID number field
     id_copy = models.FileField(upload_to='id-dealer/', blank=True, null=True, validators=[validate_file_size]) 
+    created_date = models.DateTimeField(default=timezone.now)
     
     
     def save(self, *args, **kwargs):

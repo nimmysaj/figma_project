@@ -10,7 +10,7 @@ from django.db.models import Q
 from rest_framework import serializers
 from rest_framework import generics
 from .serializers import DealerLoginSerializer
-from service_provider.permissions import IsOwnerOrAdmin
+
 # Create your views here.
 
 # Dealer Login
@@ -40,7 +40,7 @@ class CombinedDetailsSerializer(serializers.Serializer):
     additional_details = serializers.ListField(child = serializers.DictField())
 
 class ServiceProviderView(APIView):
-    permission_class =[IsAuthenticated, IsOwnerOrAdmin]
+    permission_class =[IsAuthenticated]
 
     def get(self, request,*args, **kwargs):
         try:
@@ -58,8 +58,8 @@ class ServiceProviderView(APIView):
 
             # Taken the total_providers,total verified providers,total pending request 
             total_providers = ServiceProvider.objects.filter(dealer_id=dealer.id).count()
-            verified_providers = ServiceProvider.objects.filter(Q(query) & Q(verification_by_dealer = "APPROVED")).count()
-            pending_providers = ServiceProvider.objects.filter(Q(query) & Q(verification_by_dealer = "PENDING")).count()
+            verified_providers = ServiceProvider.objects.filter(query).count()
+            pending_providers = ServiceProvider.objects.filter(Q(dealer_id=dealer.id) & Q(verification_by_dealer = "PENDING")).count()
             additional_details = []
             additional_details = [
                     {'total_providers': total_providers,
@@ -78,7 +78,7 @@ class ServiceProviderView(APIView):
                         'custom_id': service_provider_profile.custom_id,
                         'dob':service_provider_profile.date_of_birth,
                         'verifiedby':service_provider_profile.dealer.user.full_name,
-                        'location':service_provider_details.district.name,
+                        'location': service_provider_details.district.name if service_provider_details.district else 'Unknown Location',
                         'contact':service_provider_details.phone_number,
                         'email':service_provider_details.email,
                         'status':service_provider_profile.status,
@@ -117,15 +117,15 @@ class ProviderSearchView(APIView):
                     for rec in providers_list:
                         try:
                             providers_details = ServiceProvider.objects.get(Q(user_id= rec.id) & Q(dealer_id = dealer.id) & Q(verification_by_dealer = "APPROVED"))
-                            user_details = User.objects.get(id = rec.id) 
+                            provider_user = User.objects.get(id = rec.id) 
                             service_providers.append({
-                                    'name':user_details.full_name,
+                                    'name':provider_user.full_name,
                                     'custom_id': providers_details.custom_id,
                                     'dob':providers_details.date_of_birth,
                                     'verifiedby':providers_details.dealer.user.full_name,
-                                    'location':user_details.district.name,
-                                    'contact':user_details.phone_number,
-                                    'email':user_details.email,
+                                    'location': provider_user.district.name if provider_user.district else 'Unknown Location',
+                                    'contact':provider_user.phone_number,
+                                    'email':provider_user.email,
                                     'status':providers_details.status,
                             }) 
                         except ServiceProvider.DoesNotExist:
