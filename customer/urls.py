@@ -1,6 +1,6 @@
 from django.urls import include, path
 from service_provider.views import ResetPasswordView
-from customer.views import CategoryListView, CustomerLoginView, CustomerPasswordForgotView, CustomerViewSet, RegisterView, ServiceProviderDetailView, ServiceProviderListView, ServiceRequestCreateView, ServiceRequestDetailView, ServiceRequestInvoiceDetailView, SubcategoryListView, UnifiedSearchView, VerifyOTPView,ResendOTPView,SetNewPasswordView,PopluarServicesListView,PopularServiceProvidersView,GetLocationView
+from customer.views import CategoryListView, CustomerLoginView, CustomerPasswordForgotView, CustomerViewSet, RegisterView, ServiceProviderDetailView, ServiceProviderListView, ServiceRequestCreateView, ServiceRequestDetailView, ServiceRequestInvoiceDetailView, SubcategoryListView, UnifiedSearchView, VerifyOTPView,ResendOTPView,SetNewPasswordView,PopularServiceDetailView,TopServiceProviderView,save_location
 from rest_framework.routers import DefaultRouter
 
 
@@ -30,7 +30,8 @@ urlpatterns = [
     path('service-request/', ServiceRequestCreateView.as_view(), name='service-request-create'),
     path('view-request-user/', ServiceRequestDetailView.as_view(), name='view-request-user'),
     path('service-request-invoice/', ServiceRequestInvoiceDetailView.as_view(), name='service-request-invoice-detail'),
-    path('popular-service-registers/', PopluarServicesListView.as_view(), name='popular-service-registers'),
-    path('popular-service-providers/', PopularServiceProvidersView.as_view(), name='popular-service-providers'),
-    
+    path('popularservices/all/', PopularServiceDetailView.as_view(), name='services-with-reviews'),
+    path('top-service-providers/', TopServiceProviderView.as_view(), name='top_service_providers'),
+    path('save-location/', save_location, name='save_location'),
+
 ]

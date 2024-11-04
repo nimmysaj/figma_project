@@ -437,35 +437,84 @@ class CustomerRatingSerilaizer(serializers.ModelSerializer):   #this serializer 
         model=CustomerReview
         fields = ['customer','service_provider','rating','comment','created_at']
 
-# ======================================================================================================================
+#popular services 
+
+from rest_framework import serializers
+from django.db.models import Avg, Min, Max, Count
+from Accounts.models import ServiceRegister, CustomerReview, Invoice, ServiceRequest
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from collections import defaultdict
 
 
 class PopularServiceDetailSerializer(serializers.ModelSerializer):
     subcategory_title = serializers.CharField(source='subcategory.title', read_only=True)
     reviews_count = serializers.SerializerMethodField()
     rating = serializers.SerializerMethodField()
+    amount = serializers.SerializerMethodField()
+    image_url = serializers.ImageField(source='image', read_only=True)
 
     class Meta:
         model = ServiceRegister
-        fields = ['subcategory_title', 'reviews_count', 'rating']
+        fields = ['subcategory_title', 'reviews_count', 'rating', 'amount', 'image_url']
 
     def get_reviews_count(self, obj):
-        try:
-            # Retrieve service provider and then associated user
-            service_provider = obj.service_provider
-            user = service_provider.user  # Assuming ServiceProvider has a field 'user'
-            return CustomerReview.objects.filter(service_provider=user, rating__gte=4).count()
-        except (AttributeError, User.DoesNotExist):
-            return 0
+        return CustomerReview.objects.filter(service_request__service=obj).count()
 
     def get_rating(self, obj):
-        try:
-            # Retrieve service provider and then associated user
-            service_provider = obj.service_provider
-            user = service_provider.user  # Assuming ServiceProvider has a field 'user'
-            avg_rating = CustomerReview.objects.filter(service_provider=user, rating__gte=4).aggregate(avg_rating=Avg('rating'))['avg_rating']
-            return avg_rating if avg_rating is not None else None
-        except (AttributeError, User.DoesNotExist):
-            return None
-# __________________________________________________________________________________________________________________________________________________-
+        avg_rating = CustomerReview.objects.filter(service_request__service=obj).aggregate(avg_rating=Avg('rating'))['avg_rating']
+        return round(avg_rating, 1) if avg_rating is not None else None
 
+    def get_amount(self, obj):
+        invoices = Invoice.objects.filter(service_register=obj, invoice_type='service_request', payment_status='paid')
+        min_amount = invoices.aggregate(Min('total_amount'))['total_amount__min']
+        max_amount = invoices.aggregate(Max('total_amount'))['total_amount__max']
+        
+        if min_amount and max_amount:
+            return f"{min_amount}-{max_amount}" if min_amount != max_amount else str(min_amount)
+        return None
+
+
+
+#top service provider
+
+from rest_framework import serializers
+from Accounts.models import User, ServiceProvider
+
+class TopServiceProviderSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField()
+    profile_image = serializers.SerializerMethodField()
+    service_provider_id = serializers.SerializerMethodField()
+    custom_id = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User  
+        fields = ['service_provider_id','custom_id','full_name', 'profile_image']
+
+
+    def get_custom_id(self, obj):
+        # Get the custom ID of the associated ServiceProvider, if available
+        service_provider = obj.service_provider.first()
+        return service_provider.custom_id if service_provider else None
+    
+
+    def get_profile_image(self, obj):
+        # Get the first associated ServiceProvider instance, if available
+        service_provider = obj.service_provider.first()
+        return service_provider.profile_image.url if service_provider and service_provider.profile_image else None
+
+    def get_service_provider_id(self, obj):
+        # Get the ID of the associated ServiceProvider, if available
+        service_provider = obj.service_provider.first()
+        return service_provider.id if service_provider else None
+    
+
+# location
+
+from rest_framework import serializers
+from Accounts.models import CurrentLocation
+
+class CurrentLocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CurrentLocation
+        fields = ['user', 'country', 'state', 'city', 'address', 'landmark', 'pincode', 'latitude', 'longitude']

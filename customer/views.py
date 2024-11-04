@@ -523,29 +523,110 @@ class ServiceRequestInvoiceDetailView(APIView):
     
 
 
-from customer.serializers import CustomerReviewSerializer,PopularServiceDetailSerializer
-from Accounts.models import ServiceRegister, CustomerReview
+#popular service
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.db.models import Count
+from Accounts.models import ServiceRegister, ServiceRequest
+from .serializers import PopularServiceDetailSerializer
+from collections import defaultdict
+
+class PopularServiceDetailView(APIView):
+    def get(self, request):
+        # Annotate services with the count of unique customer requests and order by request count descending
+        service_requests_count = (
+            ServiceRegister.objects
+            .annotate(request_count=Count('servicerequest'))
+            .order_by('-request_count')
+        )
+
+        # Initialize data storage for aggregating details
+        aggregated_data = defaultdict(lambda: {
+            "reviews_count": 0, 
+            "rating_sum": 0, 
+            "count": 0, 
+            "total_amounts": [], 
+            "image_url": None
+        })
+
+        # Populate aggregated data for each service
+        for service in service_requests_count:
+            serializer = PopularServiceDetailSerializer(service)
+            data = serializer.data
+
+            subcategory_title = data['subcategory_title']
+            rating = data['rating']
+            reviews_count = data['reviews_count']
+            image_url = data['image_url']
+            
+            # Aggregate reviews count and ratings
+            aggregated_data[subcategory_title]["reviews_count"] += reviews_count
+            if rating is not None:
+                aggregated_data[subcategory_title]["rating_sum"] += rating
+                aggregated_data[subcategory_title]["count"] += 1
+            
+            # Add amount for each service, maintaining the range format
+            amount = data['amount']
+            if amount:
+                aggregated_data[subcategory_title]["total_amounts"].append(amount)
+            
+            # Set image_url if not already set
+            if not aggregated_data[subcategory_title]["image_url"]:
+                aggregated_data[subcategory_title]["image_url"] = image_url
+
+        # Prepare the final list of services ordered by request count
+        filtered_data = [
+            {
+                "subcategory_title": title,
+                "reviews_count": data["reviews_count"],
+                "rating": round(data["rating_sum"] / data["count"], 1) if data["count"] > 0 else None,
+                "amount": data["total_amounts"][0] if data["total_amounts"] else None,
+                "image_url": data["image_url"]
+            }
+            for title, data in aggregated_data.items()
+        ]
+
+        return Response(filtered_data)
+
+
+
+#top service provider
+from rest_framework.views import APIView
+from rest_framework.response import Response
 from django.db.models import Avg
+from Accounts.models import User
+from .serializers import TopServiceProviderSerializer
 
+class TopServiceProviderView(APIView):
+    def get(self, request):
+        # Fetch service providers with an average rating >= 4
+        service_providers = User.objects.filter(
+            to_review__isnull=False,
+            is_service_provider=True  # Ensure the user is a service provider
+        ).annotate(
+            average_rating=Avg('to_review__rating')
+        ).filter(
+            average_rating__gte=4
+        ).distinct()
 
-class PopluarServicesListView(generics.ListAPIView):
-
-    serializer_class=PopularServiceDetailSerializer
-
-    def get_queryset(self):
-        
-        popular_registers = CustomerReview.objects.filter(rating__gt=4).values('service_provider').annotate(avg_rating=Avg('rating')).filter(avg_rating__gt=4)
-        popular_providers_ids=[item['service_provider']for item in popular_registers]
-        return ServiceRegister.objects.filter(service_provider__id__in=popular_providers_ids)
+        # Serialize the filtered service providers
+        serializer = TopServiceProviderSerializer(service_providers, many=True)
+        return Response(serializer.data)
     
-class PopularServiceProvidersView(APIView):
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from .serializers import CurrentLocationSerializer
+from django.contrib.auth.models import User
 
-    def get(self, request, *args, **kwargs):
-        popular_providers = CustomerReview.objects.filter(rating__gt=4).values('service_provider').annotate(avg_rating=Avg('rating')).filter(avg_rating__gt=4)
-        response_data = [{'service_provider': item['service_provider'], 'avg_rating': item['avg_rating']} for item in popular_providers]
-
-        return Response(response_data)
-
-    
+@api_view(['POST'])
+def save_location(request):
+    serializer = CurrentLocationSerializer(data=request.data)
+   
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"message": "Location saved successfully!"}, status=status.HTTP_201_CREATED)
+   
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
