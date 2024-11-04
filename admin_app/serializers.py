@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from Accounts.models import User,Franchisee,Franchise_Type,Country_Codes,Ad_category,Ad_Management
+from Accounts.models import User,Franchisee,Franchise_Type,Country_Codes,Ad_category,Ad_Management,IncomeManagement
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 import re  # For regex validation
@@ -131,3 +131,20 @@ class AdManagementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ad_Management
         fields = ['type','title','ad_id','image','total_views','total_hits']   
+
+class IncomeManagementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IncomeManagement
+        fields = [
+            'sl_no', 'income_type', 'split_type', 
+            'company', 'franchisee', 'dealer', 'service_provider'
+        ]
+    def validate(self, data):
+        # Calculate the total of the percentage or amount fields
+        total = data.get('company', 0) + data.get('franchisee', 0) + data.get('dealer', 0) + data.get('service_provider', 0)
+        # Perform validation based on the split_type field
+        if data.get('split_type') == 'Percentage' and total != 100:
+            raise serializers.ValidationError("The total percentage must be exactly 100%")
+        elif data.get('split_type') == 'Amount' and total > 100:
+            raise serializers.ValidationError("Total amount cannot exceed 100")
+        return data

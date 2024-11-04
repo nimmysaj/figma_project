@@ -721,3 +721,32 @@ class Ad_Management(models.Model):
     image = models.ImageField(upload_to='ad_images/',validators=[validate_ad_size])
 
 
+class IncomeManagement(models.Model):
+    sl_no = models.AutoField(primary_key=True)
+    income_type = models.CharField(
+        max_length=50,
+        choices=[
+            ('Franchisee Registration', 'Franchisee Registration'),
+            ('Service Registration', 'Service Registration'),
+            ('Banner Ads', 'Banner Ads'),
+            ('Card Ads', 'Card Ads'),
+            ('Popup Ads', 'Popup Ads'),
+            ('Boost Profile', 'Boost Profile'),
+            ('Service Commission', 'Service Commission'),
+            ('Lead Commission', 'Lead Commission'),
+        ]
+    )
+    split_type = models.CharField(
+        max_length=20,
+        choices=[('Percentage', 'Percentage'), ('Amount', 'Amount')],
+        default='Percentage'
+    )
+    company = models.IntegerField()
+    franchisee = models.IntegerField()
+    dealer = models.IntegerField()
+    service_provider = models.IntegerField()
+
+    def __str__(self):
+        return f"{self.sl_no} - {self.income_type}"
+
+
