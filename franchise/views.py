@@ -8,30 +8,11 @@ from rest_framework.response import Response
 from django.db.models import Q
 from rest_framework import serializers
 from rest_framework import generics
-from .serializers import FranchiseeLoginSerializer
+# from .serializers import FranchiseeLoginSerializer
 from Accounts.models import User,Dealer,Franchisee
 from django.utils import timezone
 
 # Create your views here.
-class FranchiseeLoginView(generics.GenericAPIView):
-    serializer_class = FranchiseeLoginSerializer
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
-
-        # Generate a token for the authenticated user
-        token, created = Token.objects.get_or_create(user=user)
-
-        return Response({
-            'message': 'Login successful',
-            'token': token.key,  # Include the token in the response
-            'user_id': user.id,
-            'email': user.email,
-            'full_name': user.full_name,
-            'is_franchisee': user.is_franchisee,
-        }, status=status.HTTP_200_OK)
 
 # Combining the two list and return as serializer response
 class CombinedDetailsSerializer(serializers.Serializer):
@@ -56,7 +37,7 @@ class DealerView(APIView):
 
     def get(self, request,*args, **kwargs):
         try:
-            print(request.user.id)
+            
             franchisee = Franchisee.objects.get(user_id=request.user.id)
             # Find the Dealers for the authenticated user (franchisee)
             query = Q(franchisee_id = franchisee.id)
