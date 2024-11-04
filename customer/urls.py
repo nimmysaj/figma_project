@@ -1,6 +1,6 @@
 from django.urls import include, path
 from service_provider.views import ResetPasswordView
-from .views import CategoryListView, CustomerLoginView, CustomerPasswordForgotView, CustomerViewSet, RegisterView, ServiceProviderDetailView, ServiceProviderListView, ServiceRequestCreateView, ServiceRequestDetailView, ServiceRequestInvoiceDetailView, SubcategoryListView, UnifiedSearchView, VerifyOTPView,ResendOTPView,SetNewPasswordView,PopluarServicesListView,PopularServiceProvidersView,GetLocationView
+from customer.views import CategoryListView, CustomerLoginView, CustomerPasswordForgotView, CustomerViewSet, RegisterView, ServiceProviderDetailView, ServiceProviderListView, ServiceRequestCreateView, ServiceRequestDetailView, ServiceRequestInvoiceDetailView, SubcategoryListView, UnifiedSearchView, VerifyOTPView,ResendOTPView,SetNewPasswordView,PopluarServicesListView,PopularServiceProvidersView,GetLocationView
 from rest_framework.routers import DefaultRouter
 
 
