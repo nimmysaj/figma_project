@@ -9,13 +9,17 @@ from rest_framework import filters
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
-from django.contrib.auth import authenticate
+# from django.contrib.auth import authenticate,
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 
 
 
 # get the list of all non verified service providers under the logged in dealer     
 class ServiceProviderVerificationListView(generics.ListAPIView):
+    authentication_classes=[TokenAuthentication]
+    permission_classes=[IsAuthenticated]
     serializer_class=ServiceProviderSerializer
     filter_backends=[filters.SearchFilter]
     search_fields=['user__full_name','user__district__name']
