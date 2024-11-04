@@ -147,4 +147,5 @@ class IncomeManagementSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("The total percentage must be exactly 100%")
         elif data.get('split_type') == 'Amount' and total > 100:
             raise serializers.ValidationError("Total amount cannot exceed 100")
+        
         return data
