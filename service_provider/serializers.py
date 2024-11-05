@@ -4,7 +4,7 @@ import phonenumbers
 from rest_framework.response import Response
 from rest_framework import serializers,status
 from django.contrib.auth import authenticate
-from Accounts.models import Invoice, ServiceProvider, ServiceRequest, User, Payment,CustomerReview 
+from Accounts.models import Invoice, ServiceProvider, ServiceRequest, User, Payment 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
@@ -38,13 +38,19 @@ class ServiceProviderLoginSerializer(serializers.Serializer):
         attrs['user'] = user
         return attrs
 
-class PaymentListSerializer(serializers.ModelSerializer): 
-    invoice_type = serializers.CharField(source='invoice.invoice_type', read_only=True) 
-    class Meta: 
-        model = Payment 
-        fields = ['transaction_id', 'sender', 'receiver', 'invoice_type', 'payment_status']
+class PaymentListSerializer(serializers.ModelSerializer):
 
-class CustomerReviewSerializer(serializers.ModelSerializer):
+    sender_full_name = serializers.CharField(source='sender.full_name', read_only=True)
+    receiver_full_name = serializers.CharField(source='receiver.full_name', read_only=True)
+    invoice_type = serializers.CharField(source='invoice.invoice_type', read_only=True)
+    
     class Meta:
-        model = CustomerReview
-        fields = ['id', 'rating', 'image', 'comment', 'created_at', 'customer', 'service_provider','service_request']
+        model = Payment
+        fields = [ 
+            'transaction_id',
+            'sender_full_name',  
+            'receiver_full_name',
+            'invoice_type',
+            'payment_status',
+            'amount_paid',
+        ]

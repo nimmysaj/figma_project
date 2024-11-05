@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.shortcuts import get_object_or_404, render
 from django.db.models import Avg,Sum
 from rest_framework.views import APIView
@@ -14,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework import generics,viewsets
 from Accounts.models import ServiceProvider, ServiceRequest, User,Payment,CustomerReview
 from service_provider.permissions import IsOwnerOrAdmin
-from .serializers import ServiceProviderLoginSerializer,PaymentListSerializer,CustomerReviewSerializer
+from .serializers import ServiceProviderLoginSerializer,PaymentListSerializer
 from django.utils.encoding import smart_bytes, smart_str
 from twilio.rest import Client
 from rest_framework.decorators import action
@@ -50,89 +51,66 @@ class ServiceProviderLoginView(APIView):
 
 
 class PaymentListView(APIView):
-    permission_classes = [IsAuthenticated]  # Ensure the user is authenticated
+    permission_classes = [IsAuthenticated]  
 
     def get(self, request, *args, **kwargs):
-        # Get the logged-in user's ID
         user_id = request.user.id
 
-        # Filter payments where the user is either the sender or receiver
         payments = Payment.objects.filter(sender_id=user_id) | Payment.objects.filter(receiver_id=user_id)
 
-        # Check if the user has any payments
+        if request.user.is_service_provider:
+            # Include payments specifically made by customers for the provider's service requests
+            service_request_payments = Payment.objects.filter(
+                invoice__invoice_type='service_request',
+                invoice__service_request__service_provider_id=user_id 
+            )
+
+            payments = payments | service_request_payments  
+
         if not payments.exists():
-            # Return a response indicating no transaction history
             return Response({
                 'message': 'No transactions found for this user.'
             }, status=200)
 
-        # If payments exist, serialize the payments
+       
         serializer = PaymentListSerializer(payments, many=True)
-        
-        # Return the serialized data
         return Response(serializer.data, status=200)
-
+    
 class FinancialOverviewView(APIView):
-    # Ensure the user is authenticated
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        # Get the logged-in service provider's ID
         user_id = request.user.id
 
-        # Calculate expenditure (where service provider is the sender)
-        expenditure = Payment.objects.filter(
-            sender_id=user_id
-        ).aggregate(total_expenditure=Sum('amount_paid'))['total_expenditure'] or 0
+        income = 0
+        expenditure = 0
+        account_balance = 0
 
-        # Calculate income (where service provider is the receiver)
-        income = Payment.objects.filter(
-            receiver_id=user_id
-        ).aggregate(total_income=Sum('amount_paid'))['total_income'] or 0
+        if request.user.is_service_provider:
+            # income: sum of all payments received by the service provider from the admin
+            income = Payment.objects.filter(
+                receiver_id=user_id,
+                invoice__invoice_type='provider_payment'
+            ).aggregate(total_income=Sum('amount_paid'))['total_income'] or 0
 
-        # Return the financial summary
+            # expenditure: sum of all payments made by the service provider
+            expenditure = Payment.objects.filter(
+                sender_id=user_id
+            ).aggregate(total_expenditure=Sum('amount_paid'))['total_expenditure'] or 0
+
+            # Calculate total customer payments to the admin for this service provider's services
+            customer_payments_to_admin = Payment.objects.filter(
+                invoice__invoice_type='service_request',
+                invoice__service_request__service_provider_id=user_id,
+            ).aggregate(total_customer_payments=Sum('amount_paid'))['total_customer_payments'] or 0
+
+           # Calculate expected earnings (90% of customer payments)
+            expected_earnings = customer_payments_to_admin * Decimal('0.9')
+            account_balance = expected_earnings - income
+
         data = {
             'income': income,
-            'expenditure': expenditure
+            'expenditure': expenditure,
+            'account_balance': account_balance
         }
-
         return Response(data, status=status.HTTP_200_OK)
-
-
-
-class ServiceProviderReviews(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, id):
-        # Get the service provider based on the user ID
-        service_provider = get_object_or_404(User, id=id)
-
-        # Fetch reviews related to this service provider
-        reviews = CustomerReview.objects.filter(service_provider=service_provider)
-
-        # Calculate the average rating
-        average_rating = reviews.aggregate(Avg('rating'))['rating__avg'] or 0
-        total_reviews = reviews.count()
-
-        
-        if average_rating < 1:
-            rating_scale = "Poor"
-        elif average_rating < 2:
-            rating_scale = "Fair"
-        elif average_rating < 3:
-            rating_scale = "Good"
-        elif average_rating < 4:
-            rating_scale = "Very Good"
-        else:
-            rating_scale = "Excellent"
-        
-        
-        serializer = CustomerReviewSerializer(reviews, many=True)
-
-        
-        return Response({
-            'reviews': serializer.data,
-            'average_rating': average_rating,
-            'total_reviews': total_reviews,
-            'rating_scale': rating_scale  
-        })
