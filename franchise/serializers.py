@@ -14,7 +14,7 @@ from Accounts.models import *
 from django_filters import rest_framework as filters
 from django.contrib.auth.hashers import make_password
 from Accounts.models import RecentActivity
-
+from Accounts.models import Franchise
 
 
 
@@ -295,3 +295,29 @@ class RecentActivitySerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'activity_type', 'description', 'related_entity_id', 'related_entity_type', 'created_at']
 
 
+
+
+class FranchiseLoginSerializer(serializers.Serializer):
+    email_or_phone = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        email_or_phone = data.get('email_or_phone')
+        password = data.get('password')
+        user = None
+
+        if '@' in email_or_phone:
+            user = Franchise.objects.filter(email=email_or_phone).first()
+        else:
+            user = Franchise.objects.filter(phone_number=email_or_phone).first()
+
+        if user and user.check_password(password):
+            return user
+        else:
+            raise serializers.ValidationError("Invalid credentials")
+
+
+class FranchiseDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Franchise
+        fields = ('id', 'email', 'phone_number', 'is_active', 'is_staff')
