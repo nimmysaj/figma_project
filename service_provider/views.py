@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404
 from copy import deepcopy
 from Accounts.models import ServiceRequest, ServiceProvider, Invoice, ServiceRegister
 from .serializers import (
-    # ServiceProviderLoginSerializer,
+    ServiceProviderLoginSerializer,
     ServiceRequestSerializer,
     CustomerServiceRequestSerializer,
     InvoiceSerializer,
@@ -28,37 +28,37 @@ from django.db.models import Q
 User = get_user_model()
 
 
-# class ServiceProviderLoginView(APIView):
-#     def post(self, request):
-#         serializer = ServiceProviderLoginSerializer(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#         email_or_phone = serializer.validated_data['email_or_phone']
-#         password = serializer.validated_data['password']
+class ServiceProviderLoginView(APIView):
+    def post(self, request):
+        serializer = ServiceProviderLoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email_or_phone = serializer.validated_data['email_or_phone']
+        password = serializer.validated_data['password']
 
-#         # Check if input is email or phone
-#         user = User.objects.filter(email=email_or_phone).first() or \
-#                User.objects.filter(phone_number=email_or_phone).first()
+        # Check if input is email or phone
+        user = User.objects.filter(email=email_or_phone).first() or \
+               User.objects.filter(phone_number=email_or_phone).first()
 
-#         if user and user.check_password(password):
-#             if user.is_service_provider:
-#                 # Create JWT token
-#                 refresh = RefreshToken.for_user(user)
-#                 update_last_login(None, user)  # Update last login time
+        if user and user.check_password(password):
+            if user.is_service_provider:
+                # Create JWT token
+                refresh = RefreshToken.for_user(user)
+                update_last_login(None, user)  # Update last login time
 
-#                 return Response({
-#                     'refresh': str(refresh),
-#                     'access': str(refresh.access_token),
-#                 }, status=status.HTTP_200_OK)
-#             else:
-#                 return Response(
-#                     {'detail': 'User is not a service provider.'},
-#                     status=status.HTTP_403_FORBIDDEN
-#                 )
-#         else:
-#             return Response(
-#                 {'detail': 'Invalid credentials.'},
-#                 status=status.HTTP_401_UNAUTHORIZED
-#             )
+                return Response({
+                    'refresh': str(refresh),
+                    'access': str(refresh.access_token),
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {'detail': 'User is not a service provider.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        else:
+            return Response(
+                {'detail': 'Invalid credentials.'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
 
 
 # class ServiceRegisterViewSet(viewsets.ViewSet):
@@ -305,6 +305,12 @@ class ServiceRequestInvoiceView(APIView):
 
             elif service_request.acceptance_status == 'decline':
                 return Response({"error": "Cannot generate invoice. Work has been declined."}, status=status.HTTP_400_BAD_REQUEST)
+
+            service_type_name = service_request.service.subcategory.service_type.name  # Ensure this is the correct attribute        
+        # Prevent invoice generation for "One time lead"
+            if service_type_name.strip().lower() == 'one time lead':
+                return Response({"error": "Cannot generate invoice for one time lead."}, status=status.HTTP_400_BAD_REQUEST)
+
 
             # Create a mutable copy of request.data
             invoice_data = deepcopy(request.data)
