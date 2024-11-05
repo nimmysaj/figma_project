@@ -5,7 +5,7 @@ from rest_framework import serializers
 from Accounts.models import Customer, User
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.hashers import make_password
-from Accounts.models import ServiceRequest, Customer, Subcategory
+from Accounts.models import ServiceRequest, Customer, Subcategory, Invoice, Payment
 from django.utils import timezone
 
 
@@ -159,9 +159,49 @@ class ExpenseTableSerializer(serializers.Serializer):
     transaction_date = serializers.DateTimeField()
 
 
-
 class UnifiedResponseSerializer(serializers.Serializer):
     total_expenses = ExpensesSerializer()
     total_earnings = EarningsSerializer()
     ads_invoices = AdsInvoiceSerializer(many=True)
     expense_table = ExpenseTableSerializer(many=True)
+
+
+
+
+  
+# ******************************  PAYMENT INTEGRATION USING RAZORPAY  ******************************
+
+class InvoiceSerilaizer(serializers.ModelSerializer):
+    class Meta:
+        model = Invoice
+        fields = '__all__'
+
+
+class PaymentSerializer(serializers.ModelField):
+    class Meta:
+        model = Payment
+        fields = '__all__'
+
+
+
+
+
+#**************************************  GRAPH - FINANCIAL MANAGEMENT  **********************************
+
+class MonthlyFinanceReportSerializer(serializers.Serializer):
+    month = serializers.IntegerField()
+    year = serializers.IntegerField()
+
+    def validate_month(self, value):
+        if value < 1 or value > 12:
+            raise serializers.ValidationError("Month must be between 1 and 12")
+        return value
+    
+    def validate_year(self, value):
+        if value < 2024:
+            raise serializers.ValidationError("Year should be greater than or equal to 2024")
+        return value
+    
+    class Meta:
+        fields = ['month', 'year']
+

@@ -138,3 +138,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+RAZORPAY_KEY_ID = 'rzp_test_FFnIYtCZLZPV9O'
+RAZORPAY_SECRET_KEY = 'BQTBaz1yKJKgThKpbQMp9ltF'
+

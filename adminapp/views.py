@@ -1,3 +1,4 @@
+from datetime import timezone
 from django.shortcuts import get_object_or_404, render
 from rest_framework import generics
 from rest_framework import status, viewsets
@@ -5,15 +6,17 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from .serializers import CustomerSerializer, UnifiedResponseSerializer
 from Accounts.models import Customer, Subcategory,ServiceRegister,ServiceRequest,Payment,User,Invoice
-from .serializers import Customerview_Serializer, SubcategorySerializer,ExpensesSerializer,AdsInvoiceSerializer,ExpenseTableSerializer,EarningsSerializer
-from rest_framework.decorators import action
+from .serializers import Customerview_Serializer, SubcategorySerializer,ExpensesSerializer,AdsInvoiceSerializer,ExpenseTableSerializer,EarningsSerializer,MonthlyFinanceReportSerializer
+from rest_framework.decorators import action,api_view
 from .pagination import CustomerViewPagination
 # from .pagination import AdsInvoicePagination,ExpensePagination
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Sum,Q
 from django.contrib.auth import get_user_model
 from rest_framework.pagination import PageNumberPagination
-
+from django.conf import settings
+import razorpay
+from datetime import datetime
 
 
 # Create your views here.
@@ -235,3 +238,144 @@ class UnifiedView(APIView):
             return 'Dealer'
         else:
             return 'Unknown'
+        
+
+
+
+
+
+# ***************************************  PAYMENT INTEGRATION USING RAZORPAY  ***************************************
+
+
+
+# function to list invoice ids:
+@api_view(['GET'])
+def get_invoice_ids(request):
+    invoice_ids = Invoice.objects.values_list('id', flat=True)  # Get a list of invoice IDs
+    return Response({'invoice_ids': list(invoice_ids)})
+
+
+class CreateRazorpayOrder(APIView):
+    def post(self, request, *args, **kwargs):
+        # Initialize Razorpay client
+        client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID , settings.RAZORPAY_SECRET_KEY))
+        
+        # Get the invoice and calculate the amount to be paid
+        invoice_id = request.data.get("invoice_id")
+        invoice = Invoice.objects.get(id=invoice_id)
+        amount = int(invoice.total_amount * 100)  # Amount in paisa-- int()use to get a precise integer representation
+
+        # Create an order in Razorpay
+        razorpay_order = client.order.create({
+            "amount": amount,
+            "currency": "INR",
+            "payment_capture": 1  # Auto-capture-, you are instructing Razorpay to automatically capture the payment immediately after the order is authorized-
+                                  # If you set "payment_capture": 0, the payment will be authorized but not captured. In this case, you would need to explicitly call the capture API to complete the payment later.
+        })
+
+        # Save Razorpay order ID to the Payment model
+        payment = Payment.objects.create(
+            invoice=invoice,
+            sender=invoice.sender,
+            receiver=invoice.receiver,
+            order_id=razorpay_order['id'],
+            amount_paid=invoice.total_amount,
+            payment_status='pending'
+        )
+
+        return Response({
+            "order_id": razorpay_order['id'],
+            "amount": amount,
+            "currency": "INR",
+            "razorpay_key": settings.RAZORPAY_KEY_ID
+        })
+
+@api_view(['POST'])   # its a decorator that transforms a regular Python function into a view that can handle HTTP requests
+def handle_payment_success(request):
+    payment_id = request.data.get('razorpay_payment_id')
+    order_id = request.data.get('razorpay_order_id')
+    signature_id = request.data.get('razorpay_signature')
+
+    client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+    
+    # Verify the payment signature
+    try:
+        client.utility.verify_payment_signature({
+            'razorpay_order_id': order_id,
+            'razorpay_payment_id': payment_id,
+            'razorpay_signature': signature_id
+        })
+    except razorpay.errors.SignatureVerificationError:
+        return Response({'error': 'Signature verification failed'}, status=400)
+    
+    # If verified, update the Payment and Invoice status
+    try:
+        payment = Payment.objects.get(order_id=order_id)
+    except Payment.DoesNotExist:
+        return Response({"error": "Payment not found"}, status=404)
+
+    payment.transaction_id = payment_id
+    payment.payment_status = 'completed'
+    payment.payment_date = timezone.now()
+    payment.save()
+
+    # Mark the invoice as paid
+    payment.invoice.mark_paid()
+
+    return Response({
+        'order_id': order_id,
+        'transaction_id': payment_id,
+        'signature_id': signature_id,
+        'status': 'Payment successful'
+    })
+
+
+
+
+
+
+# ************************************  GRAPH - PHINANCIAL MANAGEMENT  *******************************************
+
+class MonthlyFinanaceReportView(generics.GenericAPIView):
+    serializer_class = MonthlyFinanceReportSerializer
+    # permission_classes = IsAuthenticated
+
+    def post(self, request):
+        # Validate the incoming data using the serializer
+        serializer = self.get_serializer(data = request.data)
+        serializer.is_valid(raise_exception = True)
+
+        month = serializer.validated_data['month']
+        year = serializer.validated_data['year']
+
+        # Get the start and end dates for the specified month
+        start_date = datetime(year, month, 1)
+        if month == 12:
+            end_date = datetime(year+1, 1, 1)  #January of the next year
+        else:
+            end_date = datetime(year, month+1, 1) #First day of the next month
+
+        # Calculate total expenses where sender is admin and payment status is completed
+        total_expense = Payment.objects.filter(
+            sender__is_staff = True, #Check if the sender is admin
+            payment_status = 'completed',
+            payment_date__gte = start_date,   #gte- greater than or equal to
+            payment_date__lt = end_date       #lt - less than
+        ).aggregate(total=Sum('amount_paid'))['total'] or 0    #['total'] is a dictionary it holds the sum of amount_paid field-- eg: 'total':1500
+
+        # Calculate total income where receiver is admin and payment status is completed
+        total_income = Payment.objects.filter(
+            receiver__is_staff = True,    #In Django's built-in User model, the field for admin users is typically is_staff (not is_admin), so use sender__is_staff
+            payment_status = 'completed',
+            payment_date__gte = start_date,
+            payment_date__lt = end_date
+        ).aggregate(total=Sum('amount_paid'))['total'] or 0
+
+        # Return the results
+        return Response(
+            {
+                'total_expense' : total_expense,
+                'total_income' : total_income
+            }
+        )
+

@@ -517,7 +517,9 @@ class Invoice(models.Model):
         ('service_request', 'Service Request'),
         ('dealer_payment', 'Dealer Payment'),
         ('provider_payment', 'Service Provider Payment'),
-        ('Ads' ,'Ads')
+        ('service_registration','service_registration'),
+        ('Ads' ,'Ads'),
+        ('lead_purchase','lead_purchase')
     ]
     
     invoice_number = models.PositiveIntegerField(unique=True, editable=False)
@@ -528,6 +530,9 @@ class Invoice(models.Model):
     #A foreign key that links to a ServiceRequest model, which is populated if the payment is related to a customer requesting a service.
     service_request = models.ForeignKey(ServiceRequest, on_delete=models.SET_NULL, null=True, blank=True,related_name='invoices')
 
+    #A foreign key that links to a ServiceRequest model, which is populated if the payment is related to a customer requesting a service.
+    service_register = models.ForeignKey(ServiceRegister, on_delete=models.SET_NULL, null=True, blank=True,related_name='serviceregister_invoices')
+
     # Sender (user who is paying) and receiver (user receiving payment)
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_payment')
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_payment')
@@ -535,6 +540,8 @@ class Invoice(models.Model):
     quantity = models.IntegerField(null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    partial_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, default=0)  # New field for partial amount
+    payment_balance = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, default=0)
     payment_status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('paid', 'Paid'), ('cancelled', 'Cancelled')], default='pending')
 
     invoice_date = models.DateTimeField(auto_now_add=True)
@@ -565,6 +572,7 @@ class Invoice(models.Model):
             last_invoice = Invoice.objects.order_by('invoice_number').last()
             self.invoice_number = last_invoice.invoice_number + 1 if last_invoice else 1
         super().save(*args, **kwargs)    
+        
 
 class Payment(models.Model):
 
@@ -580,6 +588,8 @@ class Payment(models.Model):
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_payments')  # User who sends the payment
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_payments')  # User who receives the payment
     transaction_id = models.CharField(max_length=15)
+    order_id = models.CharField(max_length=100, null=True, blank=True)
+    signature = models.CharField(max_length=256, null=True, blank=True)
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
     payment_method = models.CharField(max_length=50, choices=PAYMENT_METHOD_CHOICES)
     payment_date = models.DateTimeField(default=timezone.now)
