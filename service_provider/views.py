@@ -99,7 +99,7 @@ User = get_user_model()
 #         try:
 #             # Find the service provider associated with the authenticated user
 #             service_provider = ServiceProvider.objects.get(user=request.user)
-#             print(f"ServiceProvider ID: {service_provider.id}")
+#             # print(f"ServiceProvider ID: {service_provider.id}")
 
 #             # Check if a service with the same details already exists for this provider
 #             existing_service = ServiceRegister.objects.filter(
@@ -137,7 +137,6 @@ User = get_user_model()
 #             )
 #         except Exception as e:
 #             print(f"Error during service registration: {str(e)}")
-#             print(e)
 #             return Response(
 #                 {"error": "An error occurred while registering the service.", "details": str(e)},
 #                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -202,15 +201,15 @@ class CustomerServiceRequestView(APIView):
 
     def get(self, request, *args, **kwargs):
         try:
-            # Get the service request ID (pk) from the request data
-            pk = request.data.get('pk')
-
+            # Get the booking booking_id from the request data
+            booking_id = request.data.get('booking_id')
             # Ensure the logged-in user is a service provider
             service_provider = ServiceProvider.objects.get(user=request.user)
 
-            # Get the service request by ID (pk) and ensure it belongs to the logged-in service provider
+            # Get the service request by booking booking_id and ensure it belongs to the logged-in service provider
             service_request = ServiceRequest.objects.get(
-                pk=pk, service_provider=service_provider.user)
+                booking_id=booking_id, service_provider=service_provider.user
+            )
         except ServiceRequest.DoesNotExist:
             return Response({"error": "Service request not found or access denied."}, status=404)
         except ServiceProvider.DoesNotExist:
@@ -223,14 +222,15 @@ class CustomerServiceRequestView(APIView):
     def post(self, request, *args, **kwargs):
         try:
             # Get the service request ID (pk) from the request data
-            pk = request.data.get('pk')
+            # pk = request.data.get('pk')
+            booking_id = request.data.get('booking_id')
 
             # Ensure the logged-in user is a service provider
             service_provider = ServiceProvider.objects.get(user=request.user)
 
             # Get the service request by ID (pk) and ensure it belongs to the logged-in service provider
             service_request = ServiceRequest.objects.get(
-                pk=pk, service_provider=service_provider.user)
+                booking_id=booking_id, service_provider=service_provider.user)
         except ServiceRequest.DoesNotExist:
             return Response({"error": "Service request not found or access denied."}, status=404)
         except ServiceProvider.DoesNotExist:
@@ -259,15 +259,15 @@ class ServiceRequestInvoiceView(APIView):
 
     def get(self, request, *args, **kwargs):
         try:
-            # Get the service request ID (pk) from the request data
-            pk = request.data.get('pk')
+            # Get the service request booking_id from the request data
+            booking_id = request.data.get('booking_id')
 
             # Ensure the logged-in user is a service provider
             service_provider = ServiceProvider.objects.get(user=request.user)
 
-            # Get the service request by ID (pk) and ensure it belongs to the logged-in service provider
+            # Get the service request by booking_id and ensure it belongs to the logged-in service provider
             service_request = ServiceRequest.objects.get(
-                pk=pk, service_provider=service_provider.user)
+                booking_id=booking_id, service_provider=service_provider.user)
         except ServiceRequest.DoesNotExist:
             return Response({"error": "Service request not found or access denied."}, status=404)
         except ServiceProvider.DoesNotExist:
@@ -280,17 +280,17 @@ class ServiceRequestInvoiceView(APIView):
     def post(self, request, *args, **kwargs):
         try:
             # Get the service request ID (pk) from the request body
-            pk = request.data.get('pk')
+            booking_id = request.data.get('booking_id')
 
             # Fetch the service request for which the invoice is being created
-            service_request = get_object_or_404(ServiceRequest, pk=pk)
+            service_request = get_object_or_404(ServiceRequest, booking_id=booking_id)
 
             # Ensure the logged-in user is a service provider
             service_provider = ServiceProvider.objects.get(
                 user=request.user)  # Get the correct service provider
-
             # Check if the logged-in user is the service provider for the request
-            if service_request.service_provider != service_provider:
+            if service_request.service_provider != service_provider.user:
+                print(f"Mismatch: {service_request.service_provider.user} vs {service_provider.user}")
                 return Response(
                     {"error": "You are not authorized to create an invoice for this request."},
                     status=status.HTTP_403_FORBIDDEN
@@ -349,10 +349,10 @@ class ServiceRequestInvoiceView(APIView):
     def put(self, request, *args, **kwargs):
         try:
             # Get the service request ID (pk) from the request body
-            pk = request.data.get('pk')
+            booking_id = request.data.get('booking_id')
 
             # Fetch the service request by its primary key
-            service_request = ServiceRequest.objects.get(pk=pk)
+            service_request = ServiceRequest.objects.get(booking_id=booking_id)
             # Assuming a related name 'invoices' on the model
             invoice = service_request.invoices.first()
 
@@ -425,15 +425,15 @@ class ServiceDetailsView(generics.RetrieveAPIView):
         return ServiceRequest.objects.select_related('service_provider', 'service', 'customer').prefetch_related('invoices')
 
     def get(self, request, *args, **kwargs):
-        pk = request.data.get('pk')  # Get the pk from the request body
+        booking_id = request.data.get('booking_id')  # Get the booking_id from the request body
 
-        if not pk:
-            return Response({"error": "No 'pk' provided."}, status=status.HTTP_400_BAD_REQUEST)
+        if not booking_id:
+            return Response({"error": "No 'booking_id' provided."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Fetch the queryset and try to get the object with the provided pk
+        # Fetch the queryset and try to get the object with the provided booking_id
         queryset = self.get_queryset()
         try:
-            service_request = queryset.get(pk=pk)
+            service_request = queryset.get(booking_id=booking_id)
         except ServiceRequest.DoesNotExist:
             raise NotFound(detail="Service request not found.",
                            code=status.HTTP_404_NOT_FOUND)
@@ -448,11 +448,11 @@ class DeclineServiceView(APIView):
 
     def post(self, request, *args, **kwargs):
         try:
-            # Get the service request ID from the request body
-            pk = request.data.get('pk')
+            # Get the service request booking_iod from the request body
+            booking_id = request.data.get('booking_id')
 
-            # Fetch the service request by its primary key
-            service_request = ServiceRequest.objects.get(pk=pk)
+            # Fetch the service request by its booking_id
+            service_request = ServiceRequest.objects.get(booking_id=booking_id)
         except ServiceRequest.DoesNotExist:
             return Response({"detail": "No ServiceRequest matches the given query."}, status=404)
 
@@ -489,9 +489,9 @@ class DeclineServiceView(APIView):
 #     def get(self, request,*args, **kwargs):
 #         try:
 #             # Fetch the logged-in user's ServiceProvider instance
-#             pk =request.data.get('pk')
+#             booking_id =request.data.get('booking_id')
 #             service_provider = ServiceProvider.objects.get(user=request.user)
-#             service_request = ServiceRequest.objects.get(pk=pk, service__service_provider=service_provider)
+#             service_request = ServiceRequest.objects.get(booking_id=booking_id, service__service_provider=service_provider)
 #             service_type_name = service_request.service.subcategory.service_type.name
 
 #             if service_type_name == 'One time lead':
@@ -525,14 +525,14 @@ class DeductLeadBalanceView(APIView):
 
     def get(self, request, *args, **kwargs):
         try:
-            pk = request.data.get('pk')
+            booking_id = request.data.get('booking_id')
             # Get the logged-in service provider
             service_provider = get_object_or_404(
                 ServiceProvider, user=request.user)
 
-            # Find the corresponding ServiceRequest based on pk and service_provider
+            # Find the corresponding ServiceRequest based on booking_id and service_provider
             service_request = get_object_or_404(
-                ServiceRequest, pk=pk, service__service_provider=service_provider)
+                ServiceRequest, booking_id=booking_id, service__service_provider=service_provider)
 
             # Get the ServiceRegister object tied to the service request
             service_register = service_request.service
@@ -541,10 +541,15 @@ class DeductLeadBalanceView(APIView):
             if service_register.available_lead_balance > 0:
                 service_register.available_lead_balance -= 1
                 service_register.save()
-
+                # acceptance_status and work_status 
+                service_request.acceptance_status = "accept"
+                service_request.work_status = "in_progress"
+                service_request.save()
                 return Response({
                     "message": "Lead balance deducted successfully.",
-                    "available_lead_balance": service_register.available_lead_balance
+                    "available_lead_balance": service_register.available_lead_balance,
+                    "acceptance_status" : service_request.acceptance_status,
+                    "work_status" : service_request.work_status
                 }, status=200)
             else:
                 return Response({"error": "No lead balance available to deduct."}, status=400)

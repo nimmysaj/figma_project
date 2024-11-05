@@ -79,7 +79,7 @@ from django.utils import timezone
 #         return data
 
 
-# update service register and lead balance
+# # update service register and lead balance
 # class ServiceRegisterUpdateSerializer(serializers.ModelSerializer):
 #     add_lead = serializers.IntegerField(required=False)
 
@@ -97,12 +97,12 @@ from django.utils import timezone
 #         # Fetch the lead quantity from the SubCategory model
 #         if instance.subcategory and instance.subcategory.collar:
 #             lead_quantity = instance.subcategory.collar.lead_quantity  # Adjust field name as necessary
-#             print(lead_quantity)
+#             # print(lead_quantity)
 
 #             # Fetch the amount from the Collar model
 #             if instance.subcategory.collar:  # Assuming `collar` is a field in ServiceRegister
 #                 collar_amount = instance.subcategory.collar.amount  # Adjust field name as necessary
-#                 print(collar_amount)
+#                 # print(collar_amount)
 
 #                 # Check if the service type is "Daily Work"
 #                 if instance.subcategory.service_type.name == "Daily Work" and add_lead is not None:
@@ -116,7 +116,7 @@ from django.utils import timezone
 #                         total_lead_quantity = lead_quantity * add_lead
 #                         instance.available_lead_balance += total_lead_quantity
 #                         amount_to_paid = collar_amount * add_lead
-#                         print(amount_to_paid)
+#                         # print(amount_to_paid)
 #                         self.context['total_lead_quantity'] = total_lead_quantity
 #                         self.context['amount_to_paid'] = amount_to_paid
 #                         self.create_invoice(instance, amount_to_paid)
@@ -160,27 +160,27 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
 
 
 # class ServiceProviderLoginSerializer(serializers.Serializer):
-#     email_or_phone = serializers.CharField()
-#     password = serializers.CharField()
+    email_or_phone = serializers.CharField()
+    password = serializers.CharField()
 
-#     def validate(self, attrs):
-#         email_or_phone = attrs.get('email_or_phone')
-#         password = attrs.get('password')
+    def validate(self, attrs):
+        email_or_phone = attrs.get('email_or_phone')
+        password = attrs.get('password')
 
-#         if not email_or_phone:
-#             raise serializers.ValidationError('Email or phone is required.')
-#         if not password:
-#             raise serializers.ValidationError('Password is required.')
+        if not email_or_phone:
+            raise serializers.ValidationError('Email or phone is required.')
+        if not password:
+            raise serializers.ValidationError('Password is required.')
 
-#         # Authenticate using the custom backend
+        # Authenticate using the custom backend
 
-#         user = authenticate(username=email_or_phone, password=password)
+        user = authenticate(username=email_or_phone, password=password)
 
-#         if user is None:
-#             raise serializers.ValidationError('Invalid login credentials.')
+        if user is None:
+            raise serializers.ValidationError('Invalid login credentials.')
 
-#         attrs['user'] = user
-#         return attrs
+        attrs['user'] = user
+        return attrs
 
 
 class CustomerServiceRequestSerializer(serializers.ModelSerializer):
