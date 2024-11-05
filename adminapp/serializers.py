@@ -169,18 +169,18 @@ class UnifiedResponseSerializer(serializers.Serializer):
 
 
   
-# ******************************  PAYMENT INTEGRATION USING RAZORPAY  ******************************
+# # ******************************  PAYMENT INTEGRATION USING RAZORPAY  ******************************
 
-class InvoiceSerilaizer(serializers.ModelSerializer):
-    class Meta:
-        model = Invoice
-        fields = '__all__'
+# class InvoiceSerilaizer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Invoice
+#         fields = '__all__'
 
 
-class PaymentSerializer(serializers.ModelField):
-    class Meta:
-        model = Payment
-        fields = '__all__'
+# class PaymentSerializer(serializers.ModelField):
+#     class Meta:
+#         model = Payment
+#         fields = '__all__'
 
 
 

@@ -15,9 +15,9 @@ urlpatterns = [
     path('', include(router.urls)),
     path('adminactions/', UnifiedView.as_view(), name='admin-actions'),
     path('monthly_fin_rep/', MonthlyFinanaceReportView.as_view(), name='monthly-finance-report'),
-    path('invoice_id/',get_invoice_ids, name='get-invooice-ids'),
-    path('create-order/', CreateRazorpayOrder.as_view(), name='create-razorpay-order'),
-    path('payment-success/', handle_payment_success, name='handle-payment-success')
+    # path('invoice_id/',get_invoice_ids, name='get-invooice-ids'),
+    # path('create-order/', CreateRazorpayOrder.as_view(), name='create-razorpay-order'),
+    # path('payment-success/', handle_payment_success, name='handle-payment-success')
 
 ]
 
