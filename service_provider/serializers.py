@@ -159,7 +159,7 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
         ]
 
 
-# class ServiceProviderLoginSerializer(serializers.Serializer):
+class ServiceProviderLoginSerializer(serializers.Serializer):
     email_or_phone = serializers.CharField()
     password = serializers.CharField()
 
@@ -195,13 +195,17 @@ class CustomerServiceRequestSerializer(serializers.ModelSerializer):
     customer_address = serializers.CharField(
         source='customer.address', read_only=True)
     profile_image = serializers.SerializerMethodField()
+    customer_landmark = serializers.CharField(source = 'customer.landmark', read_only=True)
+    customer_pincode = serializers.CharField(source = 'customer.pin_code', read_only=True)
+    customer_email = serializers.CharField(source = 'customer.email', read_only=True)
 
     class Meta:
         model = ServiceRequest
         fields = [
             'booking_id', 'location', 'serviceprovider', 'subcategory', 'description',
             'acceptance_status', 'availability_from', 'availability_to', 'image',
-            'profile_image', 'customer_address'
+            'profile_image', 'customer_address', 'customer_landmark', 'customer_pincode',
+            'customer_email'
         ]
 
     def get_profile_image(self, obj):
@@ -280,7 +284,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # Extract the service_request to update its work_status later
         service_request = validated_data.get('service_request')
-
+        
         # Create the invoice instance
         invoice = Invoice.objects.create(**validated_data)
 
