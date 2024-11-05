@@ -22,5 +22,11 @@ admin.site.register(Service_Type)
 admin.site.register(Category)
 admin.site.register(Subcategory)
 admin.site.register(Invoice)
+<<<<<<< HEAD
 admin.site.register(Payment)
 admin.site.register(CustomerReview)
+=======
+admin.site.register(CustomerReview)
+#admin.site.register(Ad_category)
+#admin.site.register(Ad_Management)
+>>>>>>> 4f71b3d47b16763174a25b1294db4b1140007294
