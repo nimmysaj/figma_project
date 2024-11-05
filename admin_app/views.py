@@ -3,39 +3,164 @@ from rest_framework import permissions ,generics
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
-from Accounts.models import User ,Payment ,Franchisee ,Service_Type ,Collar ,Ad_category
-from .serializers import AdCategorySerializer, UserSerializer, FranchiseeSerializer ,TransactionSerializer ,CollarSerializer ,ServiceTypeSerializer
+from Accounts.models import User ,Payment ,Franchisee ,Service_Type ,Collar ,Ad_category ,Invoice ,Payment 
+from .serializers import AdCategorySerializer,TransactionSerializer ,CollarSerializer ,ServiceTypeSerializer,FranchiseeSerializer
 from rest_framework.views import APIView
+from rest_framework import viewsets
+from rest_framework.decorators import action
+from django.db import transaction
+from django.conf import settings
+import razorpay
 
 
-
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]  # Change based on your requirements
-    def get_permissions(self):
-        if self.action == 'create':  
-            self.permission_classes = [permissions.AllowAny]
-        else:
-            self.permission_classes = [permissions.IsAuthenticated]
-        return super(UserViewSet, self).get_permissions() 
-        
-        
-# Franchisee ViewSet
 class FranchiseeViewSet(viewsets.ModelViewSet):
     queryset = Franchisee.objects.all()
     serializer_class = FranchiseeSerializer
-    permission_classes = [IsAuthenticated]  # Change based on your requirements
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
+        # Get the validated data
+        franchisee_type = serializer.validated_data.get('type')
+        amount = franchisee_type.amount if franchisee_type else 0
+
+        try:
+            with transaction.atomic():
+                # Save the Franchisee and User data
+                franchisee = serializer.save()
+
+                # Initialize Razorpay client
+                client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+                
+                # Razorpay order creation
+                order_amount = int(amount * 100)  # Convert amount to paise || amount *100 is given beacause in razorpay the amount is taken in smallest amount which is paise || 1rupees = 100paise
+                razorpay_order = client.order.create({
+                    "amount": order_amount,
+                    "currency": "INR",
+                    "receipt": f"order_rcptid_{franchisee.id}",
+                    "payment_capture": '1'
+                })
+
+                # Check if order ID is created
+                order_id = razorpay_order.get("id")
+                if not order_id:
+                    raise ValueError("Failed to create Razorpay order.")
+
+                # Create the Invoice
+                admin_user = User.objects.filter(is_staff=True).first()
+                if not admin_user:
+                    raise ValueError("Admin user not found for invoice creation.")
+
+                invoice = Invoice.objects.create(
+                    invoice_type='franchisee_registration',
+                    sender=franchisee.user,
+                    receiver=admin_user,
+                    quantity=1,
+                    price=amount,
+                    total_amount=amount,
+                    accepted_terms=True,
+                    payment_status='pending'
+                )
+
+                # Create the Payment record
+                Payment.objects.create(
+                    invoice=invoice,
+                    sender=franchisee.user,
+                    receiver=admin_user,
+                    transaction_id=order_id,
+                    order_id=order_id,
+                    amount_paid=amount,
+                    payment_method='razorpay',
+                    payment_status='pending'
+                )
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Respond with the serializer data after successful creation
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['post'], url_path='confirm-payment')
+    def confirm_payment(self, request, *args, **kwargs):
+        # Expecting these fields in the request body
+        order_id = request.data.get('razorpay_order_id')
+        payment_id = request.data.get('razorpay_payment_id')
+        signature = request.data.get('razorpay_signature')
+
+        # Verify the payment signature
+        client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+
+        try:
+            # Verify the payment signature
+            client.utility.verify_payment_signature({
+                'razorpay_order_id': order_id,
+                'razorpay_payment_id': payment_id,
+                'razorpay_signature': signature
+            })
+
+            # Payment is valid, update the payment status in the database
+            payment = Payment.objects.get(order_id=order_id)
+            payment.payment_status = 'completed'  # Update the status
+            payment.save()
+
+            # Optionally, you can also update the invoice status here if needed
+            invoice = payment.invoice
+            invoice.payment_status = 'paid'  # Update invoice payment status
+            invoice.save()
+
+            return Response({"message": "Payment confirmed successfully."}, status=status.HTTP_200_OK)
+
+        except razorpay.errors.SignatureVerificationError:
+            return Response({"error": "Invalid payment signature."}, status=status.HTTP_400_BAD_REQUEST)
+        except Payment.DoesNotExist:
+            return Response({"error": "Payment record not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
+
+
+import hmac
+import hashlib
+
+def generate_signature(order_id, payment_id, secret):
+    string_to_sign = f"{order_id}|{payment_id}"
+    signature = hmac.new(
+        bytes(secret, 'utf-8'),
+        msg=bytes(string_to_sign, 'utf-8'),
+        digestmod=hashlib.sha256
+    ).hexdigest()
     
+    return signature
+
+# Example usage
+razorpay_secret = "YOUR_RAZORPAY_SECRET"  # Replace with your actual secret
+order_id = "YOUR_ORDER_ID"  # The order ID you received from creating the order
+payment_id = "YOUR_PAYMENT_ID"  # Use any payment ID for testing
+
+signature = generate_signature(order_id, payment_id, razorpay_secret)
+print(f"Generated Signature: {signature}")  # Use this signature in your confirmation request
+
+
+
+class PaymentTestView(APIView):
+    def post(self, request):
+        order_id = request.data.get('razorpay_order_id')
+        payment_id = request.data.get('razorpay_payment_id')
+        razorpay_secret = settings.RAZORPAY_KEY_SECRET  # Get from your settings
+
+        signature = generate_signature(order_id, payment_id, razorpay_secret)
+        return Response({"signature": signature}, status=status.HTTP_200_OK)
 
 # class TransactionsListView(generics.ListAPIView):
 #     queryset = Payment.objects.all()
@@ -227,6 +352,35 @@ class CollarAPIView(APIView):
             return Response({"message": "Collar deleted."}, status=status.HTTP_204_NO_CONTENT)
         except Collar.DoesNotExist:
             return Response({"error": "Collar not found."}, status=status.HTTP_404_NOT_FOUND)
+
+# TASK 3 GET Service Type and Collor Details
+
+class ServiceTypeAndCollarView(APIView):
+    """View to retrieve both ServiceType and Collar data."""
+
+    def get(self, request, *args, **kwargs):
+        # Fetch all ServiceType and Collar objects
+        service_types = Service_Type.objects.all()
+        collars = Collar.objects.all()
+
+        # Serialize the data
+        service_type_serializer = ServiceTypeSerializer(service_types, many=True)
+        collar_serializer = CollarSerializer(collars, many=True)
+
+        # Return both in a single response
+        return Response(
+            {
+                'service_types': service_type_serializer.data,
+                'collars': collar_serializer.data
+            },
+            status=status.HTTP_200_OK
+        )
+
+
+
+
+
+
 
 
 # TASK 4 Ad Category CRUD Operations //////////////////////////////////////////////////////////////////////////////////////////////////

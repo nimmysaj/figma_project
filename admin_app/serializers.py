@@ -1,128 +1,125 @@
 from rest_framework import serializers
-from Accounts.models import Ad_category, User, Franchisee ,Payment ,Customer ,Dealer  ,Service_Type ,Collar
-from django.db import models 
+from Accounts.models import *
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 import re
-# User Serializer
+from Accounts.models import phone_regex
+from django.core.exceptions import ValidationError as DjangoValidationError
+
+
+# serializers.py
+
+
+# TASK 1 Franchisee Registration ////////////////////////////////////////////////////////////////////////////////////
+
 class UserSerializer(serializers.ModelSerializer):
-    
-    password = serializers.CharField(write_only=True)
+    district = serializers.PrimaryKeyRelatedField(queryset=District.objects.all(), required=True)
+    state = serializers.PrimaryKeyRelatedField(queryset=State.objects.all(), required=True)
+    country_code = serializers.PrimaryKeyRelatedField(queryset=Country_Codes.objects.all(), required=True)
 
     class Meta:
         model = User
-        fields = ['email', 'full_name', 'phone_number', 'password','landmark','address','district','state','watsapp','country_code','pin_code']
+        fields = [
+            'email', 'phone_number', 'full_name', 'landmark', 'address', 
+            'district', 'state', 'watsapp', 'country_code', 'pin_code', 'password'
+        ]
+        extra_kwargs = {'password': {'write_only': True}}
 
-    # Validate email field
     def validate_email(self, value):
-        try:
-            validate_email(value)  # Django's built-in email validator
-        except ValidationError:
-            raise serializers.ValidationError("Enter a valid email address.")
-        
+        # Skip uniqueness check if updating with the same email
+        if self.instance and self.instance.email == value:
+            return value
+        # Otherwise, check if email exists
         if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("This email is already in use.")
-        
+            raise serializers.ValidationError("User with this email already exists.")
         return value
 
-    # Validate phone number field
     def validate_phone_number(self, value):
-        # Example regex for phone numbers (adjust based on your country format)
-        phone_regex = re.compile(r'^\+?\d{10,15}$')  # Accepts phone numbers between 10 and 15 digits
-        
-        if not phone_regex.match(value):
-            raise serializers.ValidationError("Enter a valid phone number (10-15 digits).")
-        
+        # Skip uniqueness check if updating with the same phone number
+        if self.instance and self.instance.phone_number == value:
+            return value
+        # Otherwise, check if phone number exists
         if User.objects.filter(phone_number=value).exists():
-            raise serializers.ValidationError("This phone number is already in use.")
-        
+            raise serializers.ValidationError("User with this phone number already exists.")
         return value
-
 
     def create(self, validated_data):
-        user = User(
-            email=validated_data.get('email'),
-            full_name=validated_data.get('full_name'),
-            phone_number=validated_data.get('phone_number'),
-            landmark=validated_data.get('landmark'),
-            address=validated_data.get('address'),
-            district=validated_data.get('district'),
-            state=validated_data.get('state'),
-            watsapp=validated_data.get('watsapp'),
-            country_code=validated_data.get('country_code'),
-            pin_code=validated_data.get('pin_code'),
-            )
-        
-        user.set_password(validated_data.get('password'))  
+        password = validated_data.pop('password')
+        user = User(**validated_data)
+        user.set_password(password)
         user.save()
         return user
 
-
-class FranchiseeSerializer(serializers.ModelSerializer):
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        if password:
+            instance.set_password(password)
+        instance.save()
+        return instance
     
+class FranchiseeSerializer(serializers.ModelSerializer):
+    user = UserSerializer()  # Nested serializer for user data
     district_name = serializers.SerializerMethodField()
-    user = UserSerializer() 
-
+    Amount_to_pay = serializers.SerializerMethodField()
     class Meta:
         model = Franchisee
-        fields = ['about', 'revenue', 'dealers', 'service_providers', 'type', 'valid_from', 
-                  'valid_up_to', 'status', 'verification_id', 'verificationid_number', 'community_name','profile_image' ,'user','district_name']
-        
+        fields = [
+            'id','custom_id',
+            'user', 
+            'about', 'profile_image', 'revenue', 'dealers', 
+            'service_providers', 'type', 'valid_from', 'valid_up_to', 
+            'verification_id', 'verificationid_number', 'community_name','district_name','Amount_to_pay','status',
+        ]
+
     def get_district_name(self, obj):
-        # Access the district name via the related user object
         return obj.user.district.name if obj.user.district else None
 
+    def get_Amount_to_pay(self, obj):
+        return obj.type.amount if obj.type else None
+
     def create(self, validated_data):
-        user_data = validated_data.pop('user')  
-        user = UserSerializer.create(UserSerializer(), validated_data=user_data,) 
-        user.is_franchisee = True
-        user.save()
-        franchisee = Franchisee.objects.create(user=user,**validated_data) 
+        user_data = validated_data.pop('user')
+
+        # Ensure email and phone_number are required for creation
+        if 'email' not in user_data or 'phone_number' not in user_data:
+            raise serializers.ValidationError("Both email and phone number are required to create a new franchisee.")
+        
+        user_data['is_franchisee'] = True
+
+        user = UserSerializer.create(UserSerializer(), validated_data=user_data)
+        franchisee = Franchisee.objects.create(user=user, **validated_data)
+        
         return franchisee
 
     def update(self, instance, validated_data):
-
+        # Extract user data if provided
         user_data = validated_data.pop('user', None)
-        instance.about = validated_data.get('about', instance.about)
-        instance.revenue = validated_data.get('revenue', instance.revenue)
-        instance.dealers = validated_data.get('dealers', instance.dealers)
-        instance.service_providers = validated_data.get('service_providers', instance.service_providers)
-        instance.type = validated_data.get('type', instance.type)
-        instance.valid_from = validated_data.get('valid_from', instance.valid_from)
-        instance.valid_up_to = validated_data.get('valid_up_to', instance.valid_up_to)
-        instance.status = validated_data.get('status', instance.status)
-        instance.verification_id = validated_data.get('verification_id', instance.verification_id)
-        instance.verificationid_number = validated_data.get('verificationid_number', instance.verificationid_number)
-        instance.community_name = validated_data.get('community_name', instance.community_name)
-        
-        profile_image = validated_data.get('profile_image')
-        if profile_image:
-            instance.profile_image = profile_image
-        
-        instance.save()
 
+        # Update the user information if user_data is provided
         if user_data:
-            user = instance.user
-            user.email = user_data.get('email', user.email)
-            user.full_name = user_data.get('full_name', user.full_name)
-            user.phone_number = user_data.get('phone_number', user.phone_number)
-            user.landmark = user_data.get('landmark', user.landmark)
-            user.address = user_data.get('address', user.address)
-            user.district = user_data.get('district', user.district)
-            user.state = user_data.get('state', user.state)
-            user.watsapp = user_data.get('watsapp', user.watsapp)
-            user.country_code = user_data.get('country_code', user.country_code)
-            user.pin_code = user_data.get('pin_code', user.pin_code)
+            for attr, value in user_data.items():
+                if attr == 'password' and value:  # Check if password is being updated
+                    instance.user.set_password(value)  # Hash the new password
+                else:
+                    setattr(instance.user, attr, value)
+            instance.user.save()  # Save changes to the user
 
-            if user_data.get('password'):
-                user.set_password(user_data['password'])
-
-            user.save()
+        # Update the remaining franchisee fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()  # Save changes to the franchisee
 
         return instance
-
-
-
+    
+    
+    
+    
+# TASK 2 Transaction History ////////////////////////////////////////////////////////////////////////////////////
+ 
+    
+    
 class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
@@ -251,6 +248,9 @@ class CollarSerializer(serializers.ModelSerializer):
         instance.amount = validated_data.get('amount', instance.amount)
         instance.save()
         return instance
+    
+    
+    
     
 # TASK 4 Ad category //////////////////////////////////////////////////////////////////////////////////////////////////
 

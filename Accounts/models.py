@@ -58,6 +58,7 @@ PAYMENT_METHOD_CHOICES = [
         ('credit_card', 'Credit Card'),
         ('paypal', 'PayPal'),
         ('cash', 'Cash'),
+        ('razorpay', 'Razorpay'),
     ]
 
 
@@ -115,13 +116,13 @@ class User(AbstractBaseUser):
     address = models.CharField(max_length=30)
     landmark = models.CharField(max_length=255, blank=True, null=True)
     pin_code = models.CharField(max_length=10)
-    district = models.ForeignKey('District', on_delete=models.SET_NULL, null=True, blank=True)
-    state = models.ForeignKey('State', on_delete=models.SET_NULL, null=True, blank=True)
+    district = models.ForeignKey(District, on_delete=models.SET_NULL, null=True, blank=True)
+    state = models.ForeignKey(State, on_delete=models.SET_NULL, null=True, blank=True)
 
     watsapp = models.CharField(max_length=15, blank=True, null=True)
     email = models.EmailField(unique=True, null=True, blank=True)
     phone_number = models.CharField(max_length=15, unique=True,validators=[phone_regex], null=True, blank=True)
-    country_code = models.ForeignKey('Country_Codes', on_delete=models.SET_NULL, null=True, blank=True)
+    country_code = models.ForeignKey(Country_Codes, on_delete=models.SET_NULL, null=True, blank=True)
 
     USERNAME_FIELD = 'email'  
     REQUIRED_FIELDS = []
@@ -174,7 +175,7 @@ class Franchisee(models.Model):
 
     valid_from = models.DateTimeField()
     valid_up_to = models.DateTimeField()
-    status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')])
+    status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')],default="Inactive")
     verification_id = models.CharField(max_length=255, blank=True, null=True)  
     verificationid_number = models.CharField(max_length=50, blank=True, null=True)  # ID number field
     community_name = models.CharField(max_length=50)
@@ -521,27 +522,30 @@ class ServiceRequest(models.Model):
         if self.availability_from >= self.availability_to:
             raise ValidationError('Availability "from" time must be before "to" time.')    
 
+
+
 class Invoice(models.Model):
     INVOICE_TYPE_CHOICES = [
         ('service_request', 'Service Request'),
         ('dealer_payment', 'Dealer Payment'),
         ('provider_payment', 'Service Provider Payment'),
-        ('Ads' ,'Ads')
+        ('service_registration','service_registration'),
+        ('franchisee_registration','Franchisee Registration'),
+        ('Ads' ,'Ads'),
+        ('lead_purchase','lead_purchase')
     ]
     
     invoice_number = models.PositiveIntegerField(unique=True, editable=False)
 
     #invoice_type: This field determines whether the invoice is related to a Service Request payment (service_request), a Dealer Payment (dealer_payment), or a Service Provider Payment (provider_payment).
-    invoice_type = models.CharField(max_length=20, choices=INVOICE_TYPE_CHOICES)
+    invoice_type = models.CharField(max_length=30, choices=INVOICE_TYPE_CHOICES)
     
     #A foreign key that links to a ServiceRequest model, which is populated if the payment is related to a customer requesting a service.
-    service_request = models.ForeignKey(ServiceRequest, on_delete=models.SET_NULL, null=True, blank=True,related_name='invoices')
+    service_request = models.ForeignKey(ServiceRequest, on_delete=models.SET_NULL, null=True, blank=True,related_name='servicerequests_invoices')
     
-    # dealer = models.ForeignKey(dealer, on_delete=models.PROTECT,related_name='to_invoice')
-    # franchisee = models.ForeignKey(franchisee, on_delete=models.PROTECT,related_name='to_invoice')
-    
-    
-    
+    #A foreign key that links to a ServiceRequest model, which is populated if the payment is related to a customer requesting a service.
+    service_register = models.ForeignKey(ServiceRegister, on_delete=models.SET_NULL, null=True, blank=True,related_name='serviceregister_invoices')
+
     # Sender (user who is paying) and receiver (user receiving payment)
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_payment')
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_payment')
@@ -549,12 +553,14 @@ class Invoice(models.Model):
     quantity = models.IntegerField(null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    payment_status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('paid', 'Paid'), ('cancelled', 'Cancelled')], default='pending')
+    partial_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, default=0)  # New field for partial payment
+    payment_balance = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, default=0)
+    payment_status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('paid', 'Paid'), ('partially paid', 'partially paid'), ('cancelled', 'Cancelled')], default='pending')
 
     invoice_date = models.DateTimeField(auto_now_add=True)
     due_date = models.DateTimeField(null=True, blank=True)
     
-    appointment_date = models.DateTimeField()
+    appointment_date = models.DateTimeField(null=True, blank=True)
     additional_requirements = models.TextField(null=True, blank=True)
     accepted_terms = models.BooleanField(default=False)
 
@@ -580,12 +586,13 @@ class Invoice(models.Model):
             self.invoice_number = last_invoice.invoice_number + 1 if last_invoice else 1
         super().save(*args, **kwargs)    
 
+
+
+
 class Payment(models.Model):
 
     PAYMENT_STATUS_CHOICES = [
         ('pending', 'Pending'),
-        ('rescheduled', 'rescheduled'),
-        ('partially paid', 'partially paid'),
         ('completed', 'Completed'),
         ('failed', 'Failed'),
     ]
@@ -593,13 +600,14 @@ class Payment(models.Model):
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='payments')
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_payments')  # User who sends the payment
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_payments')  # User who receives the payment
-    description = models.TextField(null=True, max_length=200 ,blank=True)
-    transaction_id = models.CharField(max_length=15)
+    transaction_id = models.CharField(max_length=25)
+    order_id = models.CharField(max_length=100, null=True, blank=True)
+    signature = models.CharField(max_length=256, null=True, blank=True)
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
-    payment_method = models.CharField(max_length=50, choices=PAYMENT_METHOD_CHOICES)
+    payment_method = models.CharField(max_length=50, choices=PAYMENT_METHOD_CHOICES,default='razorpay')
     payment_date = models.DateTimeField(default=timezone.now)
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
-
+    
     def __str__(self):
         return f"Payment of {self.amount_paid} by {self.sender} to {self.receiver}"
 
@@ -611,6 +619,19 @@ class Payment(models.Model):
         self.payment_status = 'failed'
         self.save()
 
+
+
+
+class Accounts(models.Model):
+    invoice_no = models.IntegerField()
+    date = models.DateTimeField()
+    descriptions_remarks = models.TextField(max_length=200)
+    dr = models.IntegerField() 
+    cr = models.IntegerField() 
+
+    def __str__(self):
+        return self.invoice_no
+    
 
 class Complaint(models.Model):
     STATUS_CHOICES = [

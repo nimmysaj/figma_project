@@ -51,7 +51,8 @@ INSTALLED_APPS = [
     'Accounts',
     'customer',
     'service_provider',
-    'admin_app'
+    'admin_app',
+    'payment',
 ]
 
 MIDDLEWARE = [
@@ -69,7 +70,7 @@ ROOT_URLCONF = 'figma.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -171,6 +172,11 @@ EMAIL_USE_TLS = True  # Use TLS encryption
 EMAIL_HOST_USER = ''  # Your email
 EMAIL_HOST_PASSWORD = ''  # Your email password
 DEFAULT_FROM_EMAIL = ''  # Default from email
+
+
+
+RAZORPAY_KEY_ID = 'rzp_test_SPupR7nnkRh33c'
+RAZORPAY_KEY_SECRET = 'URk9gOT3hQYyqaax7IXdvyEd' 
 
 # settings.py
 #TWILIO_ACCOUNT_SID = ''

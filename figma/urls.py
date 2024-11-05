@@ -29,6 +29,7 @@ urlpatterns = [
     path('admin_app/', include('admin_app.urls')),
     path('customer/', include('customer.urls')),
     path('service-provider/', include('service_provider.urls')),
+    path('payment/', include('payment.urls'))
 ]
 
 if settings.DEBUG:
