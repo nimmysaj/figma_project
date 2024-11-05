@@ -3,6 +3,7 @@ from Accounts.models import *
 import re
 from datetime import datetime
 from admin_app.models import *
+from decimal import Decimal, ROUND_DOWN
 
 class Franchise_Type_Serializer(serializers.ModelSerializer):
     class Meta:
@@ -107,54 +108,57 @@ class FranchiseeDetailsSerializer(serializers.ModelSerializer):
         else:
             return None
 
-# class NewAddSerializer(serializers.ModelSerializer):
-#     ad_category_name = serializers.CharField(source='ad_category.ad_type', read_only=True) 
-#     total_days = serializers.SerializerMethodField()
-#     ad_user_name = serializers.CharField(source='ad_user.full_name', read_only=True)
-#     total_amount = serializers.SerializerMethodField()
+class NewAddSerializer(serializers.ModelSerializer):
+    user_full_name = serializers.SerializerMethodField(read_only=True)
+    ad_category_name = serializers.CharField(source='ad_category.ad_type', read_only=True)
+    user_type = serializers.SerializerMethodField(read_only=True)
 
-#     class Meta:
-#         model = Ad_Management
-#         fields = [
-#             'title', 'description', 'ad_category_name', 'valid_from', 'valid_up_to', 'target_area', 'total_days', 'total_amount',
-#             'image', 'ad_user_name'
-#         ]
-
-#    # Method to calculate total days
-#     def get_total_days(self, obj):
-#         if obj.valid_from and obj.valid_up_to:
-#             delta = obj.valid_up_to - obj.valid_from  # Calculate date difference
-#             return delta.days  # Return the number of days
-#         return 0  # Return 0 if any date is missing
-
-#     # Method to calculate total amount
-#     def get_total_amount(self, obj):
-#         total_days = self.get_total_days(obj)  # Get total days
-#         if total_days and obj.ad_category.rate:
-#             return total_days * obj.ad_category.rate  # Calculate total amount
-#         return 0  # Return 0 if any value is missing
-
-#     # Image validator to check dimensions
-#     def validate_image(self, value):
-#         image_file = Image.open(value)  # Open the uploaded image
+    class Meta:
+        model = Ad_Management
+        fields = [ 'title','description','ad_user','ad_category','user_full_name','user_type','ad_category_name',
+                  'valid_from', 'valid_up_to','target_area','status','image','total_days', 'total_amount']
+        read_only_fields = ['ad_id','total_days', 'total_amount','user_full_name','user_type','ad_category_name']  # These will be calculated and not inputted
+    
+    def get_user_full_name(self, obj):
+        return obj.ad_user.full_name  
+    
+    def get_user_type(self,obj):
+        if obj.ad_user.is_service_provider:
+           return 'Service Provider'
+        if obj.ad_user.is_franchisee:
+             return 'Franchisee'
+        if obj.ad_user.is_dealer:
+            return 'Dealer'
         
-#         # Get the ad category from the validated data
-#         ad_category_id = self.initial_data.get('ad_category')
-#         if not ad_category_id:
-#             raise serializers.ValidationError("Ad category is required.")
+        else:return 'No User Type Assigned'
 
-#         # Retrieve expected dimensions from the Ad_category model
-#         try:
-#             ad_category_obj = Ad_category.objects.get(id=ad_category_id)
-#         except Ad_category.DoesNotExist:
-#             raise serializers.ValidationError("Invalid ad category.")
+    def validate(self, attrs):
+        # Fetch the ad_category instance directly from attrs
+        ad_category = attrs.get('ad_category')
+        
+        # Ensure valid_from and valid_up_to dates are provided and calculate total_days
+        valid_from = attrs.get('valid_from')
+        valid_up_to = attrs.get('valid_up_to')
 
-#         expected_width = ad_category_obj.image_width
-#         expected_height = ad_category_obj.image_height
+        if valid_from and valid_up_to:
+            duration = (valid_up_to - valid_from).days
+            attrs['total_days'] = duration
+        else:
+            raise serializers.ValidationError("Both 'valid_from' and 'valid_up_to' dates are required.")
 
-#         # Check if the uploaded image matches the expected dimensions
-#         if image_file.width != expected_width or image_file.height != expected_height:
-#             raise serializers.ValidationError(
-#                 f"Image dimensions should be {expected_width}x{expected_height}px."
-#             )
-#         return value
+        # Calculate the total amount using the ad_category rate
+        monthly_rate = ad_category.rate
+        daily_wage = int(monthly_rate // 30) if monthly_rate else 0
+        attrs['total_amount'] = duration * daily_wage
+
+        return attrs
+
+class InvoiceSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Invoice
+        fields = ['invoice_type', 'sender', 'receiver', 'price', 'total_amount', 'invoice_date','appointment_date']
+        read_only_fields = ['invoice_date']
+        
+    def create(self,validated_data):
+        return Invoice.objects.create(**validated_data)

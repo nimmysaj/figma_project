@@ -4,10 +4,18 @@ from rest_framework.response import Response
 from Accounts.models import Franchise_Type, ServiceRequest, ServiceProvider, Franchisee
 from admin_app.models import *
 from rest_framework import serializers
-from .serializer import Franchise_Type_Serializer, ServiceHistorySerializer, FranchiseeDetailsSerializer#, NewAddSerializer
+from .serializer import *
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination  # Import pagination class
 from django.core.paginator import Paginator
+import razorpay
+from django.conf import settings
+from admin_app.models import Payment
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from django.db.utils import IntegrityError
+
 
 # Create your views here.
 class Franchise_TypeView(APIView):
@@ -165,27 +173,73 @@ class FranchiseeDetailsView(APIView):
 
         return Response(serialized_frdata, status=status.HTTP_200_OK)
 
-# class AdListView(APIView):
-#     """
-#     View to list all ads or filter based on query parameters.
-#     """
+class AdListView(APIView):
+    """
+    View to list all ads or filter based on query parameters.
+    """
 
-#     def get(self, request, *args, **kwargs):
-#         # Optional filtering logic (e.g., filter ads by 'target_area' or date range)
-#         queryset = Ad_Management.objects.all()
+    def get(self, request, *args, **kwargs):
+        # Optional filtering logic (e.g., filter ads by 'target_area' or date range)
+        queryset = Ad_Management.objects.all()
 
-#         # Serialize the queryset
-#         serializer = NewAddSerializer(queryset, many=True)
+        # Serialize the queryset
+        serializer = NewAddSerializer(queryset, many=True)
 
-#         # Return the serialized data as response
-#         return Response(serializer.data, status=status.HTTP_200_OK)
+        # Return the serialized data as response
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-#     def post(self, request, *args, **kwargs):
-#         # Deserialize and validate incoming data
-#         serializer = NewAddSerializer(data=request.data)
+    def post(self, request, *args, **kwargs):
+        ad_serializer = NewAddSerializer(data=request.data)
+        if ad_serializer.is_valid():
+            
+            ad_management = ad_serializer.save()
+            # Prepare invoice data after ad creation
+            admin_user = User.objects.filter(is_superuser=True).first()
+            invoice_data = {
+                'invoice_type': 'Ads',
+                'sender': ad_management.ad_user.id,
+                'receiver': admin_user.id,
+                'price': ad_management.total_amount,
+                'total_amount': ad_management.total_amount,
+                'invoice_date': ad_management.valid_from,
+                'appointment_date': ad_management.valid_from
+            }
+            # Create invoice
+            invoice_serializer = InvoiceSerializer(data=invoice_data)
+            if invoice_serializer.is_valid():
+                invoice_serializer.save()
+            else:
+                return Response(invoice_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Return response for the ad and invoice creation
+            return Response({
+                "ad_management": ad_serializer.data,
+                "invoice": invoice_serializer.data
+            }, status=status.HTTP_201_CREATED)
+        # Handle errors in ad creation
+        return Response(ad_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+           
+    # PUT: Update an existing advertisement
 
-#         if serializer.is_valid():
-#             serializer.save()  # Save the new ad to the database
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         else:
-#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def put(self, request, pk, *args, **kwargs):
+        # Retrieve the ad using the primary key from the URL
+        ad = get_object_or_404(Ad_Management, id=pk)
+
+        # Create a serializer with partial updates allowed
+        serializer = NewAddSerializer(ad, data=request.data, partial=True)
+        
+        if serializer.is_valid():
+            ad = serializer.save()
+            return Response(NewAddSerializer(ad).data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self,request, *args, **kwargs):
+            id = request.data.get('id')
+            try:
+                ad = Ad_Management.objects.get(id=id)
+                ad.delete()
+                return Response({'message': 'Ad deleted successfully.'}, status=status.HTTP_204_NO_CONTENT)
+            except Ad_Management.DoesNotExist:
+                return Response({'error': 'Ad not found.'}, status=status.HTTP_404_NOT_FOUND)
+
