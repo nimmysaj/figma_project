@@ -157,7 +157,13 @@ def payment_view(request):
     return render(request, 'payment/payment.html', {
         'razorpay_key': settings.RAZORPAY_KEY_ID  # Pass the Razorpay key to the template
     })
-   
+
+
+def U21(request):
+    return render(request, 'payment/U21.html')
+
+def U22(request):
+    return render(request, 'payment/U22.html')
 #without return  invoice details,  working code
 """
 

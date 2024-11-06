@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Methods</title>
+    <style>
+        /* General styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #D8B1AB;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .payment-methods-card {
+            background-color: #F2F2F2;
+            width: 320px;
+            padding: 20px;
+            border-radius: 16px;
+        }
+
+        .header {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .payment-methods-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .payment-button {
+            background-color: #FFFFFF;
+            border: none;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 16px;
+            color: #333;
+            cursor: pointer;
+            text-align: left;
+            transition: background-color 0.3s;
+        }
+
+        .payment-button:hover {
+            background-color: #E0E0E0;
+        }
+
+        .pay-button {
+            background-color: #333;
+            color: #FFFFFF;
+            padding: 14px;
+            border: none;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .add-method {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+            font-size: 24px;
+            color: #333;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="payment-methods-card">
+        <div class="header">
+            PAYMENT METHODS
+            <span>...</span>
+        </div>
+
+        <div class="payment-methods-list">
+            <button class="payment-button">Paypal</button>
+            <button class="payment-button">Google Pay</button>
+            <button class="payment-button">Apple Pay</button>
+            <button class="payment-button">**** **** 3054</button>
+        </div>
+
+        <button class="pay-button">PAY RS 75</button>
+        <div class="add-method">+</div>
+    </div>
+</body>
+</html>

@@ -161,6 +161,6 @@ REST_FRAMEWORK = {
 
 """
 
-RAZORPAY_KEY_ID = 'rzp_test_nCK5pKIuMmqyuY'
-RAZORPAY_KEY_SECRET = 'su5sk2GafpbzObnXbnrtgssx'
+RAZORPAY_KEY_ID = 'rzp_test_8Y1iKRSDXvwbd5'
+RAZORPAY_KEY_SECRET = 'kcNKdZGhKNzhtLk1pRhLublp'
 

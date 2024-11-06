@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Success</title>
+    <style>
+        /* General styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .success-card {
+            background-color: #FFFFFF;
+            width: 320px;
+            padding: 40px 20px;
+            border-radius: 16px;
+            text-align: center;
+        }
+
+        .success-card h1 {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .success-card p {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .stars {
+            font-size: 30px;
+            margin-bottom: 20px;
+            color: #FFA726;
+        }
+
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .watch-course-btn, .e-receipt-btn {
+            background-color: #333;
+            color: #FFFFFF;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="success-card">
+        <div class="stars">⭐ ⭐ ⭐ ⭐ ⭐</div>
+        <h1>Congratulations</h1>
+        <p>Your payment is successful. Purchase a new course</p>
+
+        <div class="button-container">
+            <button class="watch-course-btn">Watch the Course</button>
+            <button class="e-receipt-btn">E - Receipt →</button>
+        </div>
+    </div>
+</body>
+</html>

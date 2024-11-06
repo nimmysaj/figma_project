@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
-from .models import User, OTP, Country_Codes, ServiceRequest
+from .models import User, OTP, Country_Codes, ServiceRequest, ServiceRegister
 from django.core.mail import send_mail
 from phonenumber_field.serializerfields import PhoneNumberField 
 import pycountry 
@@ -180,3 +180,10 @@ class ServiceRequestDetailSerializer(serializers.ModelSerializer):
             'availability_to',
             'acceptance_status'
         ]
+
+class ServiceRegisterSerializer(serializers.ModelSerializer):
+    subcategory = serializers.CharField(source='subcategory.title')  # Use source to get the title instead of id
+
+    class Meta:
+        model = ServiceRegister
+        fields = ['subcategory']  # Only include the field you want to display (e.g., subcategory.title)

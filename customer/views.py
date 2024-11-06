@@ -4,8 +4,8 @@ from django.shortcuts import render
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import User, OTP, ServiceRequest, ServiceRegister, User, Subcategory, Invoice
-from .serializers import UserRegistrationSerializer, OTPVerifySerializer, ServiceRequestSerializer, ServiceRequestDetailSerializer
+from .models import User, OTP, ServiceRequest, ServiceRegister, User, Subcategory, Invoice, ServiceProvider
+from .serializers import UserRegistrationSerializer, OTPVerifySerializer, ServiceRequestSerializer, ServiceRequestDetailSerializer, ServiceRegisterSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import generics
 from django.contrib.auth import authenticate, login
@@ -13,6 +13,7 @@ from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from django.shortcuts import get_object_or_404
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 """
 
@@ -251,3 +252,45 @@ class ServiceRequestInvoiceDetailView(APIView):
         
         return Response(data, status=status.HTTP_200_OK)
 
+
+
+#For getting new token by using refresh token. here we are not using this function instead of importing a inbuild function from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+"""
+class TokenRefreshView(APIView):
+    def post(self, request):
+        refresh_token = request.data.get('refresh')
+
+        if not refresh_token:
+            return Response({'detail': 'Refresh token is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Use the provided refresh token to create a new access token
+            refresh = RefreshToken(refresh_token)
+            access_token = str(refresh.access_token)
+
+            return Response({'access': access_token}, status=status.HTTP_200_OK)
+        except TokenError as e:
+            return Response({'detail': 'Invalid or expired refresh token.'}, status=status.HTTP_400_BAD_REQUEST)
+            """
+
+
+
+#for filter the services using service provider id
+class ActiveServicesView(APIView):
+    def post(self, request):
+        service_provider_id = request.data.get('service_provider_id')
+        
+        if not service_provider_id:
+            return Response({"error": "service_provider_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if the service provider exists
+        try:
+            service_provider = ServiceProvider.objects.get(id=service_provider_id)
+        except ServiceProvider.DoesNotExist:
+            return Response({"error": "Service provider not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Get active services for the given service provider
+        active_services = ServiceRegister.objects.filter(service_provider=service_provider, status='Active')
+        serializer = ServiceRegisterSerializer(active_services, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)

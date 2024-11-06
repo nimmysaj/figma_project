@@ -5,13 +5,111 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payment</title>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <style>
+        /* Reset some basic styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #E8D8D2;
+            height: 100vh;
+            margin: 0;
+        }
+
+        /* Card container */
+        .payment-card {
+            background-color: #FFFFFF;
+            width: 320px;
+            border-radius: 16px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* Title */
+        .payment-card h1 {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        /* Button styles */
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .button {
+            background-color: #222;
+            color: #FFFFFF;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .button:hover {
+            background-color: #333;
+        }
+
+        /* Razorpay theme color */
+        .razorpay-theme {
+            color: #333; /* Change to the theme color */
+        }
+
+        /* Footer button for Add New Card */
+        .add-card-button {
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            border-radius: 8px;
+            background-color: #333;
+            color: #FFF;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .add-card-button:hover {
+            background-color: #444;
+        }
+
+        .arrow {
+            margin-left: 8px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Payment Page</h1>
+    <div class="payment-card">
+        <h1>New Card</h1>
 
-    <!-- Two buttons for full and partial payments -->
-    <button id="payFullBtn">Pay Full Amount</button>
-    <button id="payPartialBtn">Pay Only Advance</button>
+        <!-- Two buttons for full and partial payments -->
+        <div class="button-container">
+            <button class="button" id="payFullBtn">Pay Full Amount</button>
+            <button class="button" id="payPartialBtn">Pay Only Advance</button>
+        </div>
+
+        <!-- Footer styled as Add New Card button -->
+        <div class="add-card-button">
+            Add New Card
+            <span class="arrow">→</span>
+        </div>
+    </div>
 
     <script>
         // Function to initiate payment with either 'full' or 'partial' payment type
@@ -35,7 +133,6 @@
                         image: "https://example.com/your_logo",  // Replace with your logo URL
                         order_id: data.order_id,  // Order ID from backend
                         handler: function (response) {
-                            // Log payment details for debugging
                             console.log(response.razorpay_payment_id);
                             console.log(response.razorpay_order_id);
                             console.log(response.razorpay_signature);
@@ -66,7 +163,7 @@
                             address: "Customer Address",  // Custom notes
                         },
                         theme: {
-                            color: "#F37254"  // Theme color
+                            color: "#333"  // Theme color to match UI
                         }
                     };
 
