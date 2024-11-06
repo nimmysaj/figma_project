@@ -140,11 +140,13 @@ class IncomeManagementSerializer(serializers.ModelSerializer):
             'company', 'franchisee', 'dealer', 'service_provider'
         ]
 
+
     def validate_income_type(self, value):
         # Check if the income_type already exists
         if IncomeManagement.objects.filter(income_type=value).exists():
             raise serializers.ValidationError("This income type already exists. Please choose a different income type.")
         return value
+    
     
     def validate(self, data):
         # Calculate the total of the percentage or amount fields
