@@ -336,46 +336,100 @@ class UnifiedView(APIView):
 
 # ************************************  GRAPH - PHINANCIAL MANAGEMENT  *******************************************
 
+# class MonthlyFinanaceReportView(generics.GenericAPIView):
+#     serializer_class = MonthlyFinanceReportSerializer
+#     # permission_classes = IsAuthenticated
+
+#     def post(self, request):
+#         # Validate the incoming data using the serializer
+#         serializer = self.get_serializer(data = request.data)
+#         serializer.is_valid(raise_exception = True)
+
+#         month = serializer.validated_data['month']
+#         year = serializer.validated_data['year']
+
+#         # Get the start and end dates for the specified month
+#         start_date = datetime(year, month, 1)
+#         if month == 12:
+#             end_date = datetime(year+1, 1, 1)  #January of the next year
+#         else:
+#             end_date = datetime(year, month+1, 1) #First day of the next month
+
+#         # Calculate total expenses where sender is admin and payment status is completed
+#         total_expense = Payment.objects.filter(
+#             sender__is_staff = True, #Check if the sender is admin
+#             payment_status = 'completed',
+#             payment_date__gte = start_date,   #gte- greater than or equal to
+#             payment_date__lt = end_date       #lt - less than
+#         ).aggregate(total=Sum('amount_paid'))['total'] or 0    #['total'] is a dictionary it holds the sum of amount_paid field-- eg: 'total':1500
+
+#         # Calculate total income where receiver is admin and payment status is completed
+#         total_income = Payment.objects.filter(
+#             receiver__is_staff = True,    #In Django's built-in User model, the field for admin users is typically is_staff (not is_admin), so use sender__is_staff
+#             payment_status = 'completed',
+#             payment_date__gte = start_date,
+#             payment_date__lt = end_date
+#         ).aggregate(total=Sum('amount_paid'))['total'] or 0
+
+#         # Return the results
+#         return Response(
+#             {
+#                 'total_expense' : total_expense,
+#                 'total_income' : total_income
+#             }
+#         )
+
 class MonthlyFinanaceReportView(generics.GenericAPIView):
     serializer_class = MonthlyFinanceReportSerializer
     # permission_classes = IsAuthenticated
 
     def post(self, request):
-        # Validate the incoming data using the serializer
-        serializer = self.get_serializer(data = request.data)
+        # Validate the incoming data using the serializer (only year is needed now)
+        serializer = self.get_serializer(data = request.data)    #create instance of serializer
         serializer.is_valid(raise_exception = True)
 
-        month = serializer.validated_data['month']
-        year = serializer.validated_data['year']
 
-        # Get the start and end dates for the specified month
-        start_date = datetime(year, month, 1)
-        if month == 12:
-            end_date = datetime(year+1, 1, 1)  #January of the next year
-        else:
-            end_date = datetime(year, month+1, 1) #First day of the next month
 
-        # Calculate total expenses where sender is admin and payment status is completed
-        total_expense = Payment.objects.filter(
-            sender__is_staff = True, #Check if the sender is admin
-            payment_status = 'completed',
-            payment_date__gte = start_date,   #gte- greater than or equal to
-            payment_date__lt = end_date       #lt - less than
-        ).aggregate(total=Sum('amount_paid'))['total'] or 0    #['total'] is a dictionary it holds the sum of amount_paid field-- eg: 'total':1500
+        year = serializer.validated_data['year']     #Get the year from the requested data
 
-        # Calculate total income where receiver is admin and payment status is completed
-        total_income = Payment.objects.filter(
-            receiver__is_staff = True,    #In Django's built-in User model, the field for admin users is typically is_staff (not is_admin), so use sender__is_staff
-            payment_status = 'completed',
-            payment_date__gte = start_date,
-            payment_date__lt = end_date
-        ).aggregate(total=Sum('amount_paid'))['total'] or 0
+        # Calculate the total expenses and income for each month of the specified year
+        monthly_data = []
+        for month in range(1, 13):
+            # Get the start and end dates for the specified month
+            start_date = datetime(year, month, 1)
+            if month == 12:
+                end_date = datetime(year+1, 1, 1)  #January of the next year
+            else:
+                end_date = datetime(year, month+1, 1) #First day of the next month
 
-        # Return the results
-        return Response(
-            {
-                'total_expense' : total_expense,
-                'total_income' : total_income
-            }
-        )
+            # Calculate total expenses where sender is admin and payment status is completed
+            total_expense = Payment.objects.filter(
+                sender__is_staff = True, #Check if the sender is admin
+                payment_status = 'completed',
+                payment_date__gte = start_date,   #gte- greater than or equal to
+                payment_date__lt = end_date       #lt - less than
+            ).aggregate(total=Sum('amount_paid'))['total'] or 0    #['total'] is a dictionary it holds the sum of amount_paid field-- eg: 'total':1500
+
+            # Calculate total income where receiver is admin and payment status is completed
+            total_income = Payment.objects.filter(
+                receiver__is_staff = True,    #In Django's built-in User model, the field for admin users is typically is_staff (not is_admin), so use sender__is_staff
+                payment_status = 'completed',
+                payment_date__gte = start_date,
+                payment_date__lt = end_date
+            ).aggregate(total=Sum('amount_paid'))['total'] or 0
+
+            # Append the data for the month
+            monthly_data.append(
+                {
+                    'month' : month,
+                    'total_expense' : total_expense,
+                    'total_income ' : total_income
+                }
+            )
+
+            # Return the monthly totals for the entire year
+        return Response({
+                        'year':year, 
+                        'monthly_data' : monthly_data
+                        })
 

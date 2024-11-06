@@ -188,20 +188,29 @@ class UnifiedResponseSerializer(serializers.Serializer):
 
 #**************************************  GRAPH - FINANCIAL MANAGEMENT  **********************************
 
-class MonthlyFinanceReportSerializer(serializers.Serializer):
-    month = serializers.IntegerField()
-    year = serializers.IntegerField()
+# class MonthlyFinanceReportSerializer(serializers.Serializer):
+#     month = serializers.IntegerField()
+#     year = serializers.IntegerField()
 
-    def validate_month(self, value):
-        if value < 1 or value > 12:
-            raise serializers.ValidationError("Month must be between 1 and 12")
-        return value
+#     def validate_month(self, value):
+#         if value < 1 or value > 12:
+#             raise serializers.ValidationError("Month must be between 1 and 12")
+#         return value
     
+#     def validate_year(self, value):
+#         if value < 2024:
+#             raise serializers.ValidationError("Year should be greater than or equal to 2024")
+#         return value
+    
+#     class Meta:
+#         fields = ['month', 'year']
+
+class MonthlyFinanceReportSerializer(serializers.Serializer):
+    year = serializers.IntegerField(min_value = 2000, max_value = 2100)
+
     def validate_year(self, value):
-        if value < 2024:
-            raise serializers.ValidationError("Year should be greater than or equal to 2024")
+        current_year = datetime.now().year
+        if value > current_year:
+            raise serializers.ValidationError("Year cannot be in the future")
         return value
-    
-    class Meta:
-        fields = ['month', 'year']
 
