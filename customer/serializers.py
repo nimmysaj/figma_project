@@ -4,7 +4,7 @@ import phonenumbers
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate
-from Accounts.models import Category, Country_Codes, Customer, CustomerReview, Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, Collar, Service_Type, Complaint
+from Accounts.models import Category, Country_Codes, Customer, CustomerReview, Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory
 from django.contrib.auth.password_validation import validate_password
 from django.db.models import Avg
 from django.core.validators import validate_email
@@ -307,19 +307,6 @@ class SubcategorySerializer(serializers.ModelSerializer):
         model = Subcategory
         fields = ['id', 'title', 'description', 'image', 'status', 'category', 'collar', 'service_type']
 
-
-# Serializer for Service_Type model
-class ServiceTypeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Service_Type
-        fields = ['id', 'name', 'details', 'curreny']
-
-# Serializer for Collar model
-class CollarSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Collar
-        fields = ['id', 'name', 'lead_quantity', 'amount']
-
 class ServiceProviderSerializer(serializers.ModelSerializer):
      # Fetch the full name from the related User model
     full_name = serializers.CharField(source='user.full_name') 
@@ -424,25 +411,3 @@ class ServiceRequestDetailSerializer(serializers.ModelSerializer):
             'availability_to',
             'acceptance_status'
         ]    
-
-class ComplaintSerializer(serializers.ModelSerializer):
-    sender = serializers.PrimaryKeyRelatedField(read_only=True)  
-    receiver = serializers.PrimaryKeyRelatedField(queryset=User.objects.all()) 
-    service_request = serializers.PrimaryKeyRelatedField(queryset=ServiceRequest.objects.all())
-
-    class Meta:
-        model = Complaint
-        fields = [
-            'id', 'sender', 'receiver', 'service_request', 'subject', 'description', 
-            'images', 'submitted_at', 'status', 'resolved_at', 'resolution_notes'
-        ]
-        read_only_fields = ['submitted_at', 'resolved_at', 'status']
-
-class CustomerReviewSerializer(serializers.ModelSerializer):
-    customer_name = serializers.CharField(source='customer.full_name', read_only=True)
-    service_provider_name = serializers.CharField(source='service_provider.full_name', read_only=True)
-
-    class Meta:
-        model = CustomerReview
-        fields = ['id', 'customer', 'customer_name', 'service_provider', 'service_provider_name', 'rating', 'image', 'comment', 'created_at']
-        read_only_fields = ['created_at']

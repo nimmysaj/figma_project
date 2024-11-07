@@ -254,39 +254,6 @@ class SubcategoryListView(generics.ListCreateAPIView):
         category = Category.objects.get(id=category_id)
         serializer.save(category=category)  # Save subcategory with the category
 
-
-
-
-# View for listing and creating Service_Type
-class ServiceTypeListView(generics.ListCreateAPIView):
-    queryset = Service_Type.objects.all()
-    serializer_class = ServiceTypeSerializer
-    authentication_classes = [SessionAuthentication, BasicAuthentication]  # Override JWT if needed
-    permission_classes = [AllowAny]  # Remove any restrictions if not needed
-
-# View for retrieving, updating, or deleting a single Service_Type
-class ServiceTypeDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Service_Type.objects.all()
-    serializer_class = ServiceTypeSerializer
-    authentication_classes = [SessionAuthentication, BasicAuthentication]
-    permission_classes = [AllowAny]
-
-# View for listing and creating Collar
-class CollarListView(generics.ListCreateAPIView):
-    queryset = Collar.objects.all()
-    serializer_class = CollarSerializer
-    authentication_classes = [SessionAuthentication, BasicAuthentication]
-    permission_classes = [AllowAny]
-
-# View for retrieving, updating, or deleting a single Collar
-class CollarDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Collar.objects.all()
-    serializer_class = CollarSerializer
-    authentication_classes = [SessionAuthentication, BasicAuthentication]
-    permission_classes = [AllowAny]
-
-
-
 # List all active and verified service providers under a specific subcategory
 class ServiceProviderListView(generics.ListAPIView):
     serializer_class = ServiceProviderSerializer
@@ -550,41 +517,3 @@ class ServiceRequestInvoiceDetailView(APIView):
 
 
         return Response(data, status=status.HTTP_200_OK)
-
-class ComplaintListCreateView(generics.ListCreateAPIView):
-    serializer_class = ComplaintSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        # Filter complaints based on the authenticated user's role
-        user = self.request.user
-        if user.is_staff:
-            return Complaint.objects.all()  # Staff can see all complaints
-        return Complaint.objects.filter(sender=user)  # Regular users can only see their own complaints
-
-    def perform_create(self, serializer):
-        # The serializer will automatically assign the sender as the authenticated user
-        serializer.save(sender=self.request.user)
-
-class ComplaintDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = ComplaintSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        user = self.request.user
-        if user.is_staff:
-            return Complaint.objects.all()  # Staff can access all complaints
-        return Complaint.objects.filter(sender=user)  # Restrict to the user's complaints
-
-class CustomerReviewListCreateView(generics.ListCreateAPIView):
-    queryset = CustomerReview.objects.all()
-    serializer_class = CustomerReviewSerializer
-    permission_classes = [IsAuthenticated]  # Ensure only authenticated users can leave reviews
-
-    def perform_create(self, serializer):
-        serializer.save(customer=self.request.user)  # Automatically associate the logged-in user with the review
-
-class CustomerReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = CustomerReview.objects.all()
-    serializer_class = CustomerReviewSerializer
-    permission_classes = [IsAuthenticated]  # Ensure only authenticated users can modify their reviews
