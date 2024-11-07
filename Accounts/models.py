@@ -491,32 +491,38 @@ class ServiceRequest(models.Model):
         ('completed', 'Completed'),
         ('cancelled', 'Cancelled'),
     ]
-
     
-    booking_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    title = models.CharField(max_length=20, null=True, blank=True)
-    customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='from_servicerequest')
-    service_provider = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='to_servicerequest')
-    service = models.ForeignKey('ServiceRegister', on_delete=models.PROTECT, related_name='servicerequest')
+    booking_id = models.CharField(max_length=10, unique=True, editable=False)
+    title = models.CharField(max_length=20,null=True,blank=True)
+    customer = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_servicerequest')
+    service_provider = models.ForeignKey(User, on_delete=models.PROTECT,related_name='to_servicerequest')
+    service = models.ForeignKey(ServiceRegister, on_delete=models.CASCADE,related_name='servicerequest')
     work_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    acceptance_status = models.CharField(max_length=20, choices=[('accept', 'accept'), ('decline', 'decline'), ('pending', 'pending')], default='pending')
+    acceptance_status = models.CharField(max_length=20,choices=[('accept', 'accept'), ('decline', 'decline'),('pending', 'pending')],default='pending')
     request_date = models.DateTimeField(auto_now_add=True)
-    availability_from = models.DateTimeField()
-    availability_to = models.DateTimeField()
+    availability_from = models.DateTimeField()  # New field for availability start
+    availability_to = models.DateTimeField()    # New field for availability end
     additional_notes = models.TextField(blank=True, null=True)
-    image = models.ImageField(upload_to='service_request/', null=True, blank=True)
-    payment_status = models.ForeignKey('Invoice', on_delete=models.PROTECT, related_name='from_invoice', null=True, blank=True)
-
+    image = models.ImageField(upload_to='service_request/', null=True, blank=True, validators=[validate_file_size])
+    reschedule_status = models.BooleanField(default=False)  # New field for rescheduling status
+    updated_at = models.DateTimeField(auto_now=True)
 
 
     def __str__(self):
-        return f"{self.service}"
+        return f"Request by {self.customer.full_name} for {self.service} ({self.acceptance_status})"
 
     def clean(self):
+        # Ensure the availability_from is before availability_to
         if self.availability_from >= self.availability_to:
-            raise ValidationError('Availability "from" time must be before "to" time.')
-   
+            raise ValidationError('Availability "from" time must be before "to" time.')    
+    
+    def save(self, *args, **kwargs):
+        if not self.booking_id:  # Generate booking_id only if it doesn't exist
+            self.booking_id = str(uuid.uuid4())[:10]  # Generate a unique ID
+        super().save(*args, **kwargs)
 
+
+        
 class Invoice(models.Model):
     INVOICE_TYPE_CHOICES = [
         ('service_request', 'Service Request'),

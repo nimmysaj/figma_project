@@ -1,5 +1,5 @@
 from django.urls import include, path
-from .views import CustomerServiceRequestView, ServiceProviderLoginView, RequestOTPView, ServiceProviderRequestsView, ServiceProviderViewSet, ServiceRegisterViewSet, ServiceRequestInvoiceView, ChangePasswordView, CompletedWorkListView, OngoingWorkListView, ServiceRequestStatusCheckView, VerifyOTPAndSetPasswordView
+from .views import CustomerServiceRequestView, ServiceProviderLoginView, RequestOTPView, ServiceProviderRequestsView, ServiceProviderViewSet, ServiceRegisterViewSet, ServiceRequestInvoiceView, ChangePasswordView, CompletedWorkListView, OngoingWorkListView, ServiceRequestStatusCheckView, VerifyOTPAndSetPasswordView, ServiceProviderCountsView, ServiceProviderDetailsView, ServiceProviderRevenueView, ServiceReachView
 from rest_framework.routers import DefaultRouter
 router = DefaultRouter()
 router.register(r'service-registers', ServiceRegisterViewSet, basename='service-register')
@@ -24,4 +24,11 @@ urlpatterns = [
     path('completed-work/', CompletedWorkListView.as_view(), name='completed-work'),
     path('ongoing-work/', OngoingWorkListView.as_view(), name='ongoing-work'),
     path('change-work-status/', ServiceRequestStatusCheckView.as_view(), name='check-work-status'),
+
+    #dashboard
+    path('counts/', ServiceProviderCountsView.as_view(), name='service-provider-counts'),
+    path('details-view/', ServiceProviderDetailsView.as_view(), name='service-provider-details') ,
+    path('revenue/', ServiceProviderRevenueView.as_view(), name="service-provider-revenue"),
+    path('service-reach/', ServiceReachView.as_view(), name="service-reach"),
+
 ]

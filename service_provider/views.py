@@ -11,14 +11,23 @@ from rest_framework import status, permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import generics,viewsets
-from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User, CustomerReview, OTP
+from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User, CustomerReview, OTP, Invoice
 from service_provider.permissions import IsOwnerOrAdmin
-from .serializers import CustomerServiceRequestSerializer, InvoiceSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestCustomSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer, ServiceRequestSerializer, VerifyOTPAndSetPasswordSerializer, ChangePasswordSerializer 
+from .serializers import CustomerServiceRequestSerializer, InvoiceSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestCustomSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer, ServiceRequestSerializer, VerifyOTPAndSetPasswordSerializer, ChangePasswordSerializer, SimpleServiceRequestSerializer
 from django.utils.encoding import smart_bytes, smart_str
 from twilio.rest import Client
 from rest_framework.decorators import action
 from copy import deepcopy
 from rest_framework.exceptions import NotFound
+from django.utils import timezone
+from django.db.models import Avg,Sum
+from datetime import timedelta
+from django.db.models import Q
+from decimal import Decimal
+from django.db.models.functions import TruncMonth
+from django.db.models import Count
+
+
 
 # Create your views here.
 
@@ -439,3 +448,185 @@ class ServiceRequestStatusCheckView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response({"message": "The service request is not in 'in_progress' status."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ServiceProviderCountsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        # Get the logged-in service provider
+        service_provider = get_object_or_404(ServiceProvider, user=request.user)
+
+        # Count of registered services
+        registered_services_count = ServiceRegister.objects.filter(service_provider=service_provider).count()
+
+        # Count of active jobs
+        active_jobs_count = ServiceRequest.objects.filter(
+            service_provider=request.user,
+            work_status='in_progress'
+        ).count()
+
+        # Count of service requests
+        service_requests_count = ServiceRequest.objects.filter(service_provider=request.user).count()
+
+        #completed jobs count 
+        completed_jobs_count = ServiceRequest.objects.filter(
+            service_provider = service_provider.user,
+            work_status = 'completed'
+        ).count()
+
+        # Return counts in response
+        return Response({
+            "Registered Services": registered_services_count,
+            "Active jobs": active_jobs_count,
+            "Service Requests": service_requests_count,
+            "Complete Jobs": completed_jobs_count,
+        }, status=200)
+
+
+class ServiceProviderDetailsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        # Get the logged-in service provider
+        service_provider = get_object_or_404(ServiceProvider, user=request.user)
+
+        # Define the time filter
+        one_day_ago = timezone.now() - timedelta(days=1)
+
+        # Recent Activities (updated in the last 24 hours)
+        recent_activities = ServiceRequest.objects.filter(
+            service_provider=request.user,
+            updated_at__gte=one_day_ago
+        ).values('booking_id', 'title', 'work_status', 'updated_at')
+
+        # Active services (in progress and updated within the last 24 hours)
+        active_services = ServiceRequest.objects.filter(
+            service_provider=request.user,
+            work_status="in_progress",
+            updated_at__gte=one_day_ago
+        )
+        active_services_serializer = SimpleServiceRequestSerializer(active_services, many=True)
+
+        # Active bookings (pending or rescheduled, updated within the last 24 hours)
+        active_bookings = ServiceRequest.objects.filter(
+            service_provider=service_provider.user,
+            updated_at__gte=one_day_ago
+        ).filter(
+            Q(work_status='pending') | Q(reschedule_status=True)
+        )
+        active_bookings_serializer = SimpleServiceRequestSerializer(active_bookings, many=True)
+
+        # Service requests (all requests updated within the last 24 hours)
+        service_requests = ServiceRequest.objects.filter(
+            service_provider=request.user,
+            acceptance_status = "pending",
+            updated_at__gte=one_day_ago
+        )
+        service_requests_serializer = SimpleServiceRequestSerializer(service_requests, many=True)
+
+        # Return detailed information
+        return Response({
+            "Recent Activities": recent_activities,
+            "Active Services Details(In progress)": active_services_serializer.data,
+            "Bookings(work status  - pending & reschedualed)": active_bookings_serializer.data,
+            "Requests(Accept status - Pending)": service_requests_serializer.data,
+        }, status=200)
+
+
+
+class ServiceProviderRevenueView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        # Get the logged-in service provider
+        service_provider = get_object_or_404(ServiceProvider, user=request.user)
+
+        # Calculate total revenue from all paid invoices received by the provider
+        total_revenue = Invoice.objects.filter(
+            receiver=request.user,
+            payment_status='paid'
+        ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
+
+        # Count the number of paid services
+        no_of_paid_services = Invoice.objects.filter(
+            receiver=request.user,
+            payment_status="paid"
+        ).count()
+
+        # Initialize revenue breakdown data
+        services_revenue_data = []
+        services_revenue_data.append({
+            'No of paid services': no_of_paid_services,
+        })
+
+        # Get unique paid services
+        paid_services = Invoice.objects.filter(
+            receiver=request.user,
+            payment_status='paid'
+        ).values('service_register').distinct()
+
+        for entry in paid_services:
+            service_id = entry['service_register']
+            service = ServiceRegister.objects.get(id=service_id)
+            
+            # Calculate revenue for each service
+            service_revenue = Invoice.objects.filter(
+                receiver=request.user,
+                service_register=service,
+                payment_status='paid'
+            ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
+
+            # Calculate the revenue percentage for each service
+            revenue_percentage = (
+                (service_revenue / total_revenue * 100) if total_revenue > 0 else 0
+            )
+
+            # Count the number of times the service has been bought
+            service_purchase_count = Invoice.objects.filter(
+                receiver=request.user,
+                service_register=service,
+                payment_status='paid'
+            ).count()
+
+            # Append service data with revenue, percentage, and purchase count
+            services_revenue_data.append({
+                'service_name': service.subcategory.title,
+                'amount_paid': float(service_revenue),
+                'revenue_percentage': float(revenue_percentage),
+                'times_bought': service_purchase_count,
+            })
+
+        # Return the revenue breakdown in the response
+        return Response({
+            "Total Revenue": float(total_revenue),
+            "Services Revenue Breakdown": services_revenue_data,
+        }, status=200)
+
+
+class ServiceReachView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        service_provider = get_object_or_404(User, full_name=request.user.full_name)
+        provider_start_date = service_provider.created_at.strftime('%Y-%m')
+
+        # Fetch and count service requests by month
+        monthly_request_counts = (
+            ServiceRequest.objects.filter(service_provider=service_provider)
+            .annotate(month=TruncMonth('request_date'))
+            .values('month')
+            .annotate(request_count=Count('id'))
+            .order_by('month')
+        )
+
+        # Format the data to show counts per month
+        request_dates = {entry['month'].strftime('%Y-%m'): entry['request_count'] for entry in monthly_request_counts}
+
+        # Prepare the response
+        return Response({
+            "service_requests_count": sum(request_dates.values()),
+            "provider_start_date": provider_start_date,
+            "request_dates": request_dates,  # Dictionary with month as key and request count as value
+        })
+    

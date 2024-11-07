@@ -371,3 +371,13 @@ class ServiceRequestCustomSerializer(serializers.ModelSerializer):
         if review:
             return review.rating
         return None  
+
+
+class SimpleServiceRequestSerializer(serializers.ModelSerializer):
+    customer_name = serializers.CharField(source='customer.full_name')  # Assuming there is a customer name field
+    title = serializers.CharField()  # Assuming 'title' is a field in ServiceRequest
+    request_date = serializers.DateTimeField()  # Assuming 'request_date' is a field in ServiceRequest
+
+    class Meta:
+        model = ServiceRequest
+        fields = ['customer_name', 'title', 'request_date']
