@@ -1,24 +1,23 @@
 from django.shortcuts import get_object_or_404
 import phonenumbers
-from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny,IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from customer.permissions import IsOwnerOrAdmin
 from figma import settings
 from .utils import send_otp_via_email, send_otp_via_phone
 from django.utils.http import urlsafe_base64_encode
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import smart_bytes
-from .serializers import CustomerLoginSerializer,CustomerPasswordForgotSerializer, CustomerSerializer, ResendOTPSerializer, ServiceProviderProfileSerializer,ServiceProviderSerializer,RegisterSerializer, ServiceRequestDetailSerializer, ServiceRequestSerializer,SetNewPasswordSerializer, ServiceTypeSerializer, CollarSerializer
+from .serializers import CustomerLoginSerializer, CustomerPasswordForgotSerializer, CustomerSerializer, ResendOTPSerializer, ServiceProviderProfileSerializer,ServiceProviderSerializer,RegisterSerializer, ServiceRequestDetailSerializer, ServiceRequestSerializer,SetNewPasswordSerializer, ServiceTypeSerializer, CollarSerializer, ComplaintSerializer, CustomerReviewSerializer
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from rest_framework.pagination import PageNumberPagination
-from Accounts.models import OTP, Category, Country_Codes, Customer, Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User, Service_Type, Collar
-from rest_framework import status, permissions,generics,viewsets,serializers
+from Accounts.models import OTP, Category, Country_Codes, Customer, Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User, Service_Type, Collar, Complaint, CustomerReview
+from rest_framework import status, permissions, generics, viewsets, serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import update_last_login
 from django.core.mail import send_mail
-from .serializers import CategorySerializer,SubcategorySerializer
+from .serializers import CategorySerializer, SubcategorySerializer
 from rest_framework.decorators import action
 from rest_framework.throttling import UserRateThrottle
 
@@ -200,17 +199,38 @@ class CustomerPasswordForgotView(generics.GenericAPIView):
 
 
 class CustomerViewSet(viewsets.ModelViewSet):
-    permission_class =[IsAuthenticated,IsOwnerOrAdmin]
-    queryset =Customer.objects.all()
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
     serializer_class = CustomerSerializer
+    lookup_field = 'user'  # Change lookup field to 'user'
 
     def get_queryset(self):
-        # Admins see all, service providers see only their own profiles
+        # Admins see all profiles
         if self.request.user.is_staff or self.request.user.is_superuser:
             return Customer.objects.all()
-        
-        # Non-admins can only see their own profile
+
+        # Regular users only see their own profile based on the token
         return Customer.objects.filter(user=self.request.user)
+
+    def retrieve(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        customer = queryset.filter(user=self.request.user).first()
+
+        if customer:
+            serializer = self.get_serializer(customer)
+            return Response(serializer.data)
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    
+    def update(self, request, *args, **kwargs):
+        # Custom update logic based on the authenticated user
+        instance = Customer.objects.filter(user=self.request.user).first()
+        if instance:
+            serializer = self.get_serializer(instance, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
 
 # List all active categories
 class CategoryListView(generics.ListCreateAPIView):
@@ -530,3 +550,41 @@ class ServiceRequestInvoiceDetailView(APIView):
 
 
         return Response(data, status=status.HTTP_200_OK)
+
+class ComplaintListCreateView(generics.ListCreateAPIView):
+    serializer_class = ComplaintSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Filter complaints based on the authenticated user's role
+        user = self.request.user
+        if user.is_staff:
+            return Complaint.objects.all()  # Staff can see all complaints
+        return Complaint.objects.filter(sender=user)  # Regular users can only see their own complaints
+
+    def perform_create(self, serializer):
+        # The serializer will automatically assign the sender as the authenticated user
+        serializer.save(sender=self.request.user)
+
+class ComplaintDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ComplaintSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return Complaint.objects.all()  # Staff can access all complaints
+        return Complaint.objects.filter(sender=user)  # Restrict to the user's complaints
+
+class CustomerReviewListCreateView(generics.ListCreateAPIView):
+    queryset = CustomerReview.objects.all()
+    serializer_class = CustomerReviewSerializer
+    permission_classes = [IsAuthenticated]  # Ensure only authenticated users can leave reviews
+
+    def perform_create(self, serializer):
+        serializer.save(customer=self.request.user)  # Automatically associate the logged-in user with the review
+
+class CustomerReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = CustomerReview.objects.all()
+    serializer_class = CustomerReviewSerializer
+    permission_classes = [IsAuthenticated]  # Ensure only authenticated users can modify their reviews

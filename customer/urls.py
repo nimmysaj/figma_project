@@ -1,6 +1,6 @@
 from django.urls import include, path
 from service_provider.views import ResetPasswordView
-from .views import CategoryListView, CustomerLoginView, CustomerPasswordForgotView, CustomerViewSet, RegisterView, ServiceProviderDetailView, ServiceProviderListView, ServiceRequestCreateView, ServiceRequestDetailView, ServiceRequestInvoiceDetailView, SubcategoryListView, UnifiedSearchView, VerifyOTPView, ServiceTypeListView, ServiceTypeDetailView, CollarListView, CollarDetailView
+from .views import CategoryListView, CustomerLoginView, CustomerPasswordForgotView, CustomerViewSet, RegisterView, ServiceProviderDetailView, ServiceProviderListView, ServiceRequestCreateView, ServiceRequestDetailView, ServiceRequestInvoiceDetailView, SubcategoryListView, UnifiedSearchView, VerifyOTPView, ServiceTypeListView, ServiceTypeDetailView, CollarListView, CollarDetailView, ComplaintListCreateView, ComplaintDetailView, CustomerReviewListCreateView, CustomerReviewDetailView
 from rest_framework.routers import DefaultRouter
 
 
@@ -13,7 +13,7 @@ urlpatterns = [
     path('password-forgot/', CustomerPasswordForgotView.as_view(), name='customer-password-forgot'),
     path('password-reset/<uidb64>/<token>/', ResetPasswordView.as_view(), name='customer-password-reset-confirm'),
     #profile update
-    path('profile/<int:pk>/', CustomerViewSet.as_view({
+    path('profile/', CustomerViewSet.as_view({
         'get': 'retrieve', 
         'put': 'update',
         'patch': 'partial_update'
@@ -35,4 +35,10 @@ urlpatterns = [
     
     path('collars/', CollarListView.as_view(), name='collar_list'),
     path('collars/<int:pk>/', CollarDetailView.as_view(), name='collar_detail'),
+
+    path('complaints/', ComplaintListCreateView.as_view(), name='complaint-list-create'),
+    path('complaints/<int:pk>/', ComplaintDetailView.as_view(), name='complaint-detail'),
+
+     path('reviews/', CustomerReviewListCreateView.as_view(), name='review-list-create'),
+    path('reviews/<int:pk>/', CustomerReviewDetailView.as_view(), name='review-detail'),
 ]
