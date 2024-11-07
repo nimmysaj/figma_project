@@ -1,5 +1,5 @@
 from django.urls import include, path
-from .views import BookingsServiceRequestsView, ComplaintViewSet, CompletedServiceRequestView, CustomerServiceRequestView, DeclineServiceView, DeductLeadBalanceView, FinancialOverviewView, OngoingServiceRequestView, PaymentListView, ServiceDetailsView, ServiceProviderLoginView, ServiceProviderPasswordForgotView, ServiceProviderPasswordForgotView, ResetPasswordView, ServiceProviderRequestsView, ServiceProviderReviews, ServiceProviderViewSet, ServiceRegisterViewSet, ServiceRequestCompleteStatus, ServiceRequestInvoiceView, SetNewPasswordView
+from .views import BookingsServiceRequestsView, ComplaintViewSet, CompletedServiceRequestView, CustomerServiceRequestView, DeclineServiceView, DeductLeadBalanceView, FinancialOverviewView, OngoingServiceRequestView, PaymentListView, ServiceDetailsView, ServiceProviderLoginView, ServiceProviderPasswordForgotView, ServiceProviderPasswordForgotView, ResetPasswordView, ServiceProviderRequestsView, ServiceProviderReviews, ServiceProviderViewSet, ServiceRegisterViewSet, ServiceRequestCompleteStatus, ServiceRequestInvoiceView, SetNewPasswordView,ServiceProviderCountsView, ServiceProviderDetailsView, ServiceProviderRevenueView, ServiceReachView, UpdateLocationView, ProviderLocationDistanceView
 from rest_framework.routers import DefaultRouter
 router = DefaultRouter()
 router.register(r'service-registers', ServiceRegisterViewSet, basename='service-register')
@@ -36,5 +36,15 @@ urlpatterns = [
     path('transactions/', PaymentListView.as_view(), name='payment-list'),
     path('financial/', FinancialOverviewView.as_view(), name='financial-overview'),
     path('reviews/', ServiceProviderReviews.as_view(), name='service-provider-reviews'),
+    
+    #dashboard
+    path('counts/', ServiceProviderCountsView.as_view(), name='service-provider-counts'),
+    path('details-view/', ServiceProviderDetailsView.as_view(), name='service-provider-details') ,
+    path('revenue/', ServiceProviderRevenueView.as_view(), name="service-provider-revenue"),
+    path('service-reach/', ServiceReachView.as_view(), name="service-reach"),
+
+    #location
+    path('update-location/', UpdateLocationView.as_view(), name="providers-location"),
+    path('location-distance/', ProviderLocationDistanceView.as_view(), name="providers-location-distance"),
     
 ]

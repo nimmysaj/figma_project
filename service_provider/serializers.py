@@ -5,7 +5,7 @@ from django.utils import timezone
 from rest_framework.response import Response
 from rest_framework import serializers,status
 from django.contrib.auth import authenticate
-from app1.models import Complaint, CustomerReview, DeclineServiceModel, Invoice, Payment, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User  
+from app1.models import Complaint, CustomerReview, DeclineServiceModel, Invoice, Payment, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User, CurrentLocation
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
@@ -363,7 +363,7 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = ServiceRequest
         fields = [
-            'booking_id', 'customer_name','title', 'subcategory', 'service_type', 'acceptance_status', 'request_date', 
+            'id', 'booking_id', 'customer_name','title', 'subcategory', 'service_type', 'acceptance_status', 'request_date', 
             'availability_from', 'availability_to','image','reschedule_status'
         ]
 
@@ -590,3 +590,35 @@ class CustomerReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomerReview
         fields = ['id', 'rating', 'image', 'comment', 'created_at', 'customer', 'service_provider','service_request']    
+
+
+
+class SimpleServiceRequestSerializer(serializers.ModelSerializer):
+    customer_name = serializers.CharField(source='customer.full_name')  # Assuming there is a customer name field
+    title = serializers.CharField()  # Assuming 'title' is a field in ServiceRequest
+    request_date = serializers.DateTimeField()  # Assuming 'request_date' is a field in ServiceRequest
+
+    class Meta:
+        model = ServiceRequest
+        fields = ['customer_name', 'title', 'request_date']
+
+
+class UpdateLocationSerializer(serializers.Serializer):
+    latitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=True)
+    longitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=True)
+    country = serializers.CharField(max_length=100, required=False)
+    state = serializers.CharField(max_length=100, required=False)
+    place = serializers.CharField(max_length=100, required=False)
+    address = serializers.CharField(required=False)
+    landmark = serializers.CharField(max_length=100, required=False)
+    pincode = serializers.CharField(max_length=20, required=False)
+
+    def validate_latitude(self, value):
+        if not (-90 <= value <= 90):
+            raise ValidationError("Latitude must be between -90 and 90.")
+        return value
+
+    def validate_longitude(self, value):
+        if not (-180 <= value <= 180):
+            raise ValidationError("Longitude must be between -180 and 180.")
+        return value

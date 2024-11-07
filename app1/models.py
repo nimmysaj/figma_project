@@ -310,8 +310,9 @@ class ServiceProvider(models.Model):
     payout_required = models.CharField(max_length=10, choices=PAYOUT_FREQUENCY_CHOICES)  # Payout frequency field
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')])
     verification_by_dealer= models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
-
     accepted_terms = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
     
     
     def save(self, *args, **kwargs):
@@ -403,7 +404,7 @@ class Category(models.Model):
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')])
 
     def __str__(self):
-        return self.title 
+        return f"{self.title} - {self.id}"  
 
 class Subcategory(models.Model):
     title = models.CharField(max_length=50,db_index=True)
@@ -415,7 +416,7 @@ class Subcategory(models.Model):
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')]) 
 
     def __str__(self):
-        return self.title  
+        return f"{self.title} - {self.id}"  
 
 class ServiceRegister(models.Model):
     booking_id=models.UUIDField(default=uuid.uuid4,editable=False,unique=True)
@@ -426,7 +427,7 @@ class ServiceRegister(models.Model):
     subcategory = models.ForeignKey(Subcategory, on_delete=models.PROTECT,related_name='serviceregister_subcategory') 
     license = models.FileField(upload_to='service-license/', blank=True, null=True, validators=[validate_file_size])
     image = models.ImageField(upload_to='service-images/', null=True, blank=True, validators=[validate_file_size])
-    status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')],default='Inctive')
+    status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')],default='Inactive')
     accepted_terms = models.BooleanField(default=False)
     available_lead_balance = models.IntegerField(default=0)
 
@@ -517,6 +518,7 @@ class ServiceRequest(models.Model):
     additional_notes = models.TextField(blank=True, null=True)
     image = models.ImageField(upload_to='service_request/', null=True, blank=True, validators=[validate_file_size])
     reschedule_status = models.BooleanField(default=False)  # New field for rescheduling status
+    updated_at = models.DateTimeField(auto_now=True)
 
 
     def __str__(self):
@@ -526,6 +528,12 @@ class ServiceRequest(models.Model):
         # Ensure the availability_from is before availability_to
         if self.availability_from >= self.availability_to:
             raise ValidationError('Availability "from" time must be before "to" time.')    
+    
+    def save(self, *args, **kwargs):
+        if not self.booking_id:  # Generate booking_id only if it doesn't exist
+            self.booking_id = str(uuid.uuid4())[:10]  # Generate a unique ID
+        super().save(*args, **kwargs)
+
 
 class CustomerReview(models.Model):
     RATING_CHOICES = [
@@ -691,3 +699,20 @@ class DeclineServiceModel(models.Model):
         if self.service_requests and self.service_requests.customer:
             return f"Service of {self.service_requests.customer.full_name} is declined by {self.service_requests.service_provider.full_name}"
         return "Service decline request without associated customer."
+    
+
+
+class CurrentLocation(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)  
+    country = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    place = models.CharField(max_length=100)
+    address = models.TextField()
+    landmark = models.CharField(max_length=100, blank=True, null=True)
+    pincode = models.CharField(max_length=20)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6) 
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)  
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.email} - {self.place}, {self.state}"

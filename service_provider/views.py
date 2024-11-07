@@ -12,14 +12,22 @@ from rest_framework import status, permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import generics,viewsets
-from app1.models import Complaint, CustomerReview, Invoice, Payment, ServiceProvider, ServiceRegister, ServiceRequest, User
+from app1.models import Complaint, CustomerReview, Invoice, Payment, ServiceProvider, ServiceRegister, ServiceRequest, User, CurrentLocation
 from service_provider.permissions import IsOwnerOrAdmin
-from .serializers import ComplaintSerializer, CustomerReviewSerializer, CustomerServiceRequestSerializer, DeclineServiceRequestSerializer, InvoiceSerializer, PaymentListSerializer, ServiceDetailsSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestCustomSerializer, ServiceRequestSerializer, SetNewPasswordSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer
+from .serializers import ComplaintSerializer, CustomerReviewSerializer, CustomerServiceRequestSerializer, DeclineServiceRequestSerializer, InvoiceSerializer, PaymentListSerializer, ServiceDetailsSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestCustomSerializer, ServiceRequestSerializer, SetNewPasswordSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer,SimpleServiceRequestSerializer, UpdateLocationSerializer
 from django.utils.encoding import smart_bytes, smart_str
 from twilio.rest import Client
 from django.db.models import Avg,Sum
 from rest_framework.decorators import action
 from copy import deepcopy
+from decimal import Decimal
+from django.db.models.functions import TruncMonth
+from django.db.models import Count
+from django.db.models import Q
+from datetime import timedelta
+from django.utils import timezone
+from geopy.distance import geodesic
+
 # Create your views here.
 
 #service provider login
@@ -910,3 +918,277 @@ class ServiceProviderReviews(APIView):
             'rating_scale': rating_scale  
         })
 
+
+class ServiceProviderCountsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        # Get the logged-in service provider
+        service_provider = get_object_or_404(ServiceProvider, user=request.user)
+
+        # Count of registered services
+        registered_services_count = ServiceRegister.objects.filter(service_provider=service_provider).count()
+
+        # Count of active jobs
+        active_jobs_count = ServiceRequest.objects.filter(
+            service_provider=request.user,
+            work_status='in_progress'
+        ).count()
+
+        # Count of service requests
+        service_requests_count = ServiceRequest.objects.filter(service_provider=request.user).count()
+
+        #completed jobs count 
+        completed_jobs_count = ServiceRequest.objects.filter(
+            service_provider = service_provider.user,
+            work_status = 'completed'
+        ).count()
+
+        # Return counts in response
+        return Response({
+            "Registered Services": registered_services_count,
+            "Active jobs": active_jobs_count,
+            "Service Requests": service_requests_count,
+            "Complete Jobs": completed_jobs_count,
+        }, status=200)
+
+
+class ServiceProviderDetailsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        # Get the logged-in service provider
+        service_provider = get_object_or_404(ServiceProvider, user=request.user)
+
+        # Define the time filter
+        one_day_ago = timezone.now() - timedelta(days=1)
+
+        # Recent Activities (updated in the last 24 hours)
+        recent_activities = ServiceRequest.objects.filter(
+            service_provider=request.user,
+            updated_at__gte=one_day_ago
+        ).values('booking_id', 'title', 'work_status', 'updated_at')
+
+        # Active services (in progress and updated within the last 24 hours)
+        active_services = ServiceRequest.objects.filter(
+            service_provider=request.user,
+            work_status="in_progress",
+            updated_at__gte=one_day_ago
+        )
+        active_services_serializer = SimpleServiceRequestSerializer(active_services, many=True)
+
+        # Active bookings (pending or rescheduled, updated within the last 24 hours)
+        active_bookings = ServiceRequest.objects.filter(
+            service_provider=service_provider.user,
+            updated_at__gte=one_day_ago
+        ).filter(
+            Q(work_status='pending') | Q(reschedule_status=True)
+        )
+        active_bookings_serializer = SimpleServiceRequestSerializer(active_bookings, many=True)
+
+        # Service requests (all requests updated within the last 24 hours)
+        service_requests = ServiceRequest.objects.filter(
+            service_provider=request.user,
+            acceptance_status = "pending",
+            updated_at__gte=one_day_ago
+        )
+        service_requests_serializer = SimpleServiceRequestSerializer(service_requests, many=True)
+
+        # Return detailed information
+        return Response({
+            "Recent Activities": recent_activities,
+            "Active Services Details(In progress)": active_services_serializer.data,
+            "Bookings(work status  - pending & reschedualed)": active_bookings_serializer.data,
+            "Requests(Accept status - Pending)": service_requests_serializer.data,
+        }, status=200)
+
+
+
+class ServiceProviderRevenueView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        # Get the logged-in service provider
+        service_provider = get_object_or_404(ServiceProvider, user=request.user)
+
+        # Calculate total revenue from all paid invoices received by the provider
+        total_revenue = Invoice.objects.filter(
+            receiver=request.user,
+            payment_status='paid'
+        ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
+
+        # Count the number of paid services
+        no_of_paid_services = Invoice.objects.filter(
+            receiver=request.user,
+            payment_status="paid"
+        ).count()
+
+        # Initialize revenue breakdown data
+        services_revenue_data = []
+        services_revenue_data.append({
+            'No of paid services': no_of_paid_services,
+        })
+
+        # Get unique paid services
+        paid_services = Invoice.objects.filter(
+            receiver=request.user,
+            payment_status='paid'
+        ).values('service_register').distinct()
+
+        for entry in paid_services:
+            service_id = entry['service_register']
+            service = ServiceRegister.objects.get(id=service_id)
+            
+            # Calculate revenue for each service
+            service_revenue = Invoice.objects.filter(
+                receiver=request.user,
+                service_register=service,
+                payment_status='paid'
+            ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
+
+            # Calculate the revenue percentage for each service
+            revenue_percentage = (
+                (service_revenue / total_revenue * 100) if total_revenue > 0 else 0
+            )
+
+            # Count the number of times the service has been bought
+            service_purchase_count = Invoice.objects.filter(
+                receiver=request.user,
+                service_register=service,
+                payment_status='paid'
+            ).count()
+
+            # Append service data with revenue, percentage, and purchase count
+            services_revenue_data.append({
+                'service_name': service.subcategory.title,
+                'amount_paid': float(service_revenue),
+                'revenue_percentage': float(revenue_percentage),
+                'times_bought': service_purchase_count,
+            })
+
+        # Return the revenue breakdown in the response
+        return Response({
+            "Total Revenue": float(total_revenue),
+            "Services Revenue Breakdown": services_revenue_data,
+        }, status=200)
+
+
+class ServiceReachView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        service_provider = get_object_or_404(User, full_name=request.user.full_name)
+        provider_start_date = service_provider.created_at.strftime('%Y-%m')
+
+        # Fetch and count service requests by month
+        monthly_request_counts = (
+            ServiceRequest.objects.filter(service_provider=service_provider)
+            .annotate(month=TruncMonth('request_date'))
+            .values('month')
+            .annotate(request_count=Count('id'))
+            .order_by('month')
+        )
+
+        # Format the data to show counts per month
+        request_dates = {entry['month'].strftime('%Y-%m'): entry['request_count'] for entry in monthly_request_counts}
+
+        # Prepare the response
+        return Response({
+            "service_requests_count": sum(request_dates.values()),
+            "provider_start_date": provider_start_date,
+            "request_dates": request_dates,  # Dictionary with month as key and request count as value
+        })
+    
+
+
+
+class UpdateLocationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        # Get latitude and longitude from the request data
+        latitude = request.data.get("latitude")
+        longitude = request.data.get("longitude")
+
+        # Validate if latitude and longitude are provided
+        if latitude is None or longitude is None:
+            return Response({"error": "Latitude and longitude are required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate latitude and longitude data type and range in one step
+        try:
+            latitude = float(latitude)
+            longitude = float(longitude)
+            if not (-90 <= latitude <= 90):
+                return Response({"error": "Latitude must be between -90 and 90."}, status=status.HTTP_400_BAD_REQUEST)
+            if not (-180 <= longitude <= 180):
+                return Response({"error": "Longitude must be between -180 and 180."}, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError:
+            return Response({"error": "Latitude and longitude must be valid decimal numbers."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Fetch or create the provider's current location record
+        location, created = CurrentLocation.objects.get_or_create(user=request.user)
+        
+        # Update location fields
+        location.latitude = latitude
+        location.longitude = longitude
+        
+        # Optionally update other fields if they are provided
+        location.country = request.data.get("country", location.country)
+        location.state = request.data.get("state", location.state)
+        location.place = request.data.get("place", location.place)
+        location.address = request.data.get("address", location.address)
+        location.landmark = request.data.get("landmark", location.landmark)
+        location.pincode = request.data.get("pincode", location.pincode)
+
+        location.save()
+
+        return Response({"message": "Location updated successfully."}, status=status.HTTP_200_OK)
+
+
+
+    
+
+class ProviderLocationDistanceView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        # Extract data from the request body
+        provider_email = request.data.get("provider_email")  # Changed to provider_email
+        customer_lat = request.data.get("customer_lat")
+        customer_lon = request.data.get("customer_lon")
+
+        # Check that required fields are present
+        if not provider_email or customer_lat is None or customer_lon is None:
+            return Response(
+                {"error": "provider_email, customer_lat, and customer_lon are required fields"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Fetch provider location using the email
+        provider_user = get_object_or_404(User, email=provider_email)  # Fetch the user first
+        provider_location = get_object_or_404(CurrentLocation, user=provider_user)  # Then fetch location using the user object
+
+        provider_lat = provider_location.latitude
+        provider_lon = provider_location.longitude
+
+        # Validate the customer latitude and longitude
+        try:
+            customer_lat = float(customer_lat)
+            customer_lon = float(customer_lon)
+        except ValueError:
+            return Response(
+                {"error": "customer_lat and customer_lon must be valid numbers"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Calculate distance between customer and provider
+        provider_coords = (provider_lat, provider_lon)
+        customer_coords = (customer_lat, customer_lon)
+        distance_km = geodesic(customer_coords, provider_coords).km
+
+        # Return the response
+        return Response({
+            "provider_latitude": provider_lat,
+            "provider_longitude": provider_lon,
+            "distance_km": round(distance_km, 2)
+        }, status=200)
