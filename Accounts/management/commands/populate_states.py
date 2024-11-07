@@ -1,7 +1,7 @@
 # app1/management/commands/populate_states.py
 
 from django.core.management.base import BaseCommand
-from app1.models import State
+from Accounts.models import State
 import pycountry
 
 class Command(BaseCommand):

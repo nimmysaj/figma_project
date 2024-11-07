@@ -1,7 +1,7 @@
 # app1/management/commands/populate_districts.py
 
 from django.core.management.base import BaseCommand
-from app1.models import State, District
+from Accounts.models import State, District
 
 class Command(BaseCommand):
     help = 'Populates the District model with districts for Kerala, Tamil Nadu, and Karnataka'
