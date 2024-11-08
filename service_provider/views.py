@@ -76,41 +76,67 @@ class PaymentListView(APIView):
         serializer = PaymentListSerializer(payments, many=True)
         return Response(serializer.data, status=200)
     
+    
+
 class FinancialOverviewView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        user_id = request.user.id
+        user = request.user
+        user_id = user.id
 
+        # Retrieve service provider name and profile image
+        service_provider_name = user.full_name
+        try:
+            service_provider = ServiceProvider.objects.get(user=user)
+            service_provider_image_url = service_provider.profile_image.url if service_provider.profile_image else None
+        except ServiceProvider.DoesNotExist:
+            service_provider_image_url = None
+
+        
         income = 0
         expenditure = 0
         account_balance = 0
 
-        if request.user.is_service_provider:
-            # income: sum of all payments received by the service provider from the admin
+        if user.is_service_provider:
+            # Income: sum of all payments received by the service provider from the admin
             income = Payment.objects.filter(
                 receiver_id=user_id,
                 invoice__invoice_type='provider_payment'
             ).aggregate(total_income=Sum('amount_paid'))['total_income'] or 0
 
-            # expenditure: sum of all payments made by the service provider
+            # Expenditure: sum of all payments made by the service provider
             expenditure = Payment.objects.filter(
                 sender_id=user_id
             ).aggregate(total_expenditure=Sum('amount_paid'))['total_expenditure'] or 0
 
-            # Calculate total customer payments to the admin for this service provider's services
+            # Total customer payments to admin for services
             customer_payments_to_admin = Payment.objects.filter(
                 invoice__invoice_type='service_request',
                 invoice__service_request__service_provider_id=user_id,
             ).aggregate(total_customer_payments=Sum('amount_paid'))['total_customer_payments'] or 0
 
-           # Calculate expected earnings (90% of customer payments)
+            # Expected earnings (90% of customer payments)
             expected_earnings = customer_payments_to_admin * Decimal('0.9')
             account_balance = expected_earnings - income
 
+            provider_payments = Payment.objects.filter(
+                receiver_id=user_id,
+                invoice__invoice_type='provider_payment'
+            )
+
+            
+            provider_payments_serializer = PaymentListSerializer(provider_payments, many=True)
+        else:
+            provider_payments_serializer = []
+
         data = {
+            'service_provider_name': service_provider_name,
+            'service_provider_image_url': service_provider_image_url,
             'income': income,
             'expenditure': expenditure,
-            'account_balance': account_balance
+            'account_balance': account_balance,
+            'admin_to_provider_transactions': provider_payments_serializer.data
         }
+
         return Response(data, status=status.HTTP_200_OK)
