@@ -2,8 +2,8 @@ from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from Accounts.models import User, Franchisee,Franchise_Type,Ad_Management,Invoice,IncomeManagement
-from .serializers import UserSerializer,FranchiseeSerializer,FranchiseTypeSerializer,AdManagementSerializer,IncomeManagementSerializer
+from Accounts.models import User, Franchisee,Franchise_Type,Ad_Management,Invoice,IncomeManagement,SMSSettings, EmailSettings
+from .serializers import UserSerializer,FranchiseeSerializer,FranchiseTypeSerializer,AdManagementSerializer,IncomeManagementSerializer,SMSSettingsSerializer, EmailSettingsSerializer
 from rest_framework.decorators import action
 from django.db.models import Count
 from rest_framework.pagination import PageNumberPagination
@@ -95,3 +95,11 @@ class AdManagementTypeViewSet(viewsets.ModelViewSet):
 class IncomeManagementViewSet(viewsets.ModelViewSet):
     queryset = IncomeManagement.objects.all()
     serializer_class = IncomeManagementSerializer  
+
+class SMSSettingsViewSet(viewsets.ModelViewSet):
+    queryset = SMSSettings.objects.all()
+    serializer_class = SMSSettingsSerializer
+
+class EmailSettingsViewSet(viewsets.ModelViewSet):
+    queryset = EmailSettings.objects.all()
+    serializer_class = EmailSettingsSerializer

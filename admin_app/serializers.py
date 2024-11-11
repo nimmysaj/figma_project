@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from Accounts.models import User,Franchisee,Franchise_Type,Country_Codes,Ad_category,Ad_Management,IncomeManagement
+from Accounts.models import User,Franchisee,Franchise_Type,Country_Codes,Ad_category,Ad_Management,IncomeManagement,SMSSettings, EmailSettings
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 import re  # For regex validation
@@ -158,3 +158,23 @@ class IncomeManagementSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Total amount cannot exceed 100")
         
         return data
+
+class SMSSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SMSSettings
+        fields = '__all__'  # This includes all fields in the model
+
+    def validate_twilio_sender_number(self, value):
+        if SMSSettings.objects.filter(twilio_sender_number=value).exists():
+            raise serializers.ValidationError("This phone number already exists.")
+        return value
+
+class EmailSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmailSettings
+        fields = '__all__'    
+
+    def validate_sender_email(self, value):
+        if EmailSettings.objects.filter(sender_email=value).exists():
+            raise serializers.ValidationError("This email address already exists.")
+        return value    

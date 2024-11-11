@@ -749,4 +749,38 @@ class IncomeManagement(models.Model):
     def __str__(self):
         return f"{self.sl_no} - {self.income_type}"
 
+from django.db import models
+
+class SMSSettings(models.Model):
+    sms_driver = models.CharField(max_length=50, default='twilio')
+    twilio_sid = models.CharField(max_length=100, blank=True, null=True, help_text="Twilio Account SID")
+    twilio_auth_token = models.CharField(max_length=100, blank=True, null=True, help_text="Twilio Auth Token")
+    twilio_sender_number = models.CharField(max_length=20, blank=True, null=True, help_text="Twilio Sender Number")
+    nexmo_key = models.CharField(max_length=100, blank=True, null=True, help_text="Nexmo API Key")
+    nexmo_secret = models.CharField(max_length=100, blank=True, null=True, help_text="Nexmo API Secret")
+    nexmo_sender_name = models.CharField(max_length=50, blank=True, null=True, help_text="Nexmo Sender Name")
+
+    def __str__(self):
+        return f"{self.sms_driver} Settings"
+
+    class Meta:
+        verbose_name = "SMS Setting"
+        verbose_name_plural = "SMS Settings"
+
+class EmailSettings(models.Model):
+    mail_driver = models.CharField(max_length=50,default='SMTP',help_text="Mail driver (e.g., SMTP, SendGrid)")
+    mail_host = models.CharField(max_length=100, help_text="SMTP server address (e.g., smtp.gmail.com)")
+    mail_port = models.PositiveIntegerField(help_text="Port for the SMTP server (e.g., 587 for TLS, 465 for SSL)")
+    mail_username = models.CharField(max_length=100, help_text="Username for SMTP server authentication")
+    mail_password = models.CharField(max_length=100, help_text="Password for SMTP server authentication")
+    mail_encryption = models.CharField(max_length=50,default='tls', help_text="Encryption method to use when connecting to the SMTP server")
+    sender_email = models.EmailField(help_text="Email address of the sender")
+    sender_name = models.CharField(max_length=100, help_text="Display name for the email sender")
+    
+    def __str__(self):
+        return f"Email Settings for {self.sender_name} <{self.sender_email}>"
+
+    class Meta:
+        verbose_name = "Email Setting"
+        verbose_name_plural = "Email Settings"
 
