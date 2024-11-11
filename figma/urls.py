@@ -21,9 +21,10 @@ from . import settings
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('auth/', include('social_django.urls', namespace='social')),  # For social authentication
     path('customer/', include('customer.urls')),
     path('service-provider/', include('service_provider.urls')),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+#if settings.DEBUG:
+ #   urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

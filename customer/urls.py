@@ -1,6 +1,6 @@
 from django.urls import include, path
 from service_provider.views import ResetPasswordView
-from .views import CategoryListView, CustomerLoginView, CustomerPasswordForgotView, CustomerViewSet, RegisterView, ServiceProviderDetailView, ServiceProviderListView, ServiceRequestCreateView, ServiceRequestDetailView, ServiceRequestInvoiceDetailView, SubcategoryListView, UnifiedSearchView, VerifyOTPView
+from .views import CategoryListView, CustomerLoginView, CustomerPasswordForgotView, CustomerViewSet, RegisterView, ServiceProviderDetailView, ServiceProviderListView, ServiceRequestCreateView, ServiceRequestDetailView, ServiceRequestInvoiceDetailView, SubcategoryListView, UnifiedSearchView, VerifyOTPView, GoogleLoginView, GoogleCallbackView
 from rest_framework.routers import DefaultRouter
 
 
@@ -29,4 +29,7 @@ urlpatterns = [
     path('service-request/', ServiceRequestCreateView.as_view(), name='service-request-create'),
     path('view-request-user/', ServiceRequestDetailView.as_view(), name='view-request-user'),
     path('service-request-invoice/', ServiceRequestInvoiceDetailView.as_view(), name='service-request-invoice-detail'),
+    #Social Authentication
+    path('auth/google/', GoogleLoginView.as_view(), name='google-login'),
+    path('auth/google/callback/', GoogleCallbackView.as_view(), name='google-callback'),
 ]

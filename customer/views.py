@@ -23,6 +23,17 @@ from rest_framework.decorators import action
 from rest_framework.throttling import UserRateThrottle
 
 
+import requests  # Ensure requests is imported
+
+from social_django.utils import psa
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework import status
+from rest_framework.permissions import AllowAny
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.shortcuts import redirect
+
+
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
@@ -492,3 +503,178 @@ class ServiceRequestInvoiceDetailView(APIView):
 
 
         return Response(data, status=status.HTTP_200_OK)
+
+
+# Redirects to Google login
+class GoogleLoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        client_id = settings.SOCIAL_AUTH_GOOGLE_OAUTH2_KEY
+        redirect_uri = settings.SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI
+        scope = "openid email profile"
+        google_auth_url = (
+            f"https://accounts.google.com/o/oauth2/v2/auth?"
+            f"client_id={client_id}&redirect_uri={redirect_uri}&"
+            f"response_type=code&scope={scope}"
+        )
+        return redirect(google_auth_url)
+
+"""
+# Handles Google callback and token generation
+class GoogleCallbackView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        # Extract the authorization code from the GET request
+        auth_code = request.GET.get('code')
+        if not auth_code:
+            return Response({'detail': 'Authorization code is missing'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Redirect the user to POST the code for the access token
+        return self.post(request)
+
+    def post(self, request):
+        # Extract the authorization code from the request (either GET or POST)
+        auth_code = request.GET.get('code') or request.data.get('code')
+        if not auth_code:
+            return Response({'detail': 'Authorization code is missing'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Retrieve credentials from settings
+        client_id = settings.SOCIAL_AUTH_GOOGLE_OAUTH2_KEY
+        client_secret = settings.SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET
+        redirect_uri = settings.SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI
+
+        # Exchange the authorization code for an access token
+        token_request_url = "https://oauth2.googleapis.com/token"
+        token_data = {
+            "code": auth_code,
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "redirect_uri": redirect_uri,
+            "grant_type": "authorization_code",
+        }
+        token_response = requests.post(token_request_url, data=token_data)
+
+        # Check for token exchange failure
+        if token_response.status_code != 200:
+            return Response({'detail': f"Failed to exchange authorization code for access token. {token_response.text}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        token_response_data = token_response.json()
+        access_token = token_response_data.get("access_token")
+
+        if not access_token:
+            return Response({'detail': 'Access token not received'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Use the access token to retrieve user info from Google
+        user_info_url = "https://www.googleapis.com/oauth2/v2/userinfo"
+        user_info_response = requests.get(user_info_url, headers={'Authorization': f'Bearer {access_token}'})
+
+        if user_info_response.status_code != 200:
+            return Response({'detail': 'Failed to retrieve user information from Google'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user_info = user_info_response.json()
+
+        # Handle user registration based on email/phone
+        email_or_phone = user_info.get('email') or user_info.get('phone_number')
+        if not email_or_phone:
+            return Response({'detail': 'Email or phone number is missing from Google account'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user_data = {
+            'email_or_phone': email_or_phone,
+            'password': 'googleauth123',  # Placeholder password
+            'confirm_password': 'googleauth123',
+        }
+
+        serializer = RegisterSerializer(data=user_data)
+        if serializer.is_valid():
+            user = serializer.save()
+
+            # Send OTP via email or phone
+            if user.email:
+                send_otp_via_email(user)
+            elif user.phone_number:
+                send_otp_via_phone(user)
+
+            return Response({'message': 'User registered successfully. Please verify OTP to complete registration.'}, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+"""        
+
+
+# Handles Google callback, user creation or getting the existing user, and immediate token generation
+class GoogleCallbackView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        # Extract the authorization code from the GET request
+        auth_code = request.GET.get('code')
+        if not auth_code:
+            return Response({'detail': 'Authorization code is missing'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Redirect the user to POST the code for the access token
+        return self.post(request)
+
+    def post(self, request):
+        # Extract the authorization code from the request (either GET or POST)
+        auth_code = request.GET.get('code') or request.data.get('code')
+        if not auth_code:
+            return Response({'detail': 'Authorization code is missing'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Retrieve credentials from settings
+        client_id = settings.SOCIAL_AUTH_GOOGLE_OAUTH2_KEY
+        client_secret = settings.SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET
+        redirect_uri = settings.SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI
+
+        # Exchange the authorization code for an access token
+        token_request_url = "https://oauth2.googleapis.com/token"
+        token_data = {
+            "code": auth_code,
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "redirect_uri": redirect_uri,
+            "grant_type": "authorization_code",
+        }
+        token_response = requests.post(token_request_url, data=token_data)
+
+        # Check for token exchange failure
+        if token_response.status_code != 200:
+            return Response({'detail': f"Failed to exchange authorization code for access token. {token_response.text}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        token_response_data = token_response.json()
+        access_token = token_response_data.get("access_token")
+
+        if not access_token:
+            return Response({'detail': 'Access token not received'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Use the access token to retrieve user info from Google
+        user_info_url = "https://www.googleapis.com/oauth2/v2/userinfo"
+        user_info_response = requests.get(user_info_url, headers={'Authorization': f'Bearer {access_token}'})
+
+        if user_info_response.status_code != 200:
+            return Response({'detail': 'Failed to retrieve user information from Google'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user_info = user_info_response.json()
+
+        # Retrieve or register the user based on email
+        email = user_info.get('email')
+        if not email:
+            return Response({'detail': 'Email is missing from Google account'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Try to get or create the user
+        user, created = User.objects.get_or_create(email=email)
+        if created:
+            user.is_customer = True
+            user.set_unusable_password()  # Set unusable password for Google-authenticated users
+            user.save()
+
+        # Generate and return JWT token for immediate login
+        refresh = RefreshToken.for_user(user)
+        update_last_login(None, user)  # Update the last login timestamp
+
+        return Response({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'message': 'Login successful.' if not created else 'User registered and login successful.',
+        }, status=status.HTTP_200_OK)
