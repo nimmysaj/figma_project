@@ -270,3 +270,60 @@ class AdCategorySerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(f"An Ad Category with type '{value}' already exists.")
 
         return value
+    
+
+# TASK 5 ADD Expenses ////////////////////////////////////////////////////////////////////////////////////////
+
+class AddExpensesSerializer(serializers.ModelSerializer):
+    description = serializers.CharField(required=True, max_length=255)
+    accepted_terms = serializers.BooleanField(required=True)
+    invoice_type = serializers.CharField(default="others", read_only=True)  # Fixed to "others"
+
+    class Meta:
+        model = Invoice
+        fields = [
+            'id', 'invoice_number', 'invoice_type', 'invoice_date', 'sender', 'receiver',
+            'description', 'documents', 'accepted_terms', 'price', 'quantity', 'total_amount', 'payment_status'
+        ]
+        read_only_fields = ['total_amount']  # Make total_amount read-only
+
+    def validate_accepted_terms(self, value):
+        if not value:
+            raise serializers.ValidationError("You must accept the terms to proceed.")
+        return value
+
+
+    def validate_quantity(self, value):
+        if value > 1:
+            raise serializers.ValidationError("Quantity cannot be greater than 1.")
+        return value
+
+    def validate_price(self, value):
+        if value < 0:
+            raise serializers.ValidationError("Price cannot be a negative value.")
+        return value
+
+    def validate(self, data):
+        # Check that both sender and receiver are not null
+        if data.get('sender') is None and data.get('receiver') is None:
+            raise serializers.ValidationError("Both sender and receiver cannot be null.")
+        
+        return data
+
+    def create(self, validated_data):
+        validated_data['invoice_type'] = 'others'
+        
+        # Calculate total_amount based on price and quantity
+        quantity = validated_data.get('quantity') or 1  # Default to 1 if quantity is None
+        validated_data['total_amount'] = validated_data['price'] * quantity
+        
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        validated_data['invoice_type'] = 'others'
+        
+        # Calculate total_amount based on price and quantity
+        quantity = validated_data.get('quantity') or instance.quantity or 1
+        validated_data['total_amount'] = validated_data.get('price', instance.price) * quantity
+        
+        return super().update(instance, validated_data)

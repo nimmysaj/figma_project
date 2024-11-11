@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from Accounts.models import User ,Payment ,Franchisee ,Service_Type ,Collar ,Ad_category ,Invoice ,Payment 
-from .serializers import AdCategorySerializer,TransactionSerializer ,CollarSerializer ,ServiceTypeSerializer,FranchiseeSerializer
+from .serializers import AdCategorySerializer,TransactionSerializer ,CollarSerializer ,ServiceTypeSerializer,FranchiseeSerializer,AddExpensesSerializer
 from rest_framework.views import APIView
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -456,3 +456,79 @@ class AdCategoryAPIView(APIView):
             return Response({"message": "Ad Category deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
         
         return Response({"error": "Ad Category not found or ID not provided"}, status=status.HTTP_404_NOT_FOUND)
+    
+
+# Add Expense
+
+class AddExpenseView(APIView):
+
+    def post(self, request):
+        serializer = AddExpensesSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+    def get_invoice(self, pk):
+        
+        try:
+            return Invoice.objects.get(pk=pk,invoice_type='others')
+        except Invoice.DoesNotExist:
+            return None
+
+    def get(self, request):
+        
+        pk = request.data.get('id', None)
+        if pk:
+            Expense = self.get_invoice(pk)
+            if Expense:
+                serializer = AddExpensesSerializer(Expense)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response({"error": "Invoice not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        Expenses = Invoice.objects.filter(invoice_type='others')
+        serializer = AddExpensesSerializer(Expenses, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def put(self, request):
+        pk = request.data.get('id', None)
+        if pk is None:
+            return Response({"error": "ID is required for updating an invoice"}, status=status.HTTP_400_BAD_REQUEST)
+
+        expense = self.get_invoice(pk)
+        if expense is None:
+            return Response({"error": "Invoice not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = AddExpensesSerializer(expense, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request):
+        pk = request.data.get('id', None)
+        if pk is None:
+            return Response({"error": "ID is required for updating an invoice"}, status=status.HTTP_400_BAD_REQUEST)
+
+        expense = self.get_invoice(pk)
+        if expense is None:
+            return Response({"error": "Invoice not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = AddExpensesSerializer(expense, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request):
+        pk = request.data.get('id', None)
+        if pk is None:
+            return Response({"error": "ID is required for deleting an invoice"}, status=status.HTTP_400_BAD_REQUEST)
+
+        expense = self.get_invoice(pk)
+        if expense is None:
+            return Response({"error": "Invoice not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        expense.delete()
+        return Response({"message": "Invoice deleted successfully"}, status=status.HTTP_204_NO_CONTENT)

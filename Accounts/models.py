@@ -532,7 +532,8 @@ class Invoice(models.Model):
         ('service_registration','service_registration'),
         ('franchisee_registration','Franchisee Registration'),
         ('Ads' ,'Ads'),
-        ('lead_purchase','lead_purchase')
+        ('lead_purchase','lead_purchase'),
+        ('others','Others'),
     ]
     
     invoice_number = models.PositiveIntegerField(unique=True, editable=False)
@@ -547,8 +548,10 @@ class Invoice(models.Model):
     service_register = models.ForeignKey(ServiceRegister, on_delete=models.SET_NULL, null=True, blank=True,related_name='serviceregister_invoices')
 
     # Sender (user who is paying) and receiver (user receiving payment)
-    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_payment')
-    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_payment')
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_payment',null = True, blank=True)
+    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_payment',null = True, blank=True)
+    
+    description = models.CharField(max_length=200, blank=True,null=True)
     
     quantity = models.IntegerField(null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -562,6 +565,9 @@ class Invoice(models.Model):
     
     appointment_date = models.DateTimeField(null=True, blank=True)
     additional_requirements = models.TextField(null=True, blank=True)
+    
+    documents = models.FileField(null=True, blank=True)
+    
     accepted_terms = models.BooleanField(default=False)
 
     def __str__(self):
