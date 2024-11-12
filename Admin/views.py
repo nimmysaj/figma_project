@@ -64,16 +64,16 @@ class AdminDashBoardView(views.APIView):
         return Response(data=data)
 
 
-# class IncompleteBookingView(generics.ListAPIView):
-#     authentication_classes=[authentication.TokenAuthentication]
-#     permission_classes=[permissions.IsAuthenticated]
-#     serializer_class=BookingSerializer
-#     queryset=ServiceRequest.objects.filter(work_status='pending').order_by('id')
-#     pagination_class=IncompleteBookingPaginator
+class IncompleteBookingView(generics.ListAPIView):
+    authentication_classes=[authentication.TokenAuthentication]
+    permission_classes=[permissions.IsAuthenticated]
+    serializer_class=BookingSerializer
+    queryset=ServiceRequest.objects.filter(work_status='pending').order_by('id')
+    pagination_class=IncompleteBookingPaginator
 
-# class ComplaintsView(generics.ListAPIView):
-#     authentication_classes=[authentication.TokenAuthentication]
-#     permission_classes=[permissions.IsAuthenticated]
-#     queryset=Complaint.objects.all().order_by('id')
-#     serializer_class=ComplaintSerializer
-#     pagination_class=ComplaintPaginator
+class ComplaintsView(generics.ListAPIView):
+    authentication_classes=[authentication.TokenAuthentication]
+    permission_classes=[permissions.IsAuthenticated]
+    queryset=Complaint.objects.all().order_by('id')
+    serializer_class=ComplaintSerializer
+    pagination_class=ComplaintPaginator
