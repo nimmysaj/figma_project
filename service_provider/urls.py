@@ -1,5 +1,5 @@
 from django.urls import include, path
-from .views import CustomerServiceRequestView, ServiceProviderLoginView, RequestOTPView, ServiceProviderRequestsView, ServiceProviderViewSet, ServiceRegisterViewSet, ServiceRequestInvoiceView, ChangePasswordView, CompletedWorkListView, OngoingWorkListView, ServiceRequestStatusCheckView, VerifyOTPAndSetPasswordView, ServiceProviderCountsView, ServiceProviderDetailsView, ServiceProviderRevenueView, ServiceReachView
+from .views import CustomerServiceRequestView, ServiceProviderLoginView, RequestOTPView, ServiceProviderRequestsView, ServiceProviderViewSet, ServiceRegisterViewSet, ServiceRequestInvoiceView, ChangePasswordView, CompletedWorkListView, OngoingWorkListView, ServiceRequestStatusCheckView, VerifyOTPAndSetPasswordView, ServiceProviderCountsView, ServiceProviderDetailsView, ServiceProviderRevenueView, ServiceReachView, ProviderLocationDistanceView, UpdateLocationView
 from rest_framework.routers import DefaultRouter
 router = DefaultRouter()
 router.register(r'service-registers', ServiceRegisterViewSet, basename='service-register')
@@ -30,5 +30,10 @@ urlpatterns = [
     path('details-view/', ServiceProviderDetailsView.as_view(), name='service-provider-details') ,
     path('revenue/', ServiceProviderRevenueView.as_view(), name="service-provider-revenue"),
     path('service-reach/', ServiceReachView.as_view(), name="service-reach"),
+
+    #location
+    path('update-location/', UpdateLocationView.as_view(), name="providers-location"),
+    path('location-distance/', ProviderLocationDistanceView.as_view(), name="providers-location-distance"),
+
 
 ]
