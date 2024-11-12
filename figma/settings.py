@@ -50,7 +50,10 @@ INSTALLED_APPS = [
     'Accounts',
     'customer',
     'service_provider',
-    'rest_framework.authtoken'
+    'rest_framework.authtoken',
+    'Dealer',
+    'franchise',
+    'Admin'
 ]
 
 MIDDLEWARE = [
