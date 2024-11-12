@@ -214,3 +214,208 @@ class MonthlyFinanceReportSerializer(serializers.Serializer):
             raise serializers.ValidationError("Year cannot be in the future")
         return value
 
+
+
+
+# ******************************  ACCOUNTS - INVOICE TYPE='OTHERS'  ****************************
+# ADD EXPENSE - POST
+class InvoiceOthersAddSerializer(serializers.Serializer):
+    external_invoice_number = serializers.IntegerField(required=False, allow_null=True)
+    total_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    # price = serializers.DecimalField(max_digits=10, decimal_places=2)
+    sender = serializers.IntegerField(required=False, allow_null=True)
+    receiver = serializers.IntegerField(required=False, allow_null=True)
+    description = serializers.CharField()
+    invoice_date = serializers.DateTimeField()
+    # appointment_date = serializers.DateTimeField()
+    payment_status = serializers.CharField()
+
+    def validate_sender(self, value):
+        # If value is not None or empty, try to resolve to a user by username
+        if value is not None:
+            try:
+                sender_user =  User.objects.get(pk = value)
+                return sender_user   #return user instance
+            except  User.DoesNotExist:
+                raise serializers.ValidationError("Sender User does not exist")
+        return value  # If value is None or empty, return as null
+    
+    def validate_receiver(self, value):
+        if value is not None:
+            try:
+                receiver_user = User.objects.get(pk = value)
+                return receiver_user
+            except User.DoesNotExist:
+                return serializers.ValidationError("Receiver user does not exist")
+        return value
+    
+    
+# # GET OTHER TYPE ACCOUNTS TABLE
+# class InvoiceOthersGetSerializer(serializers.ModelSerializer):
+#     sender_username = serializers.CharField(source='sender.username', required = False)
+#     receiver_username = serializers.CharField(source='receiver.username', required = False)
+#     transaction_type = serializers.SerializerMethodField()
+
+#     class Meta:
+#         model = Invoice
+#         fields = ['invoice_number','total_amount', 'transaction_type', 'sender_username', 'receiver_username', 'description', 'invoice_date', 'invoice_document']
+
+#         # Get transaction type
+#     def get_transaction_type(self, obj):
+#         # Determine whether it's a debit or credit
+#         admin_user = User.objects.filter(is_superuser=True).first()
+#         if admin_user:
+#             if obj.sender == admin_user:
+#                 return 'Debit'  # Sender is the admin
+#             elif obj.receiver == admin_user:
+#                 return 'Credit'
+#             return 'N/A'  # If the sender or receiver is not admin
+        
+
+
+
+# class InvoiceOthersUpdateSerializer(serializers.ModelSerializer):      # serializer for both put and patch
+#     sender_username = serializers.CharField(source='sender.username', required=False)
+#     receiver_username = serializers.CharField(source='receiver.username', required=False)
+#     transaction_type = serializers.SerializerMethodField(read_only=True)
+
+#     class Meta:
+#         model = Invoice
+#         fields = ['invoice_number', 'total_amount', 'sender', 'receiver', 'description', 'invoice_date', 'invoice_document', 'transaction_type','sender_username', 'receiver_username']
+
+#     def validate(self, data):
+        
+#         # Custom validation for the invoice update:
+#         # - Ensure total_amount is not negative.
+#         # - Ensure sender and receiver are not the same.
+     
+#         if 'total_amount' in data and data['total_amount'] < 0:
+#             raise serializers.ValidationError("Total amount cannot be negative.")
+        
+#         if 'sender' in data and 'receiver' in data and data['sender'] == data['receiver']:
+#             raise serializers.ValidationError("Sender and receiver cannot be the same.")
+        
+#         return data
+
+#     def update(self, instance, validated_data):
+        
+#         # Override the update method to handle full (PUT) or partial (PATCH) updates.
+        
+#         for attr, value in validated_data.items():   #(the new data will be in the key -value pair) attr - field name , value- value
+#             setattr(instance, attr, value)   #instance- instance of this model  u r updating, - The setattr() function is a built-in Python function that sets an attribute (field) of an object to a specific value.
+#         instance.save()
+#         return instance
+
+#     def get_transaction_type(self, obj):
+        
+#         # Automatically calculates the transaction type ('Debit' or 'Credit') for the admin.
+#         admin_user = User.objects.filter(is_superuser=True).first()
+#         if admin_user:
+#             if obj.sender == admin_user:
+#                 return 'Debit'  # Sender is the admin
+#             elif obj.receiver == admin_user:
+#                 return 'Credit'  # Receiver is the admin
+#         return 'N/A'  # If neither sender nor receiver is admin
+    
+
+# from rest_framework import serializers
+# from .models import Invoice, User
+
+# Serializer for get
+class InvoiceOthersGetSerializer(serializers.ModelSerializer):
+    sender_username = serializers.CharField(source='sender.username', read_only=True)
+    receiver_username = serializers.CharField(source='receiver.username', read_only=True)
+    transaction_type = serializers.SerializerMethodField()
+    # external_invoice_number = serializers.IntegerField()
+
+    class Meta:
+        model = Invoice
+        fields = [
+            'invoice_number',
+            'external_invoice_number',
+            'invoice_type',
+            'total_amount',
+            'sender',
+            'receiver',
+            'description',
+            'invoice_date',
+            'invoice_document',
+            'transaction_type',
+            'sender_username',
+            'receiver_username'
+        ]
+
+    def get_transaction_type(self, obj):
+        admin_user = User.objects.filter(is_superuser=True).first()
+        if admin_user:
+            if obj.sender == admin_user:
+                return 'Expense'  # Sender is the admin
+            elif obj.receiver == admin_user:
+                return 'Income'  # Receiver is the admin
+        return 'N/A'  # If the sender or receiver is not admin
+    
+# Serializer for Put, Patch
+class InvoiceOthersUpdateSerializer(serializers.ModelSerializer):
+    sender_username = serializers.CharField(source='sender.username', required=False)
+    receiver_username = serializers.CharField(source='receiver.username', required=False)
+
+    class Meta:
+        model = Invoice
+        fields = [
+            'invoice_number',
+            'external_invoice_number',
+            'invoice_type',
+            'total_amount',
+            'sender',
+            'receiver',
+            'description',
+            'invoice_date',
+            'invoice_document',
+            # 'transaction_type',
+            'sender_username',
+            'receiver_username'
+        ]
+
+    def update(self, instance, validated_data):
+        # Handle the case where you want to update sender/receiver by username
+        if 'sender_username' in validated_data:
+            sender_username = validated_data.pop('sender_username')
+            sender = User.objects.get(username=sender_username)
+            instance.sender = sender
+
+        if 'receiver_username' in validated_data:
+            receiver_username = validated_data.pop('receiver_username')
+            receiver = User.objects.get(username=receiver_username)
+            instance.receiver = receiver
+
+        # Update remaining fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+        return instance
+
+
+
+#----------- USER MANAGEMENT -----------
+# GET TOTAL NUMBER OF CUSTOMERS
+class CustomerCountSerializer(serializers.Serializer):
+    total_customers = serializers.IntegerField()
+
+
+# GET TOTAL NUMBER OF ACTIVE CUSTOMERS
+class ActiveCustomerCountSerializer(serializers.Serializer):
+    active_customers_count = serializers.IntegerField()
+
+# GET TOTAL SERVICE REQUESTS
+class TotalServiceRequestSerializer(serializers.Serializer):
+    total_service_requests = serializers.IntegerField()
+
+# # GET TOTAL ACTIVE SERVICES
+class ActiveServiceSerializer(serializers.Serializer):
+    active_services = serializers.IntegerField()
+
+
+# GET TOTAL NUMBER OF COMPLAINTS
+class TotalComplaintSerializer(serializers.Serializer):
+    total_complaints = serializers.IntegerField()

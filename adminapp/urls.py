@@ -1,6 +1,7 @@
 from django.urls import include, path
-from .views import UnifiedView, UserCreateView,CustomerListView, SubcategoryViewSet, MonthlyFinanaceReportView
-# CreateRazorpayOrder, handle_payment_success,get_invoice_ids,
+from .views import UnifiedView, UserCreateView,CustomerListView, SubcategoryViewSet, MonthlyFinanaceReportView, InvoiceOthersAddView, get_or_update_othertype_admin_invoices,get_customer_count, get_active_customer_count, get_total_service_request
+from .views import get_total_complaints_count, get_active_services_count
+# CreateRazorpayOrder, handle_payment_success,get_invoice_ids,get_othertype_admin_invoices,, get_active_services_count
 # from .views import ExpensesView,EarningsView,AdsInvoiceView,ExpenseTableView
 from rest_framework.routers import DefaultRouter
 from django.conf import settings
@@ -14,8 +15,16 @@ urlpatterns = [
     path('users/', UserCreateView.as_view(), name='user-create'),
     path('usersview/', CustomerListView.as_view(), name='customer-list'),
     path('', include(router.urls)),
-    path('adminactions/', UnifiedView.as_view(), name='admin-actions'),
+    path('customer_count/', get_customer_count,name='customer_count'),
+    path('online_customer_count/', get_active_customer_count, name = 'active_customer_count'),
+    path('total_service_request/', get_total_service_request, name='total_service_request'),
+    path('active_services/', get_active_services_count, name='active_services'),
+    path('get_total_complaints_count/', get_total_complaints_count, name = 'get_total_complaints_count'),
+    path('adminactions/', UnifiedView.as_view(), name='admin-actions'),          
     path('monthly_fin_rep/', MonthlyFinanaceReportView.as_view(), name='monthly-finance-report'),
+    path('invoice_type_others/', InvoiceOthersAddView.as_view(), name='invoice-others'),
+    path('get_or_update_othertype_admin_invoices/', get_or_update_othertype_admin_invoices, name='invoice-othertype-get'),
+    # path('update_invoice/', update_invoice, name='update_invoice'),
     # path('invoice_id/',get_invoice_ids, name='get-invooice-ids'),
     # path('create-order/', CreateRazorpayOrder.as_view(), name='create-razorpay-order'),
     # path('payment-success/', handle_payment_success, name='handle-payment-success')

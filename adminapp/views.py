@@ -5,11 +5,11 @@ from rest_framework import status, viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .serializers import CustomerSerializer, UnifiedResponseSerializer
-from Accounts.models import Customer, Subcategory,ServiceRegister,ServiceRequest,Payment,User,Invoice
-from .serializers import Customerview_Serializer, SubcategorySerializer,ExpensesSerializer,AdsInvoiceSerializer,ExpenseTableSerializer,EarningsSerializer,MonthlyFinanceReportSerializer
+from Accounts.models import Customer, Subcategory, ServiceRegister, ServiceRequest, Payment, User, Invoice, Complaint
+from .serializers import Customerview_Serializer, SubcategorySerializer,ExpensesSerializer,AdsInvoiceSerializer,ExpenseTableSerializer,EarningsSerializer,MonthlyFinanceReportSerializer,InvoiceOthersAddSerializer,InvoiceOthersGetSerializer, InvoiceOthersUpdateSerializer, CustomerCountSerializer, ActiveCustomerCountSerializer, TotalServiceRequestSerializer,ActiveServiceSerializer, TotalComplaintSerializer
 from rest_framework.decorators import action,api_view
 from .pagination import CustomerViewPagination
-# from .pagination import AdsInvoicePagination,ExpensePagination
+# from .pagination import AdsInvoicePagination,ExpensePagination, ActiveServiceSerializer,
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Sum,Q
 from django.contrib.auth import get_user_model
@@ -334,7 +334,7 @@ class UnifiedView(APIView):
 
 
 
-# ************************************  GRAPH - PHINANCIAL MANAGEMENT  *******************************************
+# ************************************  GRAPH - FINANCIAL MANAGEMENT  *******************************************
 
 # class MonthlyFinanaceReportView(generics.GenericAPIView):
 #     serializer_class = MonthlyFinanceReportSerializer
@@ -385,7 +385,7 @@ class MonthlyFinanaceReportView(generics.GenericAPIView):
 
     def post(self, request):
         # Validate the incoming data using the serializer (only year is needed now)
-        serializer = self.get_serializer(data = request.data)    #create instance of serializer
+        serializer = self.get_serializer(data = request.data)    
         serializer.is_valid(raise_exception = True)
 
 
@@ -433,3 +433,214 @@ class MonthlyFinanaceReportView(generics.GenericAPIView):
                         'monthly_data' : monthly_data
                         })
 
+
+
+
+
+
+
+# ******************************  ACCOUNTS - INVOICE TYPE='OTHERS'  ****************************
+# ADD EXPENSE - POST
+class InvoiceOthersAddView(APIView):
+    def post(self, request):
+        # If the request does not specify any invoice_type,then set invoice_type to 'others'
+        if 'invoice_type' not in request.data:
+            request.data['invoice_type'] = 'others'
+
+        # Initialize the serializer with the request data
+        serializer = InvoiceOthersAddSerializer(data=request.data)
+
+        # Validate and save the data
+        if serializer.is_valid():
+            # save the data
+            validated_data = serializer.validated_data
+
+            # Set sender and receiver to None if they are not provided
+            sender = validated_data.get('sender', None)
+            receiver = validated_data.get('receiver', None)
+
+            # Create a new invoice instance and save it
+            invoice = Invoice.objects.create(
+                external_invoice_number = validated_data['external_invoice_number'],
+                total_amount = validated_data['total_amount'],
+                # price = validated_data['price'],
+                sender = sender,
+                receiver = receiver,
+                description = validated_data['description'],
+                payment_status = validated_data['payment_status'],
+                invoice_date = validated_data['invoice_date'],
+                # appointment_date = validated_data['appointment_date'],
+                invoice_type = validated_data.get('invoice_type', 'others')    #use get- bcoz it has specifically a default value 'others'
+            )
+            return Response(
+                {
+                'message': "Invoice created successfully",
+                'invoice_number' : invoice.invoice_number
+                },
+                status=status.HTTP_201_CREATED
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# # GET OTHER TYPE ACCOUNTS TABLE
+# @api_view(['GET'])
+# def get_othertype_admin_invoices(request):
+#     # get the admin user
+#     admin_user = User.objects.filter(is_superuser=True).first()
+#     if not admin_user:
+#         return Response({"Admin user not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+#     # Query invoices where invoice_type is 'others' and sender or receiver is admin
+#     invoices = Invoice.objects.filter(invoice_type = 'others', sender = admin_user)|\
+#                Invoice.objects.filter(invoice_type = 'others', receiver = admin_user)
+    
+#     # Serialize the invoices
+#     serializer = InvoiceOthersGetSerializer(invoices, many = True)
+
+#     # Return serialized data
+#     return Response({'invoices' : serializer.data})
+
+# # for Update method - PUT and Patch
+
+
+# @api_view(['PUT', 'PATCH'])
+# def update_invoice(request):
+#     # Extract invoice_id from the request body
+#     invoice_id = request.data.get('invoice_id')
+#     if not invoice_id:
+#         return Response({"Error:Invoice_id is required in the request body"},status=status.HTTP_400_BAD_REQUEST )
+#     try:
+#         invoice = Invoice.objects.get(id=invoice_id)
+#     except Invoice.DoesNotExist:
+#         return Response({"error": "Invoice not found"}, status=status.HTTP_404_NOT_FOUND)
+
+#     # Ensure the admin user is authorized to update this invoice
+#     # admin_user = User.objects.filter(is_superuser=True).first()
+#     # if admin_user and (invoice.sender != admin_user or invoice.receiver != admin_user):
+#     #     return Response({"error": "You do not have permission to update this invoice"}, status=status.HTTP_403_FORBIDDEN)
+
+#     # Handle PUT (full update) or PATCH (partial update)
+#     if request.method == 'PUT':
+#         # Full update: All fields must be provided
+#         serializer = InvoiceOthersUpdateSerializer(invoice, data=request.data, partial=False)
+#     elif request.method == 'PATCH':
+#         # Partial update: Only specified fields will be updated
+#         serializer = InvoiceOthersUpdateSerializer(invoice, data=request.data, partial=True)
+
+#     if serializer.is_valid():
+#         serializer.save()
+#         return Response(serializer.data, status=status.HTTP_200_OK)
+
+#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# from rest_framework.decorators import api_view
+# from rest_framework.response import Response
+# from rest_framework import status
+# from .models import Invoice, User
+# from .serializers import InvoiceOthersGetSerializer, InvoiceOthersUpdateSerializer
+
+@api_view(['GET', 'PUT', 'PATCH'])
+def get_or_update_othertype_admin_invoices(request, invoice_id=None):
+    # Fetch the admin user (superuser)
+    admin_user = User.objects.filter(is_superuser=True).first()
+    if not admin_user:
+        return Response({"error": "Admin user not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        # Query invoices where invoice_type is 'others' and sender or receiver is admin
+        invoices = Invoice.objects.filter(invoice_type='others', sender=admin_user) | \
+                  Invoice.objects.filter(invoice_type='others', receiver=admin_user)
+
+        # Serialize the invoices
+        serializer = InvoiceOthersGetSerializer(invoices, many=True)
+
+        # Return serialized data
+        return Response({'invoices': serializer.data})
+
+    elif request.method in ['PUT', 'PATCH']:
+        invoice_id = request.data.get('invoice_id')
+        try:
+            # Fetch the invoice instance by the provided invoice_id
+            invoice = Invoice.objects.get(id=invoice_id)
+        except Invoice.DoesNotExist:
+            return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Use the appropriate serializer to update the invoice
+        serializer = InvoiceOthersUpdateSerializer(invoice, data=request.data, partial=(request.method == 'PATCH'))
+
+        if serializer.is_valid():
+            # Save and return the updated invoice
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+ 
+
+
+
+
+# ****************# USER MANAGEMENT -Above menus -***************************
+# GET TOTAL NUMBER OF CUSTOMERS
+@api_view(['GET'])
+def get_customer_count(request):
+    # Get the number of users who are customers
+    customer_count = User.objects.filter(is_customer=True).count()
+
+    # Use the serializer to send the data
+    serializer = CustomerCountSerializer(data={"total_customers" : customer_count})
+
+    # Check if the data is valid
+    if serializer.is_valid():
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    else:
+        return Response({"error":"Something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+# GET TOTAL NUMBER OF ACTIVE CUSTOMERS
+@api_view(['GET'])
+def get_active_customer_count(request):
+    active_customer_count = User.objects.filter(is_customer=True, is_active=True).count()
+
+    serializer = ActiveCustomerCountSerializer(data={"active_customers_count" : active_customer_count})
+
+    if serializer.is_valid():
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    else:
+        return Response({"error": "something went wrong"},  status=status.HTTP_400_BAD_REQUEST)
+    
+
+# GET TOTAL SERVICE REQUESTS
+@api_view(['GET'])
+def get_total_service_request(request):
+    total_service_request = ServiceRequest.objects.count()
+
+    serializer = TotalServiceRequestSerializer(data = {'total_service_requests': total_service_request})
+
+    if serializer.is_valid():
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    else:
+        return Response({"error":"Something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+# GET TOTAL ACTIVE SERVICES
+@api_view(['GET'])
+def get_active_services_count(request):
+    active_services = ServiceRegister.objects.filter(status='Active').count()
+
+    serializer = ActiveServiceSerializer(data= {'active_services': active_services})
+
+    if serializer.is_valid():
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    else:
+        return Response({"error" : "SOmething went wrong"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# GET TOTAL NUMBER OF COMPLAINTS
+@api_view(['GET'])
+def get_total_complaints_count(request):
+    total_complaints = Complaint.objects.count()
+    serializer = TotalComplaintSerializer(data={"total_complaints": total_complaints})
+
+    if serializer.is_valid():
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    else:
+        return Response({"error": "Something went wrong"}, status=status.HTTP_400_BAD_REQUEST)

@@ -519,14 +519,19 @@ class Invoice(models.Model):
         ('provider_payment', 'Service Provider Payment'),
         ('service_registration','service_registration'),
         ('Ads' ,'Ads'),
-        ('lead_purchase','lead_purchase')
+        ('lead_purchase','lead_purchase'),
+        ('others', 'others')
     ]
     
     invoice_number = models.PositiveIntegerField(unique=True, editable=False)
+    external_invoice_number = models.IntegerField(null=True, blank=True)
 
     #invoice_type: This field determines whether the invoice is related to a Service Request payment (service_request), a Dealer Payment (dealer_payment), or a Service Provider Payment (provider_payment).
     invoice_type = models.CharField(max_length=20, choices=INVOICE_TYPE_CHOICES)
     
+    #descriptin field to explain invoice type 'others'
+    description = models.CharField(null=True, blank=True, max_length=30)
+
     #A foreign key that links to a ServiceRequest model, which is populated if the payment is related to a customer requesting a service.
     service_request = models.ForeignKey(ServiceRequest, on_delete=models.SET_NULL, null=True, blank=True,related_name='invoices')
 
@@ -534,21 +539,22 @@ class Invoice(models.Model):
     service_register = models.ForeignKey(ServiceRegister, on_delete=models.SET_NULL, null=True, blank=True,related_name='serviceregister_invoices')
 
     # Sender (user who is paying) and receiver (user receiving payment)
-    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_payment')
-    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_payment')
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_payment', null=True, blank=True)
+    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_payment', null=True, blank=True)
     
     quantity = models.IntegerField(null=True, blank=True)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     partial_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, default=0)  # New field for partial amount
     payment_balance = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, default=0)
     payment_status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('paid', 'Paid'), ('cancelled', 'Cancelled')], default='pending')
 
-    invoice_date = models.DateTimeField(auto_now_add=True)
+    invoice_date = models.DateTimeField(auto_now=True)
     due_date = models.DateTimeField(null=True, blank=True)
     
-    appointment_date = models.DateTimeField()
+    appointment_date = models.DateTimeField(null=True, blank=True)
     additional_requirements = models.TextField(null=True, blank=True)
+    invoice_document = models.FileField(upload_to='invoice-documents/', blank=True, null=True, validators=[validate_file_size])
     accepted_terms = models.BooleanField(default=False)
 
     def __str__(self):
