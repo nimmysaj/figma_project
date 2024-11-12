@@ -45,23 +45,23 @@ class AddNewUserView(generics.CreateAPIView):
     
 
 
-# class AdminDashBoardView(views.APIView):
-#     authentication_classes=[authentication.TokenAuthentication]
-#     permission_classes=[permissions.IsAuthenticated]
-#     def get(self,request,*args,**kwargs):
-#         total_franchise=Franchisee.objects.all().count()
-#         total_service_providers=ServiceProvider.objects.filter(status="Active",verification_by_dealer="APPROVED").count()
-#         total_dealers=Dealer.objects.all().count()
-#         total_users=Customer.objects.all().count()
+class AdminDashBoardView(views.APIView):
+    authentication_classes=[authentication.TokenAuthentication]
+    permission_classes=[permissions.IsAuthenticated]
+    def get(self,request,*args,**kwargs):
+        total_franchise=Franchisee.objects.all().count()
+        total_service_providers=ServiceProvider.objects.filter(status="Active",verification_by_dealer="APPROVED").count()
+        total_dealers=Dealer.objects.all().count()
+        total_users=Customer.objects.all().count()
         
-#         data={
-#             'total_franchise':total_franchise,
-#             'total_service_providers':total_service_providers,
-#             'total_dealers':total_dealers,
-#             'total_users':total_users
-#             }
+        data={
+            'total_franchise':total_franchise,
+            'total_service_providers':total_service_providers,
+            'total_dealers':total_dealers,
+            'total_users':total_users
+            }
 
-#         return Response(data=data)
+        return Response(data=data)
 
 
 # class IncompleteBookingView(generics.ListAPIView):
