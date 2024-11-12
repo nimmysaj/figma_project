@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from Accounts.models import Customer,User,ServiceRequest,Complaint
+from Accounts.models import Customer,User,ServiceRequest,Complaint,Payment
 
 
 class UserSerializer(serializers.ModelSerializer):

@@ -25,13 +25,14 @@ class ServiceProviderVerificationListView(generics.ListAPIView):
     search_fields=['user__full_name','user__district__name']
     def get_queryset(self):
         user = self.request.user
-        return ServiceProvider.objects.filter(
+        queryset = ServiceProvider.objects.filter(
             verification_by_dealer='PENDING', 
             accepted_terms=True, 
-            dealer__user=user
-        )
+            dealer__user=user)
+            
+        return queryset
 
-
+# queryset = ServiceRegister.objects.annotate(request_count=Count('servicerequest'))
 
 class DealerLoginView(generics.GenericAPIView):
     serializer_class = DealerLoginSerializer

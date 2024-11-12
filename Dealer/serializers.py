@@ -1,15 +1,24 @@
 from rest_framework import serializers
-from Accounts.models import ServiceProvider
-from service_provider.serializers import UserSerializer,ServiceRegisterSerializer
+from Accounts.models import ServiceProvider,ServiceRegister
+from service_provider.serializers import UserSerializer,ServiceRegisterSerializer,ServiceRequestSerializer
 from Accounts.models import User
 from rest_framework.exceptions import ValidationError
 
 from django.contrib.auth import authenticate
 from Accounts.models import *
+from django.db.models import Count
+
+
+class ServicesSerializer(serializers.ModelSerializer):
+    request_count = serializers.IntegerField(read_only=True)
+    class Meta:
+        model = ServiceRegister
+        fields=['id', 'service_provider', 'description', 'category', 'subcategory', 'image', 'status','request_count']
+
 
 class ServiceProviderSerializer(serializers.ModelSerializer):
     user = UserSerializer()
-    services=ServiceRegisterSerializer(read_only=True,many=True)
+    services=ServicesSerializer(read_only=True,many=True)
 
     class Meta:
         model = ServiceProvider
