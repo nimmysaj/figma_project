@@ -11,7 +11,7 @@ from rest_framework import status, permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import generics,viewsets
-from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User, CustomerReview, OTP, Invoice
+from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User, CustomerReview, OTP, Invoice, CurrentLocation
 from service_provider.permissions import IsOwnerOrAdmin
 from .serializers import CustomerServiceRequestSerializer, InvoiceSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestCustomSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer, ServiceRequestSerializer, VerifyOTPAndSetPasswordSerializer, ChangePasswordSerializer, SimpleServiceRequestSerializer
 from django.utils.encoding import smart_bytes, smart_str
@@ -26,6 +26,9 @@ from django.db.models import Q
 from decimal import Decimal
 from django.db.models.functions import TruncMonth
 from django.db.models import Count
+from datetime import timedelta
+from django.utils import timezone
+from geopy.distance import geodesic
 
 
 
@@ -630,3 +633,94 @@ class ServiceReachView(APIView):
             "request_dates": request_dates,  # Dictionary with month as key and request count as value
         })
     
+
+class UpdateLocationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        # Get latitude and longitude from the request data
+        latitude = request.data.get("latitude")
+        longitude = request.data.get("longitude")
+
+        # Validate if latitude and longitude are provided
+        if latitude is None or longitude is None:
+            return Response({"error": "Latitude and longitude are required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate latitude and longitude data type and range in one step
+        try:
+            latitude = float(latitude)
+            longitude = float(longitude)
+            if not (-90 <= latitude <= 90):
+                return Response({"error": "Latitude must be between -90 and 90."}, status=status.HTTP_400_BAD_REQUEST)
+            if not (-180 <= longitude <= 180):
+                return Response({"error": "Longitude must be between -180 and 180."}, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError:
+            return Response({"error": "Latitude and longitude must be valid decimal numbers."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Fetch or create the provider's current location record
+        location, created = CurrentLocation.objects.get_or_create(user=request.user)
+        
+        # Update location fields
+        location.latitude = latitude
+        location.longitude = longitude
+        
+        # Optionally update other fields if they are provided
+        location.country = request.data.get("country", location.country)
+        location.state = request.data.get("state", location.state)
+        location.place = request.data.get("place", location.place)
+        location.address = request.data.get("address", location.address)
+        location.landmark = request.data.get("landmark", location.landmark)
+        location.pincode = request.data.get("pincode", location.pincode)
+
+        location.save()
+
+        return Response({"message": "Location updated successfully."}, status=status.HTTP_200_OK)
+
+
+
+    
+
+class ProviderLocationDistanceView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        # Extract data from the request body
+        provider_email = request.data.get("provider_email")  # Changed to provider_email
+        customer_lat = request.data.get("customer_lat")
+        customer_lon = request.data.get("customer_lon")
+
+        # Check that required fields are present
+        if not provider_email or customer_lat is None or customer_lon is None:
+            return Response(
+                {"error": "provider_email, customer_lat, and customer_lon are required fields"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Fetch provider location using the email
+        provider_user = get_object_or_404(User, email=provider_email)  # Fetch the user first
+        provider_location = get_object_or_404(CurrentLocation, user=provider_user)  # Then fetch location using the user object
+
+        provider_lat = provider_location.latitude
+        provider_lon = provider_location.longitude
+
+        # Validate the customer latitude and longitude
+        try:
+            customer_lat = float(customer_lat)
+            customer_lon = float(customer_lon)
+        except ValueError:
+            return Response(
+                {"error": "customer_lat and customer_lon must be valid numbers"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Calculate distance between customer and provider
+        provider_coords = (provider_lat, provider_lon)
+        customer_coords = (customer_lat, customer_lon)
+        distance_km = geodesic(customer_coords, provider_coords).km
+
+        # Return the response
+        return Response({
+            "provider_latitude": provider_lat,
+            "provider_longitude": provider_lon,
+            "distance_km": round(distance_km, 2)
+        }, status=200)

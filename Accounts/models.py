@@ -633,3 +633,19 @@ class Complaint(models.Model):
         self.status = 'rejected'
         self.resolution_notes = rejection_reason
         self.save()
+
+
+class CurrentLocation(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)  
+    country = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    place = models.CharField(max_length=100)
+    address = models.TextField()
+    landmark = models.CharField(max_length=100, blank=True, null=True)
+    pincode = models.CharField(max_length=20)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6) 
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)  
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.email} - {self.place}, {self.state}"

@@ -381,3 +381,20 @@ class SimpleServiceRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = ServiceRequest
         fields = ['customer_name', 'title', 'request_date']
+
+
+
+class UpdateLocationSerializer(serializers.Serializer):
+    latitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=True)
+    longitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=True)
+
+
+    def validate_latitude(self, value):
+        if not (-90 <= value <= 90):
+            raise ValidationError("Latitude must be between -90 and 90.")
+        return value
+
+    def validate_longitude(self, value):
+        if not (-180 <= value <= 180):
+            raise ValidationError("Longitude must be between -180 and 180.")
+        return value
