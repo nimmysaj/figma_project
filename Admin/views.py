@@ -126,3 +126,10 @@ class AdsManagementDashBoardView(views.APIView):
                 }
 
         return Response(data=data)
+    
+
+class AdsCategoryView(views.APIView):
+    def get(self,request,*args,**kwargs):
+        qs=Ad_category.objects.all().values_list('ad_type')
+
+        return Response(data={'ads_category':qs})
