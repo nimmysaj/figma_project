@@ -10,6 +10,8 @@ from django.core.validators import RegexValidator
 import phonenumbers
 from django.conf import settings
 import uuid
+from django.contrib.auth import get_user_model
+
 
 # Create your models here.
 phone_regex = RegexValidator(
@@ -193,9 +195,10 @@ class Franchisee(models.Model):
         """Return the amount defined in the Franchise_type."""
         return self.type.amount  
 
+User = get_user_model()
 
 class Dealer(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='dealer')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='dealer')
     custom_id = models.CharField(max_length=10, unique=True, editable=False, blank=True)  # Custom ID field
     
     about = models.TextField()
@@ -207,8 +210,10 @@ class Dealer(models.Model):
     verification_id = models.CharField(max_length=255, blank=True, null=True)  
     verificationid_number = models.CharField(max_length=50, blank=True, null=True)  # ID number field
     id_copy = models.FileField(upload_to='id-dealer/', blank=True, null=True, validators=[validate_file_size]) 
-    
-    
+
+    created_date = models.DateTimeField(default=timezone.now)
+     
+
     def save(self, *args, **kwargs):
         if not self.custom_id:
             # Generate the custom ID format

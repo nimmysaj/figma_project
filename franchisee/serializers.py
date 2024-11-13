@@ -1,6 +1,6 @@
 # serializers.py
 from rest_framework import serializers
-from Accounts.models import ServiceProvider, User
+from Accounts.models import ServiceProvider, User,Dealer,State,Franchisee
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -134,3 +134,75 @@ class ServiceProviderSerializer(serializers.ModelSerializer):
         except Exception as e:
             print("Error creating ServiceProvider:", e)
             raise serializers.ValidationError({"error": "ServiceProvider creation failed."})
+        
+
+# class AdddealerSerializer(serializers.ModelSerializer):
+#     #user fields
+#     email = serializers.EmailField(required=True)
+#     phone_number = serializers.CharField(required=True)
+#     ful_name = serializers.CharField(required=True)
+#     address = serializers.CharField(required= True)
+#     pin_code = serializers.CharField(required=True)
+#     district = serializers.PrimaryKeyRelatedField(queryset=State.objects.all())
+
+#     #dealer fields
+
+#     about = serializers.CharField(required=True)
+#     profile_image = serializers.ImageField(required=False)
+#     service_providers = serializers.IntegerField(required = False)
+#     franchisee = serializers.PrimaryKeyRelatedField(queryset=Franchisee.objects.all())
+#     verification_id = serializers.CharField(required = False)
+#     verificationid_number = serializers.CharField(required=False)
+#     id_copy = serializers.FileField(required=False)
+
+# serializers.py
+
+class DealerUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['email', 'full_name', 'is_dealer']
+        extra_kwargs = {'password': {'write_only': True}}
+
+class DealerSerializer(serializers.ModelSerializer):
+    user = DealerUserSerializer()
+
+    class Meta:
+        model = Dealer
+        # fields = '__all__'
+        exclude = ['franchisee']
+
+    def create(self, validated_data):
+        user_data = validated_data.pop('user')
+        user = User.objects.create(**user_data, is_dealer=True)
+        # franchisee = self.context['request'].user
+        franchisee = Franchisee.objects.get(user=self.context['request'].user)
+
+        dealer = Dealer.objects.create(user=user, franchisee=franchisee,**validated_data)
+        return dealer
+        
+    def to_representation(self, instance):
+        """Customize the serialized response to include the franchisee's ID or any other details."""
+        representation = super().to_representation(instance)
+        representation['franchisee'] = instance.franchisee.id
+        return representation   
+        # Get the current user (should be a franchisee)
+        # user = validated_data.get('user')
+        # franchisee = self.context['request'].user.franchisee
+
+        # Ensure the franchisee is correct
+        # validated_data['franchisee'] = franchisee
+
+        # dealer = Dealer.objects.create(**validated_data)
+        # return dealer
+
+class DealerUserListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'full_name', 'phone_number']  # Specify fields you want from User
+
+class DealerListSerializer(serializers.ModelSerializer):
+    user = DealerUserSerializer()  # Nested serializer for user details
+
+    class Meta:
+        model = Dealer
+        fields = ['id', 'user', 'other_dealer_field_1', 'other_dealer_field_2']  # Include necessary dealer fields
