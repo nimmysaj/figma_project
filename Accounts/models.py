@@ -514,17 +514,22 @@ class ServiceRequest(models.Model):
 
 class Invoice(models.Model):
     INVOICE_TYPE_CHOICES = [
-        ('service_request', 'Service Request'),
         ('dealer_payment', 'Dealer Payment'),
         ('provider_payment', 'Service Provider Payment'),
-        ('service_registration','service_registration'),
-        ('Ads' ,'Ads'),
+        ('franchise_payment', 'Franchise Payment'),
+        ('service_registration', 'Service Registration'),
+        ('franchise_registraion', 'Franchise Registration'),
+        ('service_request', 'Service Request'),
         ('lead_purchase','lead_purchase'),
+        ('banner_ads', 'Banner Ads'),
+        ('card_ads', 'Card Ads'),
+        ('popup_ads', 'Popup Ads'),
+        ('boost_profile', 'Boost Profile'),
         ('others', 'others')
     ]
     
     invoice_number = models.PositiveIntegerField(unique=True, editable=False)
-    external_invoice_number = models.IntegerField(null=True, blank=True)
+    external_invoice_number = models.CharField(max_length=25, null=True, blank=True)
 
     #invoice_type: This field determines whether the invoice is related to a Service Request payment (service_request), a Dealer Payment (dealer_payment), or a Service Provider Payment (provider_payment).
     invoice_type = models.CharField(max_length=20, choices=INVOICE_TYPE_CHOICES)
