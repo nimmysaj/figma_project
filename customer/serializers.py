@@ -137,45 +137,63 @@ class ResendOTPSerializer(serializers.Serializer):
             return User.objects.get(phone_number=email_or_phone)
 
 #login customer
+from rest_framework import serializers
+from django.contrib.auth import authenticate
+from Accounts.models import User, Country_Codes
+import phonenumbers
+import logging
+
+logger = logging.getLogger(__name__)
+
 class CustomerLoginSerializer(serializers.Serializer):
     email_or_phone = serializers.CharField(required=True)
     password = serializers.CharField(required=True, write_only=True)
-    
+
     def validate(self, attrs):
         email_or_phone = attrs.get('email_or_phone')
         password = attrs.get('password')
 
-        # Validate that either email or phone and password are provided
-        if not email_or_phone:
-            raise serializers.ValidationError('Email or phone is required.')
-        if not password:
-            raise serializers.ValidationError('Password is required.')
+        if not email_or_phone or not password:
+            raise serializers.ValidationError('Both email/phone and password are required.')
 
-        # Try to authenticate the user using email or phone number
         user = None
+
+        # First, find the user
         if '@' in email_or_phone:
-            # If input is email
-            user = authenticate(username=email_or_phone, password=password)
-        else:
-            # If input is phone number
             try:
-                #user = User.objects.get(phone_number=email_or_phone)
-                fullnumber=phonenumbers.parse(email_or_phone,None)
-                code=Country_Codes.objects.get(calling_code="+"+str(fullnumber.country_code))
-                number=str(fullnumber.national_number)
-                user = User.objects.get(phone_number=number,country_code=code)
-                if not user.check_password(password):
-                    raise serializers.ValidationError('Invalid credentials.')
-            except phonenumbers.phonenumberutil.NumberParseException:
-                raise serializers.ValidationError('Wrong phone number or email format')    
+                user = User.objects.get(email=email_or_phone)
+                logger.debug(f"Found user by email: {user.email}")
             except User.DoesNotExist:
-                raise serializers.ValidationError('Invalid login credentials.')
+                raise serializers.ValidationError('No account found with this email.')
+        else:
+            try:
+                fullnumber = phonenumbers.parse(email_or_phone, None)
+                code = Country_Codes.objects.get(calling_code="+" + str(fullnumber.country_code))
+                number = str(fullnumber.national_number)
+                
+                user = User.objects.get(phone_number=number, country_code=code)
+                logger.debug(f"Found user by phone: {user.email}")
+            except (phonenumbers.phonenumberutil.NumberParseException, Country_Codes.DoesNotExist):
+                raise serializers.ValidationError('Invalid phone number format')
+            except User.DoesNotExist:
+                raise serializers.ValidationError('No account found with this phone number.')
 
-        if user is None or not user.is_customer:
-            raise serializers.ValidationError('Invalid login credentials or not a customer.')
+        # Check if user is active and is a customer
+        if not user.is_active:
+            raise serializers.ValidationError('This account is inactive.')
 
+        if not user.is_customer:
+            raise serializers.ValidationError('This account is not registered as a customer.')
+
+        # Debugging password verification
+        if not user.check_password(password):
+            logger.debug(f"Password verification failed for user: {user.email} with provided password: {password}")
+            raise serializers.ValidationError('Invalid password.')
+
+
+        logger.debug("Authentication successful")
         attrs['user'] = user
-        return attrs    
+        return attrs
 
 #forgot password and set new pasword    
 class CustomerPasswordForgotSerializer(serializers.Serializer):
@@ -410,3 +428,8 @@ class ServiceRequestDetailSerializer(serializers.ModelSerializer):
             'availability_to',
             'acceptance_status'
         ]    
+from Accounts.models import Notification
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields =['id','recipient_user','sender_user','notification_type','message','is_read','created_at']        

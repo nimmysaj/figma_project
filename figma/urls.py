@@ -23,6 +23,11 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('customer/', include('customer.urls')),
     path('service-provider/', include('service_provider.urls')),
+<<<<<<< HEAD
+    path('franchise/',include('franchise.urls')),
+=======
+    path('franchisee/',include('franchise.urls')),
+>>>>>>> notificationviews
 ]
 
 if settings.DEBUG:

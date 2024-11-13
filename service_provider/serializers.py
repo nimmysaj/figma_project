@@ -4,11 +4,11 @@ import phonenumbers
 from rest_framework.response import Response
 from rest_framework import serializers,status
 from django.contrib.auth import authenticate
-from Accounts.models import Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User  
+from Accounts.models import Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User,  Notification
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
-
+from django.contrib.auth.hashers import make_password
 #service provider login
 class ServiceProviderLoginSerializer(serializers.Serializer):
     email_or_phone = serializers.CharField()
@@ -103,6 +103,8 @@ class UserSerializer(serializers.ModelSerializer):
         
 class ServiceProviderSerializer(serializers.ModelSerializer):
     user = UserSerializer()
+    password = serializers.CharField(write_only=True)
+    # franchise_name = serializers.CharField(source='Franchisee.franchise_name', read_only=True)
 
     class Meta:
         model = ServiceProvider
@@ -118,7 +120,27 @@ class ServiceProviderSerializer(serializers.ModelSerializer):
             "payout_required", 
             "accepted_terms" 
             ]
+    # def validate(self, attrs):
+    #     # Validate that the password meets complexity requirements (optional)
+    #     password = attrs.get('password')
+    #     if len(password) < 8:
+    #         raise serializers.ValidationError("Password must be at least 8 characters long.")
+    #     # return attrs
+    
+    # def create(self, validated_data):
+    #     franchisee = self.context['request'].user.Franchisee  # Franchisee making the request
 
+    #     # Pop password from validated data and create user
+    #     password = validated_data.pop('password')
+    #     user = User.objects.create(
+    #         username=validated_data['email'],
+    #         email=validated_data['email'],
+    #         password= make_password(password),
+    #         is_active=True,
+    #     )
+    #     service_provider = ServiceProvider.objects.create(franchisee=franchisee,**validated_data)
+    #     return service_provider
+    
     def create(self, validated_data):
         # Extract the nested user data from the validated data
         user_data = validated_data.pop('user')
@@ -153,8 +175,7 @@ class ServiceProviderSerializer(serializers.ModelSerializer):
         # Save the ServiceProvider instance with updated data
         instance.save()
         return instance
-    
-
+        
 
 #service registration and view the registered services of themselves
 class ServiceRegisterSerializer(serializers.ModelSerializer):
@@ -295,3 +316,17 @@ class InvoiceSerializer(serializers.ModelSerializer):
                 service_request.save()
 
         return invoice
+<<<<<<< HEAD
+
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['id', 'service_request', 'message', 'created_at', 'is_read']
+=======
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ServiceRequest
+        fields =['id','recipient_user','sender_user','notification_type','message','is_read','created_at']
+>>>>>>> notificationviews

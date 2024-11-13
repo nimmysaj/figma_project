@@ -190,7 +190,20 @@ class Franchisee(models.Model):
     @property
     def franchise_amount(self):
         """Return the amount defined in the Franchise_type."""
-        return self.type.amount  
+        return self.type.amount 
+
+class FranchiseeRegister(models.Model):
+    id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    franchisee = models.ForeignKey(Franchisee, on_delete=models.CASCADE, related_name='services')
+    description = models.TextField()
+    gstcode = models.CharField(max_length=50)
+    license = models.FileField(upload_to='franchisee-license/', blank=True, null=True, validators=[validate_file_size])
+    image = models.ImageField(upload_to='franchisee-images/', null=True, blank=True, validators=[validate_file_size])
+    status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')],default='Active')
+    accepted_terms = models.BooleanField(default=False)
+    available_lead_balance = models.IntegerField(default=0)
+    def __str__(self):
+        return self.franchise_name     
 
 
 class Dealer(models.Model):
@@ -225,7 +238,7 @@ class Dealer(models.Model):
 class ServiceProvider(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='service_provider')
     custom_id = models.CharField(max_length=20, unique=True, editable=False, blank=True)  # Custom ID field
-
+    franchisee = models.ForeignKey(Franchisee, on_delete=models.CASCADE, related_name="service_providers")
     # Service provider-specific fields
     PAYOUT_FREQUENCY_CHOICES = [
         ('Daily', 'Daily'),
@@ -254,7 +267,6 @@ class ServiceProvider(models.Model):
     payout_required = models.CharField(max_length=10, choices=PAYOUT_FREQUENCY_CHOICES)  # Payout frequency field
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')])
     verification_by_dealer= models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
-
     accepted_terms = models.BooleanField(default=False)
     
     
@@ -440,6 +452,19 @@ class ServiceRegister(models.Model):
             # No collar is needed for 'Daily Work' service type
             self.available_lead_balance = 0  # You can adjust logic for infinite leads here
         super(ServiceRegister, self).save(*args, **kwargs) 
+#franchisee register
+class FranchiseeRegister(models.Model):
+    id=models.UUIDField(primary_key=True,default=uuid.uuid4,editable=False)
+    franchisee = models.ForeignKey(Franchisee, on_delete=models.CASCADE, related_name='services')
+    description = models.TextField()
+    gstcode = models.CharField(max_length=50)
+    license = models.FileField(upload_to='franchisee-license/', blank=True, null=True, validators=[validate_file_size])
+    image = models.ImageField(upload_to='franchisee-images/', null=True, blank=True, validators=[validate_file_size])
+    status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')],default='Active')
+    accepted_terms = models.BooleanField(default=False)
+    available_lead_balance = models.IntegerField(default=0)
+    def __str__(self):
+        return self.franchise_name    
    
 class PaymentRequest(models.Model):
     service_provider = models.ForeignKey(ServiceProvider, on_delete=models.PROTECT,related_name='from_paymentrequest')
@@ -632,3 +657,37 @@ class Complaint(models.Model):
         self.status = 'rejected'
         self.resolution_notes = rejection_reason
         self.save()
+<<<<<<< HEAD
+        
+class Notification(models.Model):
+    service_request = models.ForeignKey(ServiceRequest, on_delete=models.CASCADE, related_name='notifications')
+    message = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Notification for {self.service_request.service_provider} from {self.service_request.customer}"
+=======
+
+class NotificationType(models.TextChoices):
+    SERVICE_REQUESTED = 'SERVICE_REQUESTED', 'Service Requested'
+    SERVICE_ACCEPTED = 'SERVICE_ACCEPTED', 'Service Accepted'
+    SERVICE_COMPLETED = 'SERVICE_COMPLETED', 'Service Completed'
+    
+class Notification(models.Model):
+    recipient_user = models.ForeignKey(User, related_name='notifications', on_delete=models.CASCADE)
+    sender_user = models.ForeignKey(User, related_name='sent_notifications', on_delete=models.CASCADE)
+    notification_type = models.CharField(max_length=50, choices=NotificationType.choices)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"Notification from {self.sender_user} to {self.recipient_user} - {self.notification_type}"
+
+    def mark_as_read(self):
+        self.is_read = True
+        self.save()
+
+#class NewServiceProvider(models.Model):        
+>>>>>>> notificationviews
