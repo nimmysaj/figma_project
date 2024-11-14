@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from Accounts.models import ServiceProvider,ServiceRegister
-from service_provider.serializers import UserSerializer,ServiceRegisterSerializer,ServiceRequestSerializer
+from service_provider.serializers import UserSerializer
 from Accounts.models import User
 from rest_framework.exceptions import ValidationError
 
@@ -9,67 +9,67 @@ from Accounts.models import *
 from django.db.models import Count
 
 
-class ServicesSerializer(serializers.ModelSerializer):
-    request_count = serializers.IntegerField(read_only=True)
-    class Meta:
-        model = ServiceRegister
-        fields=['id', 'service_provider', 'description', 'category', 'subcategory', 'image', 'status','request_count']
+# class ServicesSerializer(serializers.ModelSerializer):
+#     request_count = serializers.IntegerField(read_only=True)
+#     class Meta:
+#         model = ServiceRegister
+#         fields=['id', 'service_provider', 'description', 'category', 'subcategory', 'image', 'status','request_count']
 
 
-class ServiceProviderSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
-    services=ServicesSerializer(read_only=True,many=True)
+# class ServiceProviderSerializer(serializers.ModelSerializer):
+#     user = UserSerializer()
+#     services=ServicesSerializer(read_only=True,many=True)
 
-    class Meta:
-        model = ServiceProvider
-        fields = [ "user",
-            "profile_image",
-            "date_of_birth",
-            "gender" ,
-            "dealer",
-            "franchisee",
-            "address_proof_document",
-            "id_number", 
-            "address_proof_file" ,
-            "payout_required", 
-            "accepted_terms",
-            "services" 
-            ]
+#     class Meta:
+#         model = ServiceProvider
+#         fields = [ "user",
+#             "profile_image",
+#             "date_of_birth",
+#             "gender" ,
+#             "dealer",
+#             "franchisee",
+#             "address_proof_document",
+#             "id_number", 
+#             "address_proof_file" ,
+#             "payout_required", 
+#             "accepted_terms",
+#             "services" 
+#             ]
 
-    def create(self, validated_data):
-        # Extract the nested user data from the validated data
-        user_data = validated_data.pop('user')
+#     def create(self, validated_data):
+#         # Extract the nested user data from the validated data
+#         user_data = validated_data.pop('user')
 
-        # Check if accepted_terms is False
-        if not validated_data.get('accepted_terms'):
-            raise ValidationError({"accepted_terms": "You must accept the terms and conditions to create a profile."})
+#         # Check if accepted_terms is False
+#         if not validated_data.get('accepted_terms'):
+#             raise ValidationError({"accepted_terms": "You must accept the terms and conditions to create a profile."})
         
-        user = User.objects.create(**user_data)
-        service_provider = ServiceProvider.objects.create(user=user, **validated_data)
-        return service_provider
+#         user = User.objects.create(**user_data)
+#         service_provider = ServiceProvider.objects.create(user=user, **validated_data)
+#         return service_provider
 
-    def update(self, instance, validated_data):
-        # Extract user data and handle separately
-        user_data = validated_data.pop('user', None)
+#     def update(self, instance, validated_data):
+#         # Extract user data and handle separately
+#         user_data = validated_data.pop('user', None)
 
-        # Update ServiceProvider fields
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+#         # Update ServiceProvider fields
+#         for attr, value in validated_data.items():
+#             setattr(instance, attr, value)
 
-        # Handle User fields separately
-        if user_data:
-            user = instance.user  # Get the related user instance
-            for attr, value in user_data.items():
-                if attr == 'email' and user.email:
-                    continue  # Skip updating email if it's already set
-                if attr == 'phone_number' and user.phone_number:
-                    continue  # Skip updating phone number if it's already set
-                setattr(user, attr, value)
-            user.save()
+#         # Handle User fields separately
+#         if user_data:
+#             user = instance.user  # Get the related user instance
+#             for attr, value in user_data.items():
+#                 if attr == 'email' and user.email:
+#                     continue  # Skip updating email if it's already set
+#                 if attr == 'phone_number' and user.phone_number:
+#                     continue  # Skip updating phone number if it's already set
+#                 setattr(user, attr, value)
+#             user.save()
 
-        # Save the ServiceProvider instance with updated data
-        instance.save()
-        return instance
+#         # Save the ServiceProvider instance with updated data
+#         instance.save()
+#         return instance
     
 
 
@@ -91,3 +91,33 @@ class DealerLoginSerializer(serializers.Serializer):
         attrs['user'] = user
         return attrs
     
+
+
+
+from rest_framework import serializers
+from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest
+
+class ServiceRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ServiceRequest
+        fields = ['id', 'booking_id', 'title', 'customer', 'work_status', 'acceptance_status', 'request_date', 'availability_from', 'availability_to', 'additional_notes', 'image']
+
+class ServiceRegisterSerializer(serializers.ModelSerializer):
+    total_orders = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ServiceRegister
+        fields = ['id', 'description', 'category', 'subcategory', 'image', 'total_orders']
+
+    def get_total_orders(self, obj):
+        return ServiceRequest.objects.filter(service=obj).count()
+
+class ServiceProviderSerializer(serializers.ModelSerializer):
+    services = ServiceRegisterSerializer(many=True, read_only=True)
+    user = UserSerializer()
+    dealer=serializers.CharField(source='dealer.user.full_name')
+    franchisee=serializers.CharField(source='franchisee.user.full_name')
+
+    class Meta:
+        model = ServiceProvider
+        fields = ['user', 'custom_id', 'profile_image', 'about', 'dealer', 'franchisee','services']
