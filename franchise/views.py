@@ -3,7 +3,7 @@ from django.shortcuts import render
 # Create your views here.
 
 from rest_framework import generics,filters
-from Accounts.models import Dealer
+from Accounts.models import Dealer,ServiceProvider
 from franchise.serializers import DealerSerializer,FranchiseeLoginSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -11,6 +11,9 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
+from rest_framework import viewsets
+from rest_framework.decorators import action
+from Dealer.serializers import ServiceProviderSerializer
 
 # get the dealer details, also perform edit function
 class DealerDetailView(generics.RetrieveUpdateAPIView):
@@ -52,3 +55,27 @@ class FranchiseeLoginView(APIView):
             }, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+
+class FranchiseServiceProviderViewSet(viewsets.ReadOnlyModelViewSet):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    queryset = ServiceProvider.objects.all()
+    serializer_class = ServiceProviderSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['user__full_name', 'user__district__name']
+
+    @action(detail=False, methods=['post'])
+    def services(self, request):
+        service_provider_id = request.data.get('service_provider_id')
+        
+        if not service_provider_id:
+            return Response({'error': 'Service Provider ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            service_provider = ServiceProvider.objects.get(custom_id=service_provider_id)
+        except ServiceProvider.DoesNotExist:
+            return Response({'error': 'Service Provider not found.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = self.get_serializer(service_provider)
+        return Response(serializer.data)

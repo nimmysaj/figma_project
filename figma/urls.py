@@ -24,7 +24,7 @@ urlpatterns = [
     path('customer/', include('customer.urls')),
     path('service-provider/', include('service_provider.urls')),
     path('dealer/',include('Dealer.urls')),
-    path('serviceprovider/',include('franchise.urls')),
+    path('franchise/',include('franchise.urls')),
     path('admins/app/',include('Admin.urls'))
 ]
 
