@@ -2,11 +2,12 @@ from django.shortcuts import render
 from rest_framework import generics,status,permissions,authentication,views
 from Accounts.models import Customer,Country_Codes,State,District,GENDER_CHOICES,Franchisee,ServiceProvider,Dealer,ServiceRequest,Complaint,Invoice,Payment,Ad_category,Ad_Management
 from rest_framework.response import Response
-from Admin.serializers import CustomerSerializer,BookingSerializer,ComplaintSerializer
+from Admin.serializers import CustomerSerializer,BookingSerializer,ComplaintSerializer,AdsManagementSerializer
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Sum
 from datetime import datetime, timedelta 
 import calendar
+from rest_framework import filters
 
 #pagination classes
 class IncompleteBookingPaginator(PageNumberPagination):
@@ -96,8 +97,8 @@ class AdsManagementDashBoardView(views.APIView):
         total_ads=Ad_Management.objects.all().count()
         other_ad=['banner','pop_up','card']
         other_ads=Ad_Management.objects.filter(ad_category__ad_type__in=other_ad).count()
-        current_month_ads = Ad_Management.objects.filter( created_date__range=[current_month_start, current_month_end] ).count() 
-        previous_month_ads = Ad_Management.objects.filter( created_date__range=[previous_month_start, previous_month_end] ).count()
+        current_month_ads = Ad_Management.objects.filter( created_date__range=[current_month_start, current_month_end],ad_category__ad_type__in=other_ad ).count() 
+        previous_month_ads = Ad_Management.objects.filter( created_date__range=[previous_month_start, previous_month_end],ad_category__ad_type__in=other_ad ).count()
         if previous_month_ads > 0: 
             ads_percentage_difference = ((current_month_ads - previous_month_ads) / previous_month_ads) * 100 
             ads_change_type = "increase" if ads_percentage_difference > 0 else "decrease" 
@@ -110,6 +111,23 @@ class AdsManagementDashBoardView(views.APIView):
         else: 
             percentage_difference = 100.0 if current_month_revenue > 0 else 0.0
             change_type = "increase" if current_month_revenue > 0 else "no change"
+
+        profile_boost=Ad_Management.objects.filter(ad_category__ad_type='profile_boost').count()
+        current_month_ads = Ad_Management.objects.filter( created_date__range=[current_month_start, current_month_end],ad_category__ad_type='profile_boost').count() 
+        previous_month_ads = Ad_Management.objects.filter( created_date__range=[previous_month_start, previous_month_end],ad_category__ad_type='profile_boost').count()
+        if previous_month_ads > 0: 
+            boost_ads_percentage_difference = ((current_month_ads - previous_month_ads) / previous_month_ads) * 100 
+            boost_ads_change_type = "increase" if ads_percentage_difference > 0 else "decrease" 
+        else: 
+            boost_ads_percentage_difference = 100.0 if current_month_ads > 0 else 0.0 
+            boost_ads_change_type = "increase" if current_month_ads > 0 else "no change"
+        if previous_month_revenue > 0: 
+            boost_percentage_difference = ((current_month_revenue - previous_month_revenue) / previous_month_revenue) * 100 
+            boost_change_type = "increase" if percentage_difference > 0 else "decrease"
+        else: 
+            boost_percentage_difference = 100.0 if current_month_revenue > 0 else 0.0
+            boost_change_type = "increase" if current_month_revenue > 0 else "no change"
+
             data={
                 'ads_revenue':{
                 'total_ads_revenue':total_ads_revenue,
@@ -121,7 +139,14 @@ class AdsManagementDashBoardView(views.APIView):
                     'chage_type':ads_change_type
                 },
                 'other_ads':{
-                    'other_ad_count':other_ads
+                    'other_ad_count':other_ads,
+                    'difference':ads_percentage_difference,
+                    'diff_type':ads_change_type
+                },
+                'profile_boost':{
+                    'profile_boost_count':profile_boost,
+                    'difference':boost_ads_percentage_difference,
+                    'diff_type':boost_ads_change_type
                 }
                 }
 
@@ -133,3 +158,10 @@ class AdsCategoryView(views.APIView):
         qs=Ad_category.objects.all().values_list('ad_type')
 
         return Response(data={'ads_category':qs})
+
+
+class AdsManagementView(generics.ListAPIView):
+    serializer_class=AdsManagementSerializer
+    queryset=Ad_Management.objects.all()
+    filter_backends=[filters.SearchFilter]
+    search_fields=['ad_category__ad_type']

@@ -652,6 +652,8 @@ AD_TYPE = [
 
     ('pop_up','Pop Up Ad'),
 
+    ('profile_boost','Profile Boost')
+
 ]
 
 class Ad_category(models.Model):

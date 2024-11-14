@@ -7,5 +7,6 @@ urlpatterns = [
     path('incomplete-booking/',views.IncompleteBookingView.as_view(),name='incomplete-booking'),
     path('complaints/',views.ComplaintsView.as_view(),name='complaints'),
     path('ads/',views.AdsManagementDashBoardView.as_view()),
-    path('ads-category/',views.AdsCategoryView.as_view())
+    path('ads-category/',views.AdsCategoryView.as_view()),
+    path('ads-management/',views.AdsManagementView.as_view())
 ]

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from Accounts.models import Customer,User,ServiceRequest,Complaint,Payment
+from Accounts.models import Customer,User,ServiceRequest,Complaint,Payment,Ad_Management
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -43,3 +43,14 @@ class ComplaintSerializer(serializers.ModelSerializer):
     class Meta:
         model=Complaint
         fields=['id','sender_name','status']
+
+
+class AdsManagementSerializer(serializers.ModelSerializer):
+    total_views=serializers.IntegerField(source='ad_category.total_views', read_only=True) 
+    total_hits=serializers.IntegerField(source='ad_category.total_hits', read_only=True)
+    ad_category=serializers.CharField(source='ad_category.ad_type',read_only=True)
+    class Meta:
+        model=Ad_Management
+        fields = [ 'ad_id', 
+                  'title', 'ad_category', 
+                  'total_views','total_hits' ]
