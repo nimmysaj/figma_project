@@ -9,4 +9,5 @@ router.register(r'service-providers', ServiceProviderViewSet, basename='service-
 urlpatterns = [
     path('login/',views.DealerLoginView.as_view(),name='dealer_login'),
     path('api/', include(router.urls)),
+    path('common-login/',views.LoginView.as_view(),name='common-login')
 ]

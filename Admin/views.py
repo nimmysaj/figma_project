@@ -8,6 +8,13 @@ from django.db.models import Sum
 from datetime import datetime, timedelta 
 import calendar
 from rest_framework import filters
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated,BasePermission
+
+
+class IsAdminUser(BasePermission):
+    def has_permission(self, request, view): # Check if the user is authenticated and is a superuser 
+        return request.user and (request.user.is_superuser)
 
 #pagination classes
 class IncompleteBookingPaginator(PageNumberPagination):
@@ -23,6 +30,8 @@ class ComplaintPaginator(PageNumberPagination):
 # Create your views here.
 
 class AddNewUserView(generics.CreateAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
     authentication_classes=[authentication.TokenAuthentication]
     permission_classes=[permissions.IsAuthenticated]
     queryset = Customer.objects.all()
@@ -50,6 +59,8 @@ class AddNewUserView(generics.CreateAPIView):
 
 
 class AdminDashBoardView(views.APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
     authentication_classes=[authentication.TokenAuthentication]
     permission_classes=[permissions.IsAuthenticated]
     def get(self,request,*args,**kwargs):
@@ -69,6 +80,8 @@ class AdminDashBoardView(views.APIView):
 
 
 class IncompleteBookingView(generics.ListAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
     authentication_classes=[authentication.TokenAuthentication]
     permission_classes=[permissions.IsAuthenticated]
     serializer_class=BookingSerializer
@@ -76,6 +89,8 @@ class IncompleteBookingView(generics.ListAPIView):
     pagination_class=IncompleteBookingPaginator
 
 class ComplaintsView(generics.ListAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
     authentication_classes=[authentication.TokenAuthentication]
     permission_classes=[permissions.IsAuthenticated]
     queryset=Complaint.objects.all().order_by('id')
@@ -83,6 +98,8 @@ class ComplaintsView(generics.ListAPIView):
     pagination_class=ComplaintPaginator
 
 class AdsManagementDashBoardView(views.APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
     def get(self,request,*args,**kwargs):
         today = datetime.today() 
         current_month_start = today.replace(day=1) 
@@ -148,6 +165,8 @@ class AdsManagementDashBoardView(views.APIView):
     
 
 class AdsCategoryView(views.APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
     def get(self,request,*args,**kwargs):
         qs=Ad_category.objects.all().values_list('ad_type')
 
@@ -155,6 +174,8 @@ class AdsCategoryView(views.APIView):
 
 
 class AdsManagementView(generics.ListAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAdminUser]
     serializer_class=AdsManagementSerializer
     queryset=Ad_Management.objects.all()
     filter_backends=[filters.SearchFilter]
