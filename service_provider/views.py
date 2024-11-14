@@ -1,4 +1,5 @@
 from decimal import Decimal
+from rest_framework.generics import CreateAPIView
 from django.shortcuts import get_object_or_404, render
 from django.db.models import Avg,Sum
 from rest_framework.views import APIView
@@ -13,9 +14,9 @@ from rest_framework import status, permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import generics,viewsets
-from Accounts.models import ServiceProvider, ServiceRequest, User,Payment,CustomerReview
+from Accounts.models import ServiceProvider, ServiceRequest, User,Payment,CustomerReview,AdManagement,AdCategory
 from service_provider.permissions import IsOwnerOrAdmin
-from .serializers import ServiceProviderLoginSerializer,PaymentListSerializer
+from .serializers import ServiceProviderLoginSerializer,PaymentListSerializer,BoostServiceSerializer
 from django.utils.encoding import smart_bytes, smart_str
 from twilio.rest import Client
 from rest_framework.decorators import action
@@ -140,3 +141,13 @@ class FinancialOverviewView(APIView):
         }
 
         return Response(data, status=status.HTTP_200_OK)
+    
+
+
+class BoostServiceCreateView(generics.CreateAPIView):
+    queryset = AdManagement.objects.all()
+    serializer_class = BoostServiceSerializer
+    permission_classes = [permissions.IsAuthenticated]  
+
+    def perform_create(self, serializer):
+        serializer.save(sender=self.request.user)
