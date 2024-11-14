@@ -93,10 +93,10 @@ class AdsManagementDashBoardView(views.APIView):
         previous_month_end = last_day_of_previous_month
         current_month_revenue = Payment.objects.filter( invoice__invoice_type='Ads', payment_date__range=[current_month_start, current_month_end] ).aggregate(total_revenue=Sum('amount_paid'))['total_revenue'] or 0.0
         previous_month_revenue = Payment.objects.filter( invoice__invoice_type='Ads', payment_date__range=[previous_month_start, previous_month_end] ).aggregate(total_revenue=Sum('amount_paid'))['total_revenue'] or 0.0
-        total_ads_revenue = Payment.objects.filter( invoice__invoice_type='Ads' ).aggregate(total_revenue=Sum('amount_paid'))['total_revenue'] or 0.0
-        total_ads=Ad_Management.objects.all().count()
+        #total_ads_revenue = Payment.objects.filter( invoice__invoice_type='Ads' ).aggregate(total_revenue=Sum('amount_paid'))['total_revenue'] or 0.0
+        total_ads=Ad_Management.objects.filter(created_date__range=[current_month_start, current_month_end]).count()
         other_ad=['banner','pop_up','card']
-        other_ads=Ad_Management.objects.filter(ad_category__ad_type__in=other_ad).count()
+        other_ads=Ad_Management.objects.filter(created_date__range=[current_month_start, current_month_end],ad_category__ad_type__in=other_ad).count()
         current_month_ads = Ad_Management.objects.filter( created_date__range=[current_month_start, current_month_end],ad_category__ad_type__in=other_ad ).count() 
         previous_month_ads = Ad_Management.objects.filter( created_date__range=[previous_month_start, previous_month_end],ad_category__ad_type__in=other_ad ).count()
         if previous_month_ads > 0: 
@@ -112,32 +112,26 @@ class AdsManagementDashBoardView(views.APIView):
             percentage_difference = 100.0 if current_month_revenue > 0 else 0.0
             change_type = "increase" if current_month_revenue > 0 else "no change"
 
-        profile_boost=Ad_Management.objects.filter(ad_category__ad_type='profile_boost').count()
-        current_month_ads = Ad_Management.objects.filter( created_date__range=[current_month_start, current_month_end],ad_category__ad_type='profile_boost').count() 
-        previous_month_ads = Ad_Management.objects.filter( created_date__range=[previous_month_start, previous_month_end],ad_category__ad_type='profile_boost').count()
-        if previous_month_ads > 0: 
-            boost_ads_percentage_difference = ((current_month_ads - previous_month_ads) / previous_month_ads) * 100 
-            boost_ads_change_type = "increase" if ads_percentage_difference > 0 else "decrease" 
+        profile_boost=Ad_Management.objects.filter(created_date__range=[current_month_start, current_month_end],ad_category__ad_type='profile_boost').count()
+        current_month_boost_ads = Ad_Management.objects.filter( created_date__range=[current_month_start, current_month_end],ad_category__ad_type='profile_boost').count() 
+        previous_month_boost_ads = Ad_Management.objects.filter( created_date__range=[previous_month_start, previous_month_end],ad_category__ad_type='profile_boost').count()
+        if previous_month_boost_ads > 0: 
+            boost_ads_percentage_difference = ((current_month_boost_ads - previous_month_boost_ads) / previous_month_boost_ads) * 100 
+            boost_ads_change_type = "increase" if boost_ads_percentage_difference > 0 else "decrease" 
         else: 
-            boost_ads_percentage_difference = 100.0 if current_month_ads > 0 else 0.0 
-            boost_ads_change_type = "increase" if current_month_ads > 0 else "no change"
-        if previous_month_revenue > 0: 
-            boost_percentage_difference = ((current_month_revenue - previous_month_revenue) / previous_month_revenue) * 100 
-            boost_change_type = "increase" if percentage_difference > 0 else "decrease"
-        else: 
-            boost_percentage_difference = 100.0 if current_month_revenue > 0 else 0.0
-            boost_change_type = "increase" if current_month_revenue > 0 else "no change"
+            boost_ads_percentage_difference = 100.0 if current_month_boost_ads > 0 else 0.0 
+            boost_ads_change_type = "increase" if current_month_boost_ads > 0 else "no change"
 
             data={
-                'ads_revenue':{
-                'total_ads_revenue':total_ads_revenue,
-                'percentage_diff':percentage_difference,
-                'change_type':change_type},
                 'total_ads':{
                     'ads':total_ads,
                     'difference':ads_percentage_difference,
                     'chage_type':ads_change_type
                 },
+                'ads_revenue':{
+                'total_ads_revenue':current_month_revenue,
+                'percentage_diff':percentage_difference,
+                'change_type':change_type},
                 'other_ads':{
                     'other_ad_count':other_ads,
                     'difference':ads_percentage_difference,

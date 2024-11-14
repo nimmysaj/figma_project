@@ -59,22 +59,56 @@ class DealerLoginView(generics.GenericAPIView):
 from rest_framework import viewsets
 from rest_framework.decorators import action
 
+# class ServiceProviderViewSet(viewsets.ReadOnlyModelViewSet):
+#     authentication_classes=[TokenAuthentication]
+#     permission_classes=[IsAuthenticated]
+#     queryset = ServiceProvider.objects.all()
+#     serializer_class = ServiceProviderSerializer
+#     filter_backends=[filters.SearchFilter]
+#     search_fields=['user__full_name','user__district__name']
+
+#     def get_queryset(self):
+#         user = self.request.user
+#         return ServiceProvider.objects.filter( 
+#             accepted_terms=True, 
+#             dealer__user=user)
+
+#     @action(detail=True, methods=['get'])
+#     def services(self, request, pk=None):
+#         service_provider = self.get_object()
+#         serializer = self.get_serializer(service_provider)
+#         return Response(serializer.data)
+
+
+
+
 class ServiceProviderViewSet(viewsets.ReadOnlyModelViewSet):
-    authentication_classes=[TokenAuthentication]
-    permission_classes=[IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     queryset = ServiceProvider.objects.all()
     serializer_class = ServiceProviderSerializer
-    filter_backends=[filters.SearchFilter]
-    search_fields=['user__full_name','user__district__name']
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['user__full_name', 'user__district__name']
 
     def get_queryset(self):
         user = self.request.user
-        return ServiceProvider.objects.filter( 
-            accepted_terms=True, 
-            dealer__user=user)
+        return ServiceProvider.objects.filter(
+            accepted_terms=True,
+            dealer__user=user
+        )
 
-    @action(detail=True, methods=['get'])
-    def services(self, request, pk=None):
-        service_provider = self.get_object()
+    @action(detail=False, methods=['post'])
+    def services(self, request):
+        service_provider_id = request.data.get('service_provider_id')
+        
+        if not service_provider_id:
+            return Response({'error': 'Service Provider ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            service_provider = ServiceProvider.objects.get(custom_id=service_provider_id)
+        except ServiceProvider.DoesNotExist:
+            return Response({'error': 'Service Provider not found.'}, status=status.HTTP_404_NOT_FOUND)
+        
         serializer = self.get_serializer(service_provider)
         return Response(serializer.data)
+
