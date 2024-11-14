@@ -120,4 +120,4 @@ class ServiceProviderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ServiceProvider
-        fields = ['user', 'custom_id', 'profile_image', 'about', 'dealer', 'franchisee','services']
+        fields = ['user', 'custom_id', 'profile_image', 'about','verification_by_dealer', 'dealer', 'franchisee','services']
