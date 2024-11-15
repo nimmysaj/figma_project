@@ -680,3 +680,8 @@ class AdManagement(models.Model):
 
     def __str__(self):
         return self.title
+    # @property
+    # def boost_service_image(self):
+    #     if self.subcategory and self.subcategory.image:
+    #         return self.subcategory.image.url
+    #     return None
