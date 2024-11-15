@@ -659,27 +659,29 @@ class AdCategory(models.Model):
     currency = models.CharField(max_length=10, default="INR")
     image_width = models.IntegerField()
     image_height = models.IntegerField()
+    status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')], default='Active')
 
     def __str__(self):
         return self.ad_type
 
 class AdManagement(models.Model):
-    title = models.CharField(max_length=100)
-    description = models.CharField(max_length=200)
-    ad_category = models.ForeignKey(AdCategory, on_delete=models.CASCADE, related_name="ads")
     service_name = models.CharField(max_length=100, null=True, blank=True)  #boost service
+    subcategory = models.ForeignKey(Subcategory, on_delete=models.CASCADE, related_name='boostservice', null=True, blank=True)
     valid_from = models.DateTimeField()
     valid_up_to = models.DateTimeField()
     target_area = models.CharField(max_length=100, choices=TARGET_AREA_CHOICES, default='up_to_5_km')
     total_days = models.IntegerField()
     total_amount = models.DecimalField(max_digits=7, decimal_places=2)
-    boost_service_image = models.ImageField(upload_to='boost_service_images/', null=True, blank=True) #boost service
+    title = models.CharField(max_length=100)
+    description = models.CharField(max_length=200)
+    ad_category = models.ForeignKey(AdCategory, on_delete=models.CASCADE, related_name="ads")
     image = models.ImageField(upload_to='ad_images/', null=True, blank=True)
-    status = models.CharField(max_length=20, choices=[('Active', 'Active'), ('Inactive', 'Inactive')])
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='ads_created', null=True, blank=True)
 
     def __str__(self):
         return self.title
+    
+
     # @property
     # def boost_service_image(self):
     #     if self.subcategory and self.subcategory.image:
