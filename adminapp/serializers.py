@@ -1,8 +1,10 @@
 from rest_framework import serializers
 from .models import ServiceRequest, Invoice,Complaint,CustomerReview,Payment,Category,Customer
 from .models import User, District, State, Country_Codes
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-
+from rest_framework_simplejwt.serializers import RefreshToken
+from rest_framework.exceptions import AuthenticationFailed
+import phonenumbers
+from phonenumbers.phonenumberutil import NumberParseException
 
 class InvoiceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -152,19 +154,86 @@ class CategoryDashboardSerializer(serializers.ModelSerializer):
         model = Category
         fields = ['id', 'title','image']
 
-class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    def validate(self, attrs):
-        data = super().validate(attrs)
-        user = self.user
+class LoginSerializer(serializers.Serializer):
+    email_or_phone = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+    access = serializers.CharField(read_only=True)
+    refresh = serializers.CharField(read_only=True)
+    user_type = serializers.CharField(read_only=True)
 
-        # Check the user's access level and include it in the response
-        if user.is_franchisee:
-            data['role'] = 'franchisee'
-        elif user.is_dealer:
-            data['role'] = 'dealer'
-        elif user.is_superuser:
-            data['role'] = 'admin'
+    def validate(self, data):
+        email_or_phone = data.get('email_or_phone')
+        password = data.get('password')
+
+        user = None
+
+        # Handle email login
+        if '@' in email_or_phone:
+            try:
+                user = User.objects.get(email=email_or_phone)
+            except User.DoesNotExist:
+                raise AuthenticationFailed("Invalid login credentials.")
+        # Handle phone number login
         else:
-            raise serializers.ValidationError("User role not authorized.")
+            try:
+                # Parse the phone number with phonenumbers
+                full_number = phonenumbers.parse(email_or_phone, None)
 
-        return data
+                # Get the country code object
+                country_code = Country_Codes.objects.get(calling_code="+" + str(full_number.country_code))
+
+                # Extract the national number
+                phone_number = str(full_number.national_number)
+
+                # Find the user with the phone number and country code
+                user = User.objects.get(phone_number=phone_number, country_code=country_code)
+            except NumberParseException:
+                raise AuthenticationFailed("Invalid phone number format.")
+            except Country_Codes.DoesNotExist:
+                raise AuthenticationFailed("Country code not recognized.")
+            except User.DoesNotExist:
+                raise AuthenticationFailed("Invalid login credentials.")
+
+        # Check user password
+        if not user.check_password(password):
+            raise AuthenticationFailed("Invalid login credentials.")
+
+        # Ensure the user account is active
+        if not user.is_active:
+            raise AuthenticationFailed("This account is inactive. Please contact support.")
+
+        # Determine user type
+        if user.is_superuser:
+            user_type = "admin"
+        elif user.is_franchisee:
+            user_type = "franchisee"
+        elif user.is_dealer:
+            user_type = "dealer"
+        else:
+            user_type = "unknown"
+
+        # Generate tokens
+        tokens = RefreshToken.for_user(user)
+
+        return {
+            'access': str(tokens.access_token),
+            'refresh': str(tokens),
+            'user_type': user_type,
+        }
+    
+class MonthlyComparisonSerializer(serializers.Serializer):
+    month = serializers.CharField()
+    income = serializers.DecimalField(max_digits=10, decimal_places=2)
+    expense = serializers.DecimalField(max_digits=10, decimal_places=2)
+
+class YearlyIncomeExpenseSerializer(serializers.Serializer):
+    yearly_comparison = MonthlyComparisonSerializer(many=True)
+    
+class CustomerStatusTotalsSerializer(serializers.Serializer):
+    active_customers = serializers.IntegerField()
+    inactive_customers = serializers.IntegerField()
+
+class PaymentTotalsSerializer(serializers.Serializer):
+    ads_total = serializers.DecimalField(max_digits=10, decimal_places=2)
+    service_registration_total = serializers.DecimalField(max_digits=10, decimal_places=2)
+    commission_total = serializers.DecimalField(max_digits=10, decimal_places=2)
