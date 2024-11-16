@@ -4,7 +4,7 @@ import phonenumbers
 from rest_framework.response import Response
 from rest_framework import serializers,status
 from django.contrib.auth import authenticate
-from Accounts.models import Invoice, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User  
+from Accounts.models import Invoice, PaymentRequest, ServiceProvider, ServiceRegister, ServiceRequest, Subcategory, User  
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
@@ -295,3 +295,11 @@ class InvoiceSerializer(serializers.ModelSerializer):
                 service_request.save()
 
         return invoice
+
+class PaymentRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PaymentRequest
+        fields = '__all__'
+
+    description = serializers.CharField(required=True)
+    supporting_documents = serializers.FileField(required=True)

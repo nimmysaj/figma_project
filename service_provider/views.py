@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework import generics,viewsets
 from Accounts.models import ServiceProvider, ServiceRegister, ServiceRequest, User
 from service_provider.permissions import IsOwnerOrAdmin
-from .serializers import CustomerServiceRequestSerializer, InvoiceSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestSerializer, SetNewPasswordSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer
+from .serializers import CustomerServiceRequestSerializer, InvoiceSerializer, PaymentRequestSerializer, ServiceProviderPasswordForgotSerializer, ServiceRegisterSerializer, ServiceRegisterUpdateSerializer, ServiceRequestSerializer, SetNewPasswordSerializer, ServiceProviderLoginSerializer,ServiceProviderSerializer
 from django.utils.encoding import smart_bytes, smart_str
 from twilio.rest import Client
 from rest_framework.decorators import action
@@ -404,3 +404,27 @@ class ServiceRequestInvoiceView(APIView):
                 {"error": "Cannot generate invoice. Accepted terms must be true."}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+class PaymentRequestCreateView(APIView):
+    permission_classes = [IsAuthenticated]  # Ensure the user is logged in
+
+    def post(self, request):
+        user = request.user  
+        
+        email = user.email  
+        phone = user.phone_number  
+        country_code = user.country_code_id  
+
+    
+        request.data['email'] = email
+        request.data['phone'] = phone
+        request.data['country_code'] = country_code
+        request.data['user'] = user.id 
+
+        serializer = PaymentRequestSerializer(data=request.data)
+
+        if serializer.is_valid():
+            payment_request = serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

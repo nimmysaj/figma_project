@@ -442,26 +442,17 @@ class ServiceRegister(models.Model):
         super(ServiceRegister, self).save(*args, **kwargs) 
    
 class PaymentRequest(models.Model):
-    service_provider = models.ForeignKey(ServiceProvider, on_delete=models.PROTECT,related_name='from_paymentrequest')
-    dealer = models.ForeignKey(Dealer, on_delete=models.PROTECT,related_name='to_paymentrequest')
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    description = models.TextField()
+    user = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_paymentrequest')
+    description = models.TextField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     email = models.EmailField()
     country_code = models.ForeignKey(Country_Codes,max_length=25,on_delete=models.SET_NULL,null=True,blank=True)
     phone = models.CharField(validators=[phone_regex],max_length=15)
-
-    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES)
-    account_holder_name = models.CharField(max_length=50)
-    bank_name = models.CharField(max_length=50)
-    bank_branch = models.CharField(max_length=50)
-    account_number = models.CharField(max_length=50)
-    ifsc_code = models.CharField(max_length=50)
     supporting_documents = models.FileField(upload_to='payment-request/', blank=True, null=True, validators=[validate_file_size])
 
 
     def __str__(self):
-        return f"Request by {self.service_provider.full_name} to {self.dealer.name} for {self.amount}"
+        return f"Request by {self.user.full_name} "
 
 class CustomerReview(models.Model):
     RATING_CHOICES = [
