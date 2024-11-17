@@ -1,11 +1,9 @@
 from rest_framework import serializers
 from Accounts.models import *
 from django.core.validators import validate_email
-from django.core.exceptions import ValidationError
 import re
-from Accounts.models import phone_regex
-from django.core.exceptions import ValidationError as DjangoValidationError
-
+from django.core.exceptions import ValidationError
+from django.contrib.auth.password_validation import validate_password 
 
 # serializers.py
 
@@ -13,14 +11,12 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 # TASK 1 Franchisee Registration ////////////////////////////////////////////////////////////////////////////////////
 
 class UserSerializer(serializers.ModelSerializer):
-    district = serializers.PrimaryKeyRelatedField(queryset=District.objects.all(), required=True)
-    state = serializers.PrimaryKeyRelatedField(queryset=State.objects.all(), required=True)
-    country_code = serializers.PrimaryKeyRelatedField(queryset=Country_Codes.objects.all(), required=True)
+    phone_number = serializers.CharField(max_length=15, validators=[phone_regex])
 
     class Meta:
         model = User
         fields = [
-            'email', 'phone_number', 'full_name', 'landmark', 'address', 
+            'email', 'phone_number', 'full_name', 'landmark', 'address',
             'district', 'state', 'watsapp', 'country_code', 'pin_code', 'password'
         ]
         extra_kwargs = {'password': {'write_only': True}}
@@ -43,13 +39,20 @@ class UserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("User with this phone number already exists.")
         return value
 
+    def validate_password(self, value):
+        try:
+            validate_password(value)
+        except ValidationError as e:
+            raise serializers.ValidationError(e.messages)
+        return value
+
     def create(self, validated_data):
         password = validated_data.pop('password')
         user = User(**validated_data)
         user.set_password(password)
         user.save()
         return user
-
+    
     def update(self, instance, validated_data):
         password = validated_data.pop('password', None)
         for attr, value in validated_data.items():
@@ -58,26 +61,67 @@ class UserSerializer(serializers.ModelSerializer):
             instance.set_password(password)
         instance.save()
         return instance
-    
+
+
 class FranchiseeSerializer(serializers.ModelSerializer):
-    user = UserSerializer()  # Nested serializer for user data
-    district_name = serializers.SerializerMethodField()
-    Amount_to_pay = serializers.SerializerMethodField()
+    user = UserSerializer()  # Nest the UserSerializer
+    Amount_to_pay = serializers.SerializerMethodField() 
+    district = serializers.PrimaryKeyRelatedField(queryset=District.objects.all(), required=False)
+    state = serializers.PrimaryKeyRelatedField(queryset=State.objects.all(), required=False)
+    country_code = serializers.PrimaryKeyRelatedField(queryset=Country_Codes.objects.all(), required=False)
+    
     class Meta:
         model = Franchisee
         fields = [
-            'id','custom_id',
-            'user', 
-            'about', 'profile_image', 'revenue', 'dealers', 
-            'service_providers', 'type', 'valid_from', 'valid_up_to', 
-            'verification_id', 'verificationid_number', 'community_name','district_name','Amount_to_pay','status',
+            'user', 'custom_id', 'about', 'profile_image', 'revenue', 
+            'dealers', 'service_providers', 'type', 'valid_from', 
+            'valid_up_to', 'status', 'verification_id', 'verificationid_number', 
+            'community_name', 'Amount_to_pay', 'district', 'state', 'country_code'
         ]
 
-    def get_district_name(self, obj):
-        return obj.user.district.name if obj.user.district else None
+    def validate(self, data):
+        valid_from = data.get('valid_from')
+        valid_up_to = data.get('valid_up_to')
+
+        if valid_from and valid_up_to and valid_up_to <= valid_from:
+            raise serializers.ValidationError({
+                "valid_up_to": "valid_up_to must be later than valid_from."
+            })
+
+        # Check custom_id uniqueness
+        custom_id = data.get('custom_id')
+        if custom_id and Franchisee.objects.filter(custom_id=custom_id).exists():
+            raise serializers.ValidationError({
+                "custom_id": "A franchisee with this custom_id already exists."
+            })
+
+        # Check non-negative values
+        if data.get('revenue') is not None and data['revenue'] < 0:
+            raise serializers.ValidationError({
+                "revenue": "Revenue must be a non-negative value."
+            })
+        if data.get('dealers') is not None and data['dealers'] < 0:
+            raise serializers.ValidationError({
+                "dealers": "Dealers count must be a non-negative value."
+            })
+        if data.get('service_providers') is not None and data['service_providers'] < 0:
+            raise serializers.ValidationError({
+                "service_providers": "Service providers count must be a non-negative value."
+            })
+
+        # Check if type exists in Franchise_Type
+        if not Franchise_Type.objects.filter(id=data.get('type').id).exists():
+            raise serializers.ValidationError({
+                "type": "The specified franchise type does not exist."
+            })
+
+        return data
 
     def get_Amount_to_pay(self, obj):
-        return obj.type.amount if obj.type else None
+        # Example: assume type has a fixed amount to pay field
+        if obj.type and obj.type.amount:
+            return obj.type.amount
+        return 0
 
     def create(self, validated_data):
         user_data = validated_data.pop('user')
@@ -87,10 +131,10 @@ class FranchiseeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Both email and phone number are required to create a new franchisee.")
         
         user_data['is_franchisee'] = True
-
         user = UserSerializer.create(UserSerializer(), validated_data=user_data)
-        franchisee = Franchisee.objects.create(user=user, **validated_data)
         
+        # Create the franchisee instance
+        franchisee = Franchisee.objects.create(user=user, **validated_data)
         return franchisee
 
     def update(self, instance, validated_data):
@@ -99,12 +143,18 @@ class FranchiseeSerializer(serializers.ModelSerializer):
 
         # Update the user information if user_data is provided
         if user_data:
+            # Check if password is being updated and hash it before saving
+            password = user_data.get('password', None)
+            if password:
+                # If password is present in the update, hash it
+                instance.user.set_password(password)  # Hash and set the password
+                instance.user.save()
+
+            # Update the other user fields
             for attr, value in user_data.items():
-                if attr == 'password' and value:  # Check if password is being updated
-                    instance.user.set_password(value)  # Hash the new password
-                else:
+                if attr != 'password':  # Don't overwrite password here
                     setattr(instance.user, attr, value)
-            instance.user.save()  # Save changes to the user
+            instance.user.save()  # Save the user model after updates
 
         # Update the remaining franchisee fields
         for attr, value in validated_data.items():
@@ -115,7 +165,10 @@ class FranchiseeSerializer(serializers.ModelSerializer):
     
     
     
-    
+class InvoiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Invoice
+        fields = ['invoice_number', 'invoice_type', 'sender', 'receiver', 'description', 'price', 'total_amount', 'payment_status', 'accepted_terms', 'invoice_date', 'due_date']
 # TASK 2 Transaction History ////////////////////////////////////////////////////////////////////////////////////
  
     
@@ -123,7 +176,7 @@ class FranchiseeSerializer(serializers.ModelSerializer):
 class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
-        fields = ['transaction_id', 'invoice', 'description', 'amount_paid',
+        fields = ['transaction_id', 'invoice', 'amount_paid',
                   'payment_method', 'payment_date', 'payment_status', 'sender', 'receiver']
 
     def to_representation(self, instance):
@@ -131,6 +184,7 @@ class TransactionSerializer(serializers.ModelSerializer):
 
         # Safely get the invoice type
         representation['type'] = getattr(instance.invoice, 'invoice_type', None)
+        representation['description'] = getattr(instance.invoice, 'description', None)
 
         # Initialize sender to None
         sender = None
@@ -258,19 +312,44 @@ class AdCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Ad_category
         fields = '__all__'
+
     def validate_type(self, value):
         """Ensure that the same ad type cannot be posted more than once."""
         if self.instance:  # If this is an update
             # If the 'type' is unchanged, allow it
             if self.instance.type == value:
                 return value
-        
+
         # For both new and changed types, check for duplicates
         if Ad_category.objects.filter(type=value).exists():
             raise serializers.ValidationError(f"An Ad Category with type '{value}' already exists.")
 
         return value
     
+    def validate_rate(self, value):
+        """Ensure the rate is a positive value."""
+        if value <= 0:
+            raise serializers.ValidationError("Rate must be greater than zero.")
+        return value
+    
+    
+    def validate_status(self, value):
+        """Ensure the status is either 'Active' or 'Inactive'."""
+        if value not in ['Active', 'Inactive']:
+            raise serializers.ValidationError("Status must be either 'Active' or 'Inactive'.")
+        return value
+        
+    def validate(self, data):
+        """Override the validate method to apply custom checks."""
+        # Ensure image dimensions are valid
+        image_width = data.get('image_width')
+        image_height = data.get('image_height')
+        
+        # Check if image dimensions are less than 100px
+        if image_width < 100 or image_height < 100:
+            raise serializers.ValidationError("Image width and height should be greater than or equal to 100px.")
+        
+        return data
 
 # TASK 5 ADD Expenses ////////////////////////////////////////////////////////////////////////////////////////
 

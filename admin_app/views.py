@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from Accounts.models import User ,Payment ,Franchisee ,Service_Type ,Collar ,Ad_category ,Invoice ,Payment 
-from .serializers import AdCategorySerializer,TransactionSerializer ,CollarSerializer ,ServiceTypeSerializer,FranchiseeSerializer,AddExpensesSerializer
+from .serializers import *
 from rest_framework.views import APIView
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -15,183 +15,104 @@ from django.conf import settings
 import razorpay
 
 
-class FranchiseeViewSet(viewsets.ModelViewSet):
-    queryset = Franchisee.objects.all()
-    serializer_class = FranchiseeSerializer
+class FranchiseeView(APIView):
+    permission_classes = [IsAuthenticated]  # Only accessible by admins
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        # Get the validated data
-        franchisee_type = serializer.validated_data.get('type')
-        amount = franchisee_type.amount if franchisee_type else 0
-
+    def post(self, request):
+        """Register a new franchisee along with a new user"""
         try:
             with transaction.atomic():
-                # Save the Franchisee and User data
-                franchisee = serializer.save()
-
-                # Initialize Razorpay client
-                client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
-                
-                # Razorpay order creation
-                order_amount = int(amount * 100)  # Convert amount to paise || amount *100 is given beacause in razorpay the amount is taken in smallest amount which is paise || 1rupees = 100paise
-                razorpay_order = client.order.create({
-                    "amount": order_amount,
-                    "currency": "INR",
-                    "receipt": f"order_rcptid_{franchisee.id}",
-                    "payment_capture": '1'
-                })
-
-                # Check if order ID is created
-                order_id = razorpay_order.get("id")
-                if not order_id:
-                    raise ValueError("Failed to create Razorpay order.")
-
-                # Create the Invoice
-                admin_user = User.objects.filter(is_staff=True).first()
-                if not admin_user:
-                    raise ValueError("Admin user not found for invoice creation.")
-
-                invoice = Invoice.objects.create(
-                    invoice_type='franchisee_registration',
-                    sender=franchisee.user,
-                    receiver=admin_user,
-                    quantity=1,
-                    price=amount,
-                    total_amount=amount,
-                    accepted_terms=True,
-                    payment_status='pending'
-                )
-
-                # Create the Payment record
-                Payment.objects.create(
-                    invoice=invoice,
-                    sender=franchisee.user,
-                    receiver=admin_user,
-                    transaction_id=order_id,
-                    order_id=order_id,
-                    amount_paid=amount,
-                    payment_method='razorpay',
-                    payment_status='pending'
-                )
-
+                serializer = FranchiseeSerializer(data=request.data)
+                if serializer.is_valid():
+                    franchisee = serializer.save()
+                    invoice = self.create_invoice(franchisee)
+                    
+                    invoice_serializer = InvoiceSerializer(invoice)
+                    return Response({
+                        'franchisee': serializer.data,
+                        'invoice': invoice_serializer.data
+                    }, status=status.HTTP_201_CREATED)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+    def create_invoice(self, franchisee):
+        """Create an invoice for franchisee registration"""
+        # Assume that the admin user is the first user (or you can adjust this logic)
+        admin_user = User.objects.filter(is_superuser=True).first()
+        
+        # amount to pay
+        amount = franchisee.type.amount
+        if amount is None or amount <= 0:
+            raise ValidationError("Invalid amount specified for franchisee registration.")
 
-        # Respond with the serializer data after successful creation
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if not admin_user:
+            return Response({"error": "Admin user not found"}, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=False, methods=['post'], url_path='confirm-payment')
-    def confirm_payment(self, request, *args, **kwargs):
-        # Expecting these fields in the request body
-        order_id = request.data.get('razorpay_order_id')
-        payment_id = request.data.get('razorpay_payment_id')
-        signature = request.data.get('razorpay_signature')
+        # Create the invoice for franchisee registration
+        invoice = Invoice.objects.create(
+            # invoice_number=self.generate_invoice_number(),
+            invoice_type='franchisee_registration',
+            sender=franchisee.user,  # Franchisee is the sender
+            receiver=admin_user,     # Admin is the receiver
+            description="Franchisee Registration Fee",
+            price=amount,  # Set an appropriate price
+            total_amount=amount,
+            payment_status='pending',  # Initially, the payment status is pending
+            accepted_terms=True
+            # invoice_date=timezone.now(),
+            # due_date=timezone.now() + timezone.timedelta(days=30),  # Set due date
+        )
+        return invoice
 
-        # Verify the payment signature
-        client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+    
+    def get(self, request):
+        """Retrieve franchisee details based on ID in the body"""
+        user_id = request.data.get('user_id')
+        if not user_id:
+            return Response({"error": "USER ID is required in the body"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Verify the payment signature
-            client.utility.verify_payment_signature({
-                'razorpay_order_id': order_id,
-                'razorpay_payment_id': payment_id,
-                'razorpay_signature': signature
-            })
+            franchisee = Franchisee.objects.get(user=user_id)
+            serializer = FranchiseeSerializer(franchisee)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Franchisee.DoesNotExist:
+            return Response({"error": "Franchisee not found"}, status=status.HTTP_404_NOT_FOUND)
 
-            # Payment is valid, update the payment status in the database
-            payment = Payment.objects.get(order_id=order_id)
-            payment.payment_status = 'completed'  # Update the status
-            payment.save()
+    def put(self, request):
+        """Update an entire franchisee record based on ID in the body"""
+        user_id = request.data.get('user_id')
+        if not user_id:
+            return Response({"error": "USER ID is required in the body"}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Optionally, you can also update the invoice status here if needed
-            invoice = payment.invoice
-            invoice.payment_status = 'paid'  # Update invoice payment status
-            invoice.save()
+        try:
+            franchisee = Franchisee.objects.get(user=user_id)
+            serializer = FranchiseeSerializer(franchisee, data=request.data)
 
-            return Response({"message": "Payment confirmed successfully."}, status=status.HTTP_200_OK)
+            # Check if the serializer is valid
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Franchisee.DoesNotExist:
+            return Response({"error": "Franchisee not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        except razorpay.errors.SignatureVerificationError:
-            return Response({"error": "Invalid payment signature."}, status=status.HTTP_400_BAD_REQUEST)
-        except Payment.DoesNotExist:
-            return Response({"error": "Payment record not found."}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        
-        
+    def patch(self, request):
+        """Partially update a franchisee record based on ID in the body"""
+        user_id = request.data.get('user_id')
+        if not user_id:
+            return Response({"error": "user ID is required in the body"}, status=status.HTTP_400_BAD_REQUEST)
 
-    def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return Response(serializer.data)
-
-
-import hmac
-import hashlib
-
-def generate_signature(order_id, payment_id, secret):
-    string_to_sign = f"{order_id}|{payment_id}"
-    signature = hmac.new(
-        bytes(secret, 'utf-8'),
-        msg=bytes(string_to_sign, 'utf-8'),
-        digestmod=hashlib.sha256
-    ).hexdigest()
-    
-    return signature
-
-# Example usage
-razorpay_secret = "YOUR_RAZORPAY_SECRET"  # Replace with your actual secret
-order_id = "YOUR_ORDER_ID"  # The order ID you received from creating the order
-payment_id = "YOUR_PAYMENT_ID"  # Use any payment ID for testing
-
-signature = generate_signature(order_id, payment_id, razorpay_secret)
-print(f"Generated Signature: {signature}")  # Use this signature in your confirmation request
-
-
-
-class PaymentTestView(APIView):
-    def post(self, request):
-        order_id = request.data.get('razorpay_order_id')
-        payment_id = request.data.get('razorpay_payment_id')
-        razorpay_secret = settings.RAZORPAY_KEY_SECRET  # Get from your settings
-
-        signature = generate_signature(order_id, payment_id, razorpay_secret)
-        return Response({"signature": signature}, status=status.HTTP_200_OK)
-
-# class TransactionsListView(generics.ListAPIView):
-#     queryset = Payment.objects.all()
-#     serializer_class = TransactionSerializer
-
-# class TransactionDetailView(generics.RetrieveAPIView):
-#     queryset = Payment.objects.all()
-#     serializer_class = TransactionSerializer
-
-
-# class FranchiseePaymentHistory(APIView):
-#     pagination_class = TransactionPagination
-
-#     def post(self, request):
-#         franchisee_id = request.data.get('franchisee_id')
-        
-#         if not franchisee_id:
-#             return Response({"error": "franchisee_id is required"}, status=status.HTTP_400_BAD_REQUEST)
-        
-#         payments = Payment.objects.filter(invoice__service_request__service_provider__franchisee__custom_id=franchisee_id) #Note : Using Franchisee Custom id to retrieve DATA
-
-#         # Paginate the queryset
-#         paginator = TransactionPagination()
-#         paginated_payments = paginator.paginate_queryset(payments, request)
-
-#         # Serialize the paginated data
-#         serializer = TransactionSerializer(paginated_payments, many=True)
-
-#         # Return paginated response
-#         return paginator.get_paginated_response(serializer.data)
-
+        try:
+            franchisee = Franchisee.objects.get(user=user_id)
+            serializer = FranchiseeSerializer(franchisee, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Franchisee.DoesNotExist:
+            return Response({"error": "Franchisee not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
 class TransactionPagination(PageNumberPagination):

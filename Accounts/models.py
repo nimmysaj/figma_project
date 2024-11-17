@@ -175,7 +175,7 @@ class Franchisee(models.Model):
 
     valid_from = models.DateTimeField()
     valid_up_to = models.DateTimeField()
-    status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')],default="Inactive")
+    status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive','Inactive')],default="Inactive")
     verification_id = models.CharField(max_length=255, blank=True, null=True)  
     verificationid_number = models.CharField(max_length=50, blank=True, null=True)  # ID number field
     community_name = models.CharField(max_length=50)

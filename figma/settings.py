@@ -52,7 +52,7 @@ INSTALLED_APPS = [
     'customer',
     'service_provider',
     'admin_app',
-    'payment',
+    'payment.apps.PaymentConfig',
 ]
 
 MIDDLEWARE = [

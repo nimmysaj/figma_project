@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Make Payment</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+    <h1>Make Payment</h1>
+    <form action="" method="POST" name="razorpayform">
+        Invoice ID: <input type="text" id="invoice_id" value="{{ invoice_id }}" readonly><br><br>
+        Amount: <input type="text" id="amount" value="{{ amount }}" readonly><br><br>
+        <button type="button" id="payBtn">Pay</button>
+    </form>
+
+    <script>
+        var options = {
+            "key": "{{ razorpay_key }}",  // Razorpay key ID
+            "amount": "{{ amount }}",  // Amount in paise
+            "currency": "INR",
+            "name": "Your Company Name",  // Optional: Change it to your company name
+            "description": "{{ description }}",
+            "order_id": "{{ order_id }}",  // Razorpay order ID
+            "handler": function (response) {
+                // Handle the response from Razorpay after the payment is successful
+                var transaction_id = response.razorpay_payment_id;
+                var order_id = response.razorpay_order_id;
+                var signature = response.razorpay_signature;
+
+                // Now create the payment record
+                var data = {
+                    'transaction_id': transaction_id,
+                    'order_id': order_id,
+                    'signature': signature,
+                    'invoice_id': "{{ invoice_id }}",  // Pass the invoice ID here
+                    'amount_paid': "{{ amount }}",
+                };
+                console.log("Payment Data:", data);  // Debug: Check the contents of data
+
+                // Send the payment details to the server for verification and saving
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "{% url 'verify_payment' %}", true);
+                xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+
+                // On success
+                xhr.onload = function() {
+                    var response = JSON.parse(xhr.responseText);
+                    if (response.status === "success") {
+                        // Show success message and redirect
+                        alert("Payment successful!");
+                        window.location.href = "{% url 'create_payment_view' %}";  // Redirect to success page
+                    } else {
+                        // Show failure message
+                        alert("Payment failed! " + response.message);
+                        window.location.href = "{% url 'create_payment_view' %}";
+                    }
+                };
+
+                // On error
+                xhr.onerror = function() {
+                    alert("There was an error while processing your payment.");
+                };
+
+                xhr.send(JSON.stringify(data));
+            },
+            "prefill": {
+                "name": "{{name}}",  // Optional: prefill customer name
+                "email": "{{email}}",  // Optional: prefill customer email
+                "contact": "{{phone}}"  // Optional: prefill customer contact
+            },
+            "theme": {
+                "color": "#F37254"  // Optional: customize the theme color of the checkout button
+            }
+        };
+
+        // Trigger the Razorpay payment dialog when the "Pay" button is clicked
+        document.getElementById('payBtn').onclick = function(e) {
+            e.preventDefault();
+            var rzp1 = new Razorpay(options);
+            rzp1.open();
+        };
+    </script>
+</body>
+</html>
