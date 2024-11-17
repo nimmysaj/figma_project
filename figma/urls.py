@@ -20,4 +20,5 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('admin_app/', include('admin_app.urls')),
+    path('razorpay_payment/', include('razorpay_payment.urls')),
 ]

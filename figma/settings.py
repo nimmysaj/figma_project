@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'customer',
     'service_provider',
     'admin_app',
+    'razorpay_payment',
 
 ]
 
@@ -68,7 +69,9 @@ ROOT_URLCONF = 'figma.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'templates'),
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

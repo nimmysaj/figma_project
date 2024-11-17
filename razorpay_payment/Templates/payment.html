@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Razorpay Payment</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+    <h2>Invoice Payment</h2>
+    <p>Invoice ID: {{ invoice.invoice_number }}</p>
+    <p>Amount: ₹{{ amount|floatformat:2 }}</p>
+
+    <button id="rzp-button">Pay Now</button>
+
+    <script>
+        var options = {
+            "key": "{{ razorpay_key_id }}",
+            "amount": "{{ amount }}",
+            "currency": "INR",
+            "name": "Your Company Name",
+            "description": "Invoice Payment",
+            "order_id": "{{ razorpay_order_id }}",
+            "handler": function (response) {
+                // Handle successful payment
+                fetch("{% url 'razorpay_success' %}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": "{{ csrf_token }}"
+                    },
+                    body: JSON.stringify({
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_order_id: response.razorpay_order_id,
+                        razorpay_signature: response.razorpay_signature,
+                        invoice_id: "{{ invoice.invoice_number }}"
+                    })
+                }).then(response => response.json()).then(data => {
+                    if (data.success) {
+                        alert("Payment successful!");
+                        window.location.href = "/";
+                    } else {
+                        alert("Payment failed: " + data.error);
+                    }
+                });
+            },
+            "prefill": {
+                "name": "{{ invoice.sender.full_name }}",
+                "email": "{{ invoice.sender.email }}",
+                "contact": "{{ invoice.sender.phone_number }}"
+            },
+            "theme": {
+                "color": "#3399cc"
+            }
+        };
+
+        var rzp = new Razorpay(options);
+        document.getElementById('rzp-button').onclick = function (e) {
+            rzp.open();
+            e.preventDefault();
+        };
+    </script>
+</body>
+</html>

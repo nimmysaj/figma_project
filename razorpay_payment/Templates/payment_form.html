@@ -1,0 +1,6 @@
+<form method="POST" action="{% url 'Razorpay_Payment' %}">
+    {% csrf_token %}
+    <label for="invoice_id">Enter Invoice ID:</label>
+    <input type="text" id="invoice_id" name="invoice_id" required>
+    <button type="submit">Proceed to Payment</button>
+</form>
