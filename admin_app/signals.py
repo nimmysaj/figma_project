@@ -18,7 +18,7 @@ def calculate_amount_balance(sender,instance,created,*args,**kwargs):
         total_invoice_amount = instance.price 
         reciever =  instance.receiver 
 
-        if instance.payment_status == "pending" :
+        if instance.payment_status == "paid" :
 
             if income.company > 0:
                 if split_type == "Percentage":
