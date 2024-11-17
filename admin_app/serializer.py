@@ -4,6 +4,7 @@ import re
 from datetime import datetime
 from admin_app.models import *
 from decimal import Decimal, ROUND_DOWN
+from django.db.models import Sum 
 
 class Franchise_Type_Serializer(serializers.ModelSerializer):
     class Meta:
@@ -162,3 +163,19 @@ class InvoiceSerializer(serializers.ModelSerializer):
         
     def create(self,validated_data):
         return Invoice.objects.create(**validated_data)
+
+class PayoutScheduleSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = PayoutSchedule
+        fields = ['user_type', 'user_id','auto_payment_schedule', 'manual_payout_schedule','auto_payment_amount','manual_payment_amount','payment_method','status']
+                   
+class AccountDetailsSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = AccountDetails
+        fields = ['user_id', 'account_holder_name', 'account_number','bank_name', 'bank_branch','ifsc_code', 'account_balance']
+        read_only_fields=['account_balance','created_at']
+
+
+    

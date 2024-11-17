@@ -550,18 +550,25 @@ class CustomerReview(models.Model):
 
 class Invoice(models.Model):
     INVOICE_TYPE_CHOICES = [
-        ('service_request', 'Service Request'),
         ('dealer_payment', 'Dealer Payment'),
         ('provider_payment', 'Service Provider Payment'),
-        ('service_registration','service_registration'),
-        ('Ads' ,'Ads'),
-        ('lead_purchase','lead_purchase')
+        ('franchise_payment', 'Franchise Payment'),
+        ('service_registration', 'Service Registration'),
+        ('franchise_registration', 'Franchise Registration'),
+        ('service_request', 'Service Request'),
+        ('lead_purchase', 'Lead Purchase'),
+        ('banner_ads', 'Banner Ads'),
+        ('card_ads', 'Card Ads'),
+        ('popup_ads', 'Popup Ads'),
+        ('boost_profile', 'Boost Profile'),
+        ('others', 'Others'),
+
     ]
     
     invoice_number = models.PositiveIntegerField(unique=True, editable=False)
 
     #invoice_type: This field determines whether the invoice is related to a Service Request payment (service_request), a Dealer Payment (dealer_payment), or a Service Provider Payment (provider_payment).
-    invoice_type = models.CharField(max_length=20, choices=INVOICE_TYPE_CHOICES)
+    invoice_type = models.CharField(max_length=50, choices=INVOICE_TYPE_CHOICES)
     
     #A foreign key that links to a ServiceRequest model, which is populated if the payment is related to a customer requesting a service.
     service_request = models.ForeignKey(ServiceRequest, on_delete=models.SET_NULL, null=True, blank=True,related_name='servicerequests_invoices')

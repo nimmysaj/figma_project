@@ -51,7 +51,6 @@ INSTALLED_APPS = [
     'customer',
     'service_provider',
     'admin_app',
-    'rest_framework'
 ]
 
 MIDDLEWARE = [
@@ -130,6 +129,7 @@ USE_I18N = True
 
 USE_TZ = True
 
+import os
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
@@ -144,12 +144,11 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')  # Where the files will be stored 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-<<<<<<< HEAD
-# import os
+
 
 # RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "rzp_test_7QecczEWm61LUy")
 # RAZORPAY_SECRET_KEY = os.getenv("RAZORPAY_SECRET_KEY", "B72jPJ9MShY5iRqcbBegSppx")
-=======
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -178,4 +177,4 @@ DEFAULT_FROM_EMAIL = ''  # Default from email
 #TWILIO_ACCOUNT_SID = ''
 #TWILIO_AUTH_TOKEN = ''
 #TWILIO_PHONE_NUMBER = ''
->>>>>>> 4f71b3d47b16763174a25b1294db4b1140007294
+

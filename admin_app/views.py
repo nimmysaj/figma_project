@@ -15,7 +15,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.db.utils import IntegrityError
-
+from django.utils import timezone
+from datetime import timedelta
 
 # Create your views here.
 class Franchise_TypeView(APIView):
@@ -196,7 +197,7 @@ class AdListView(APIView):
             # Prepare invoice data after ad creation
             admin_user = User.objects.filter(is_superuser=True).first()
             invoice_data = {
-                'invoice_type': 'Ads',
+                'invoice_type': ad_management.ad_category.ad_type,
                 'sender': ad_management.ad_user.id,
                 'receiver': admin_user.id,
                 'price': ad_management.total_amount,
@@ -243,3 +244,131 @@ class AdListView(APIView):
             except Ad_Management.DoesNotExist:
                 return Response({'error': 'Ad not found.'}, status=status.HTTP_404_NOT_FOUND)
 
+class PayoutScheduleView(APIView):
+
+    def post(self, request, *args, **kwargs):
+        """Conditional data retrieval based on inputs."""
+        user_type = request.data.get('user_type')
+        user_id = request.data.get('user_id')
+        auto_payment_schedule = request.data.get('auto_payment_schedule')
+        manual_payout_schedule = request.data.get('manual_payout_schedule')
+        #payoutserializer=PayoutScheduleSerializer(data=request.data)
+
+        # Check if user_type is provided
+        if not user_type:
+            return Response({"error": "user type is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not user_id:
+            if auto_payment_schedule:
+                # Check for duplicates
+                existing_schedule = PayoutSchedule.objects.filter(user_type=user_type,auto_payment_schedule=auto_payment_schedule).first()
+                if existing_schedule:
+                    return Response({"error": "Duplicate entry for auto_payment_schedule."}, status=status.HTTP_400_BAD_REQUEST)
+                data = {
+                    "user_type": user_type,
+                    "auto_payment_schedule": auto_payment_schedule,}
+
+                payoutserializer = PayoutScheduleSerializer(data = data)
+                if payoutserializer.is_valid():
+                    payoutserializer.save()
+                    return Response(payoutserializer.data, status=status.HTTP_201_CREATED)
+                else:
+                    return Response(payoutserializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        # Handle case when user_id is provided
+        if user_id:
+            # Fetch associated account details
+            account_details = AccountDetails.objects.filter(user_id=user_id).first()
+            if not account_details:
+                return Response({"error": "Account details not found for the provided user_id."}, status=status.HTTP_404_NOT_FOUND)
+            
+            payoutserializer = PayoutScheduleSerializer(data=request.data)
+            account_serializer = AccountDetailsSerializer(account_details)
+
+            if payoutserializer.is_valid():
+                payoutserializer.save()
+            
+            if not account_details.account_number:
+                response_data = {
+                    'Scheduled_date': payoutserializer.data,
+                    'Account details': account_serializer.data,
+                    'Bank Account': 'Update Account Details'
+                }
+                return Response(response_data, status=status.HTTP_201_CREATED)
+            else:
+                data = {
+                    'Scheduled_date': payoutserializer.data,
+                    'Account details': account_serializer.data
+                }
+                return Response(data, status=status.HTTP_200_OK)
+            
+            return Response(payoutserializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def patch(self, request):
+        print(request.data)
+        
+        user_id = request.data.get('user_id')
+        print(user_id)
+        
+        if not user_id:
+            return Response({"error": "user_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Fetch the account details for the given user_id
+            account = AccountDetails.objects.get(user_id=user_id)
+            user_schedule = PayoutSchedule.objects.get(user_id=user_id)
+        except AccountDetails.DoesNotExist:
+            return Response({"error": "Account not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Partially update the account details with the provided data
+        accountserializer = AccountDetailsSerializer(account, data=request.data, partial=True)
+        payoutserializer = None
+
+        # If user_schedule exists, perform a partial update
+        if user_schedule:
+            payoutserializer = PayoutScheduleSerializer(user_schedule, data=request.data, partial=True)
+        
+        if accountserializer.is_valid():
+            accountserializer.save()
+        
+        if payoutserializer and payoutserializer.is_valid():
+            payoutserializer.save()
+
+        # Prepare the response data
+        response_data = {
+            "account_details": accountserializer.data
+        }
+        
+        if payoutserializer:
+            response_data["payout_schedule"] = payoutserializer.data
+
+        return Response(response_data, status=status.HTTP_200_OK) if accountserializer.is_valid() else Response(accountserializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request, *args, **kwargs):
+        user_id = request.data.get('user_id')
+        
+        # If user_id is not provided, return all payout schedules
+        if not user_id:
+            schedules = PayoutSchedule.objects.all()
+            payoutserializer = PayoutScheduleSerializer(schedules, many=True)
+            return Response(payoutserializer.data, status=status.HTTP_200_OK)
+
+        # If a specific user_id is provided
+        else:
+            # Filter schedules and account info based on user_id
+            user_schedule = PayoutSchedule.objects.filter(user_id=user_id)
+            account_info = AccountDetails.objects.filter(user_id=user_id)
+
+            # Serialize the filtered objects
+            user_schedule_serializer = PayoutScheduleSerializer(user_schedule, many=True)
+            account_info_serializer = AccountDetailsSerializer(account_info, many=True)
+
+            # Return serialized data for the specific user
+            return Response({
+                'payment_scheduled': user_schedule_serializer.data,
+                'account_details': account_info_serializer.data
+            }, status=status.HTTP_200_OK)
+
+
+        
+        

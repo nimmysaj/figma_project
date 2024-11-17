@@ -8,4 +8,5 @@ urlpatterns = [
     path("frdet/", FranchiseeDetailsView.as_view()),
     path("adadd/", AdListView.as_view()),
     #path("rzrpay/", RazorpayPaymentView.as_view()),
+    path('payout-schedules/', PayoutScheduleView.as_view())
 ]
