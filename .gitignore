@@ -13,3 +13,8 @@ migrations/
 # IDEs
 .vscode/
 .idea/
+
+# Virtual environment
+venv/
+figma/
+
