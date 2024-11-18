@@ -684,3 +684,85 @@ class Notification(models.Model):
         return str(self.service_provider_id)
 
 
+
+
+
+TARGET_AREA_CHOICES = [
+
+    ('up_to_5_km','Up to 5 km'),
+
+    ('up_to_10_km','Up to 10 km'),
+
+    ('up_to_15_km','Up to 15 km'),
+
+]
+
+AD_TYPE = [
+
+    ('banner','Banner Ad'),
+
+    ('card','Card Ad'),
+
+    ('pop_up','Pop Up Ad'),
+
+    ('profile_boost','Profile Boost')
+
+]
+
+class Ad_category(models.Model):
+
+    # ad_title = models.CharField(max_length=100)
+
+    ad_type = models.CharField(max_length=50,choices=AD_TYPE)
+
+    description = models.CharField(max_length=200)
+
+    rate = models.DecimalField(max_digits=5, decimal_places=2)
+
+    currency = models.CharField(max_length=10,default="INR")
+
+    # ad_image = models.ImageField(upload_to='ad_image/', validators=[validate_ad_size])
+
+    status = models.CharField(max_length=20,choices=[('Active','Active'),('Inactive','Inactive')],default='Active')
+
+    total_views = models.IntegerField(null=True,blank=True)
+
+    total_hits = models.IntegerField(null=True,blank=True)
+
+    image_width = models.IntegerField()
+
+    image_height = models.IntegerField()
+
+
+
+    def __str__(self):
+
+        return self.ad_type
+
+
+
+class Ad_Management(models.Model):
+
+    ad_id = models.PositiveIntegerField()
+
+    title = models.CharField(max_length=100)
+
+    description = models.CharField(max_length=200)
+
+    ad_category = models.ForeignKey(Ad_category,on_delete=models.CASCADE,related_name='ad_category')
+
+    ad_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ad_user')
+
+    valid_from = models.DateTimeField()
+
+    valid_up_to = models.DateTimeField()
+
+    target_area = models.CharField(max_length=100,choices=TARGET_AREA_CHOICES, default='up_to_5_km')
+
+    total_days = models.IntegerField()
+
+    total_amount = models.DecimalField(max_digits=5,decimal_places=2)
+
+    image = models.ImageField(upload_to='ad_images/',validators=[],null=True)
+
+    created_date=models.DateTimeField(auto_now_add=True,null=True)
