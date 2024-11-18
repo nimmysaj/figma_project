@@ -1,12 +1,15 @@
-from datetime import timezone
-from django.shortcuts import get_object_or_404, render
+from datetime import timedelta, timezone
+from django.utils import timezone 
+from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import CustomerSerializer, UnifiedResponseSerializer
+
+# from figma_project.Accounts import models
 from Accounts.models import Customer, Subcategory, ServiceRegister, ServiceRequest, Payment, User, Invoice, Complaint
-from .serializers import Customerview_Serializer, SubcategorySerializer,ExpensesSerializer,AdsInvoiceSerializer,ExpenseTableSerializer,EarningsSerializer,MonthlyFinanceReportSerializer,InvoiceOthersAddSerializer,InvoiceOthersGetSerializer, InvoiceOthersUpdateSerializer, CustomerCountSerializer, ActiveCustomerCountSerializer, TotalServiceRequestSerializer,ActiveServiceSerializer, TotalComplaintSerializer
+from .serializers import CustomerSerializer, LeadRequestCountSerializer, UnifiedResponseSerializer, MonthlyFinanceReportSerializer,InvoiceOthersAddSerializer,InvoiceOthersGetSerializer, InvoiceOthersUpdateSerializer, CustomerCountSerializer, OnlineCustomerCountSerializer 
+from .serializers import Customerview_Serializer, SubcategorySerializer,ExpensesSerializer,AdsInvoiceSerializer,ExpenseTableSerializer,EarningsSerializer, TotalServiceRequestSerializer,ActiveServiceSerializer, TotalComplaintSerializer #, IncomeManagementSerializer
 from rest_framework.decorators import action,api_view
 from .pagination import CustomerViewPagination
 # from .pagination import AdsInvoicePagination,ExpensePagination, ActiveServiceSerializer,
@@ -179,7 +182,8 @@ class UnifiedView(APIView):
         # Prepare the response data
         response_data = {
             "total_expenses": self.calculate_expenses(admin_user),
-            "total_earnings": self.calculate_earnings(admin_user),
+            "total_revenue": self.calculate_revenue(admin_user),
+            "total_earnings" : self.calculate_earnings(admin_user),
             "ads_invoices": paginated_ads_invoices,
             "expense_table": paginated_expense_table,
         }
@@ -194,11 +198,31 @@ class UnifiedView(APIView):
     def calculate_expenses(self, admin_user):
         return Payment.objects.filter(sender=admin_user, payment_status='completed').aggregate(total=Sum('amount_paid'))['total'] or 0
 
-    def calculate_earnings(self, admin_user):
+    def calculate_revenue(self, admin_user):
         return Payment.objects.filter(receiver=admin_user, payment_status='completed').aggregate(total=Sum('amount_paid'))['total'] or 0
+        
+    def calculate_earnings(self, admin_user):
+        # Fetch all invoices where invoice_type is in ('dealer_payment', 'provider_payment', 'franchise_payment') and payment_status is 'completed'
+        payments_to_deduct = Payment.objects.filter(
+            invoice__invoice_type__in=['dealer_payment', 'franchise_payment', 'provider_payment', 'others'],
+            payment_status='completed',
+            sender=admin_user
+        )
+
+        # Filter the related payments where payment_status is 'completed' and calculate the sum of the total_amount
+        total_amount_deducted = payments_to_deduct.aggregate(total=Sum('amount_paid'))['total'] or 0
+        
+        # Get total revenue received by the admin
+        total_revenue = self.calculate_revenue(admin_user)
+
+        # Earnings = Revenue - Deducted Amount (from invoices with completed payments)
+        earnings = total_revenue - total_amount_deducted
+        return earnings
+
 
     def get_ads_invoices(self):
-        ads_invoices = Invoice.objects.filter(invoice_type='Ads').prefetch_related('payments').select_related('sender')
+        ads_invoices = Invoice.objects.filter(
+            invoice_type__in=['banner_ads', 'card_ads', 'popup_ads', 'boost_profile']).prefetch_related('payments').select_related('sender')  #select_related = joins for foreignkey and one to one relationship(single-valued relationships), prefetch_related_ = joins for reverse foreignkey and many to many relationships('Payment' is a model whie 'sender' is a field)
         results = []
         for invoice in ads_invoices:
             user_type = self.get_user_type(invoice.sender)
@@ -209,6 +233,7 @@ class UnifiedView(APIView):
                 'amount': first_payment.amount_paid if first_payment else None,
                 'sender_user_type': user_type,
                 'payment_date': first_payment.payment_date if first_payment else None,
+                'invoice_type': invoice.invoice_type
             })
         return results
 
@@ -335,50 +360,6 @@ class UnifiedView(APIView):
 
 
 # ************************************  GRAPH - FINANCIAL MANAGEMENT  *******************************************
-
-# class MonthlyFinanaceReportView(generics.GenericAPIView):
-#     serializer_class = MonthlyFinanceReportSerializer
-#     # permission_classes = IsAuthenticated
-
-#     def post(self, request):
-#         # Validate the incoming data using the serializer
-#         serializer = self.get_serializer(data = request.data)
-#         serializer.is_valid(raise_exception = True)
-
-#         month = serializer.validated_data['month']
-#         year = serializer.validated_data['year']
-
-#         # Get the start and end dates for the specified month
-#         start_date = datetime(year, month, 1)
-#         if month == 12:
-#             end_date = datetime(year+1, 1, 1)  #January of the next year
-#         else:
-#             end_date = datetime(year, month+1, 1) #First day of the next month
-
-#         # Calculate total expenses where sender is admin and payment status is completed
-#         total_expense = Payment.objects.filter(
-#             sender__is_staff = True, #Check if the sender is admin
-#             payment_status = 'completed',
-#             payment_date__gte = start_date,   #gte- greater than or equal to
-#             payment_date__lt = end_date       #lt - less than
-#         ).aggregate(total=Sum('amount_paid'))['total'] or 0    #['total'] is a dictionary it holds the sum of amount_paid field-- eg: 'total':1500
-
-#         # Calculate total income where receiver is admin and payment status is completed
-#         total_income = Payment.objects.filter(
-#             receiver__is_staff = True,    #In Django's built-in User model, the field for admin users is typically is_staff (not is_admin), so use sender__is_staff
-#             payment_status = 'completed',
-#             payment_date__gte = start_date,
-#             payment_date__lt = end_date
-#         ).aggregate(total=Sum('amount_paid'))['total'] or 0
-
-#         # Return the results
-#         return Response(
-#             {
-#                 'total_expense' : total_expense,
-#                 'total_income' : total_income
-#             }
-#         )
-
 class MonthlyFinanaceReportView(generics.GenericAPIView):
     serializer_class = MonthlyFinanceReportSerializer
     # permission_classes = IsAuthenticated
@@ -447,6 +428,9 @@ class InvoiceOthersAddView(APIView):
         if 'invoice_type' not in request.data:
             request.data['invoice_type'] = 'others'
 
+        if 'transaction_type' not in request.data:
+            return Response({"Error":"Transaction type is required"}, status=status.HTTP_400_BAD_REQUEST)
+
         # Initialize the serializer with the request data
         serializer = InvoiceOthersAddSerializer(data=request.data)
 
@@ -455,9 +439,19 @@ class InvoiceOthersAddView(APIView):
             # save the data
             validated_data = serializer.validated_data
 
-            # Set sender and receiver to None if they are not provided
-            sender = validated_data.get('sender', None)
-            receiver = validated_data.get('receiver', None)
+            # Set sender and receiver based on transaction_type
+            transaction_type = validated_data['transaction_type']
+            sender = None
+            receiver = None
+
+            if transaction_type == 'income':
+                # Set receiver as admin and sender as None
+                receiver = User.objects.get(is_superuser=True)
+
+            elif transaction_type == 'expense':
+                # Set sender as admin and sender as None
+                sender = User.objects.get(is_superuser=True)
+
 
             # Create a new invoice instance and save it
             invoice = Invoice.objects.create(
@@ -469,7 +463,7 @@ class InvoiceOthersAddView(APIView):
                 description = validated_data['description'],
                 payment_status = validated_data['payment_status'],
                 invoice_date = validated_data['invoice_date'],
-                # appointment_date = validated_data['appointment_date'],
+                # transaction_type = validated_data['transaction_type']
                 invoice_type = validated_data.get('invoice_type', 'others')    #use get- bcoz it has specifically a default value 'others'
             )
             return Response(
@@ -533,11 +527,7 @@ class InvoiceOthersAddView(APIView):
 
 #     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# from rest_framework.decorators import api_view
-# from rest_framework.response import Response
-# from rest_framework import status
-# from .models import Invoice, User
-# from .serializers import InvoiceOthersGetSerializer, InvoiceOthersUpdateSerializer
+
 
 @api_view(['GET', 'PUT', 'PATCH'])
 def get_or_update_othertype_admin_invoices(request, invoice_id=None):
@@ -595,17 +585,25 @@ def get_customer_count(request):
         return Response({"error":"Something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
     
 
-# GET TOTAL NUMBER OF ACTIVE CUSTOMERS
+# GET TOTAL NUMBER OF ONLINE CUSTOMERS
 @api_view(['GET'])
-def get_active_customer_count(request):
-    active_customer_count = User.objects.filter(is_customer=True, is_active=True).count()
+def get_online_customer_count(request):
+    # Calculate the time threshold for 5 minutes ago
+    threshold_time = timezone.now() - timedelta(minutes = 5)
 
-    serializer = ActiveCustomerCountSerializer(data={"active_customers_count" : active_customer_count})
+    # Filter customers whose last activity is within the last 5 minutes
+    online_customers = Customer.objects.filter(last_activity__gte = threshold_time)
 
-    if serializer.is_valid():
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    else:
-        return Response({"error": "something went wrong"},  status=status.HTTP_400_BAD_REQUEST)
+    # Get the count of online customers
+    online_customer_count = online_customers.count()
+
+    # Serialize the count of online customers
+    serializer = OnlineCustomerCountSerializer({
+        'online_customer_count' : online_customer_count
+    })
+
+    # Return the count of online customers in the response
+    return Response(serializer.data, status=status.HTTP_200_OK)
     
 
 # GET TOTAL SERVICE REQUESTS
@@ -634,13 +632,41 @@ def get_active_services_count(request):
         return Response({"error" : "SOmething went wrong"}, status=status.HTTP_400_BAD_REQUEST)
 
 
+# GET LEAD REQUEST COUNT(ONE TIME LEAD - REQUEST BY CUSTOMER)
+@api_view(['GET'])
+def get_leadrequest_count(request):
+    # Filter ServiceRequest based on the service type "one-time lead"
+    count = ServiceRequest.objects.filter(
+        service__subcategory__service_type__name = 'One Time Lead'
+    ).count()
+
+      # Serialize the count into a response format
+    serializer = LeadRequestCountSerializer(data={"lead_request_count" : count})
+     # Check if the serialized data is valid
+    if serializer.is_valid():
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    else:
+        return Response({"error" : "Something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
+
+
 # GET TOTAL NUMBER OF COMPLAINTS
 @api_view(['GET'])
 def get_total_complaints_count(request):
-    total_complaints = Complaint.objects.count()
+    customers = User.objects.filter(is_customer=True)
+    total_complaints = Complaint.objects.count() #double underscore is used to perform a lookup on a field and compare it against a list of values
     serializer = TotalComplaintSerializer(data={"total_complaints": total_complaints})
 
     if serializer.is_valid():
         return Response(serializer.data, status=status.HTTP_200_OK)
     else:
         return Response({"error": "Something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+
+
+
+
+# # **********************  INCOME MANAGEMENT- ADD DATA(POST) ***********************
+# class IncomeManagementPostView(APIView):
+#     def post()

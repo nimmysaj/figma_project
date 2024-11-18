@@ -1,3 +1,4 @@
+from datetime import timedelta
 import re
 from django.contrib.auth.models import Permission,Group
 from django.db import models
@@ -285,28 +286,21 @@ class Customer(models.Model):
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
     
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')])
+    last_activity = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
         if not self.custom_id:
-            # # Find the last existing custom ID
-            # last_custom_id = Customer.objects.order_by('custom_id').last()
-            # if last_custom_id:
-            #     # Extract the numeric part and increment
-            #     match = re.match(r'USER(\d+)', last_custom_id.custom_id)
-            #     if match:
-            #         customer_number = int(match.group(1)) + 1
-            #     else:
-            #         customer_number = 1  # Start from 1 if no previous ID found
-            # else:
-            #     customer_number = 1  # Start from 1 if no previous ID found
-
-            # # Create the custom ID with the USER prefix
-            self.custom_id = f'USER{self.user.id}'  # No leading zeros
-
+            # Combine to form the custom ID
+            self.custom_id = f'USER{self.user.id}' 
         super(Customer, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.custom_id
+    
+    @property
+    def is_online(self):
+        # Return true if last activity was within 5 mins, otherwise false
+        return self.last_activity >= timezone.now() - timedelta(minutes=5)
 
 class OTP(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE,related_name='otp_received_user')
@@ -532,7 +526,7 @@ class Invoice(models.Model):
     external_invoice_number = models.CharField(max_length=25, null=True, blank=True)
 
     #invoice_type: This field determines whether the invoice is related to a Service Request payment (service_request), a Dealer Payment (dealer_payment), or a Service Provider Payment (provider_payment).
-    invoice_type = models.CharField(max_length=20, choices=INVOICE_TYPE_CHOICES)
+    invoice_type = models.CharField(max_length=30, choices=INVOICE_TYPE_CHOICES)
     
     #descriptin field to explain invoice type 'others'
     description = models.CharField(null=True, blank=True, max_length=30)
@@ -596,8 +590,8 @@ class Payment(models.Model):
     ]
 
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='payments')
-    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_payments')  # User who sends the payment
-    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_payments')  # User who receives the payment
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='sent_payments', null=True, blank=True)  # User who sends the payment
+    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='received_payments', null=True, blank=True)  # User who receives the payment
     transaction_id = models.CharField(max_length=15)
     order_id = models.CharField(max_length=100, null=True, blank=True)
     signature = models.CharField(max_length=256, null=True, blank=True)
@@ -654,3 +648,35 @@ class Complaint(models.Model):
         self.status = 'rejected'
         self.resolution_notes = rejection_reason
         self.save()
+
+
+
+
+class IncomeManagement(models.Model):
+    sl_no = models.AutoField(primary_key=True)
+    income_type = models.CharField(
+        max_length = 50,
+        choices=[
+            ('Franchisee Regiatration', 'Franchisee Registration'),
+            ('Service Registration', 'Service Registration'),
+            ('Banner Ads', 'Banner Ads'),
+            ('Card Ads', 'Card Ads'),
+            ('Popup Ads', 'Popup Ads'),
+            ('Boost Profile', 'Boost Profile'),
+            ('Service Commission', 'Service Commission'),
+            ('Lead Commission', 'Lead Commission'),
+        ]
+    )
+    split_type = models.CharField(
+        max_length = 20,
+        choices = [('Percentage', 'Percentage'), ('Amount', 'Amount')],
+        default = 'Percentage'
+    )
+    company = models.IntegerField()
+    franchisee = models.IntegerField()
+    dealer = models.IntegerField()
+    service_provider = models.IntegerField()
+
+    def __str__(self):
+        return f"{self.sl_no} - {self.income_type}"
+

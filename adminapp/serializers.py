@@ -5,7 +5,7 @@ from rest_framework import serializers
 from Accounts.models import Customer, User
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.hashers import make_password
-from Accounts.models import ServiceRequest, Customer, Subcategory, Invoice, Payment
+from Accounts.models import ServiceRequest, Customer, Subcategory, Invoice, Payment, IncomeManagement
 from django.utils import timezone
 
 
@@ -63,7 +63,7 @@ class CustomerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Customer
-        fields = ['user','date_of_birth','gender','profile_image']
+        fields = ['user','date_of_birth','gender','profile_image', 'last_activity']
 
 
     def create(self, validated_data):
@@ -90,6 +90,7 @@ class Customerview_Serializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(source='user.phone_number', read_only=True)
     email = serializers.EmailField(source='user.email', read_only=True)
     is_active = serializers.BooleanField(source='user.is_active', read_only=True)
+    
 
 
     # Total number of completed services from ServiceRequest model
@@ -138,6 +139,11 @@ class ExpensesSerializer(serializers.Serializer):
 
 
 # --> View total earnings
+class RevenueSerializer(serializers.Serializer):
+    total_revnue = serializers.DecimalField(max_digits=10, decimal_places=2)
+
+
+# -->view total eranings
 class EarningsSerializer(serializers.Serializer):
     total_earnings = serializers.DecimalField(max_digits=10, decimal_places=2)
 
@@ -161,6 +167,7 @@ class ExpenseTableSerializer(serializers.Serializer):
 
 class UnifiedResponseSerializer(serializers.Serializer):
     total_expenses = ExpensesSerializer()
+    total_revenue = RevenueSerializer()
     total_earnings = EarningsSerializer()
     ads_invoices = AdsInvoiceSerializer(many=True)
     expense_table = ExpenseTableSerializer(many=True)
@@ -188,23 +195,6 @@ class UnifiedResponseSerializer(serializers.Serializer):
 
 #**************************************  GRAPH - FINANCIAL MANAGEMENT  **********************************
 
-# class MonthlyFinanceReportSerializer(serializers.Serializer):
-#     month = serializers.IntegerField()
-#     year = serializers.IntegerField()
-
-#     def validate_month(self, value):
-#         if value < 1 or value > 12:
-#             raise serializers.ValidationError("Month must be between 1 and 12")
-#         return value
-    
-#     def validate_year(self, value):
-#         if value < 2024:
-#             raise serializers.ValidationError("Year should be greater than or equal to 2024")
-#         return value
-    
-#     class Meta:
-#         fields = ['month', 'year']
-
 class MonthlyFinanceReportSerializer(serializers.Serializer):
     year = serializers.IntegerField(min_value = 2000, max_value = 2100)
 
@@ -220,19 +210,19 @@ class MonthlyFinanceReportSerializer(serializers.Serializer):
 # ******************************  ACCOUNTS - INVOICE TYPE='OTHERS'  ****************************
 # ADD EXPENSE - POST
 class InvoiceOthersAddSerializer(serializers.Serializer):
-    external_invoice_number = serializers.IntegerField(required=False, allow_null=True)
+    external_invoice_number = serializers.CharField(required=False, allow_null=True)
     total_amount = serializers.DecimalField(max_digits=10, decimal_places=2)
-    # price = serializers.DecimalField(max_digits=10, decimal_places=2)
     sender = serializers.IntegerField(required=False, allow_null=True)
     receiver = serializers.IntegerField(required=False, allow_null=True)
     description = serializers.CharField()
     invoice_date = serializers.DateTimeField()
-    # appointment_date = serializers.DateTimeField()
     payment_status = serializers.CharField()
+    transaction_type = serializers.ChoiceField(choices=['income', 'expense'])
+
 
     def validate_sender(self, value):
-        # If value is not None or empty, try to resolve to a user by username
-        if value is not None:
+        # Sender is only validated if 'expense' transaction_type is passed
+        if value is not None and self.initial_data.get('transaction_type')=='expense':    #inital_data--it check th data inside parenthesis b4 any other data get
             try:
                 sender_user =  User.objects.get(pk = value)
                 return sender_user   #return user instance
@@ -240,8 +230,9 @@ class InvoiceOthersAddSerializer(serializers.Serializer):
                 raise serializers.ValidationError("Sender User does not exist")
         return value  # If value is None or empty, return as null
     
+     # Receiver is only validated if 'income' transaction_type is passed
     def validate_receiver(self, value):
-        if value is not None:
+        if value is not None and self.initial_data.get('transaction_type') == 'income':
             try:
                 receiver_user = User.objects.get(pk = value)
                 return receiver_user
@@ -249,78 +240,9 @@ class InvoiceOthersAddSerializer(serializers.Serializer):
                 return serializers.ValidationError("Receiver user does not exist")
         return value
     
+
     
-# # GET OTHER TYPE ACCOUNTS TABLE
-# class InvoiceOthersGetSerializer(serializers.ModelSerializer):
-#     sender_username = serializers.CharField(source='sender.username', required = False)
-#     receiver_username = serializers.CharField(source='receiver.username', required = False)
-#     transaction_type = serializers.SerializerMethodField()
-
-#     class Meta:
-#         model = Invoice
-#         fields = ['invoice_number','total_amount', 'transaction_type', 'sender_username', 'receiver_username', 'description', 'invoice_date', 'invoice_document']
-
-#         # Get transaction type
-#     def get_transaction_type(self, obj):
-#         # Determine whether it's a debit or credit
-#         admin_user = User.objects.filter(is_superuser=True).first()
-#         if admin_user:
-#             if obj.sender == admin_user:
-#                 return 'Debit'  # Sender is the admin
-#             elif obj.receiver == admin_user:
-#                 return 'Credit'
-#             return 'N/A'  # If the sender or receiver is not admin
-        
-
-
-
-# class InvoiceOthersUpdateSerializer(serializers.ModelSerializer):      # serializer for both put and patch
-#     sender_username = serializers.CharField(source='sender.username', required=False)
-#     receiver_username = serializers.CharField(source='receiver.username', required=False)
-#     transaction_type = serializers.SerializerMethodField(read_only=True)
-
-#     class Meta:
-#         model = Invoice
-#         fields = ['invoice_number', 'total_amount', 'sender', 'receiver', 'description', 'invoice_date', 'invoice_document', 'transaction_type','sender_username', 'receiver_username']
-
-#     def validate(self, data):
-        
-#         # Custom validation for the invoice update:
-#         # - Ensure total_amount is not negative.
-#         # - Ensure sender and receiver are not the same.
-     
-#         if 'total_amount' in data and data['total_amount'] < 0:
-#             raise serializers.ValidationError("Total amount cannot be negative.")
-        
-#         if 'sender' in data and 'receiver' in data and data['sender'] == data['receiver']:
-#             raise serializers.ValidationError("Sender and receiver cannot be the same.")
-        
-#         return data
-
-#     def update(self, instance, validated_data):
-        
-#         # Override the update method to handle full (PUT) or partial (PATCH) updates.
-        
-#         for attr, value in validated_data.items():   #(the new data will be in the key -value pair) attr - field name , value- value
-#             setattr(instance, attr, value)   #instance- instance of this model  u r updating, - The setattr() function is a built-in Python function that sets an attribute (field) of an object to a specific value.
-#         instance.save()
-#         return instance
-
-#     def get_transaction_type(self, obj):
-        
-#         # Automatically calculates the transaction type ('Debit' or 'Credit') for the admin.
-#         admin_user = User.objects.filter(is_superuser=True).first()
-#         if admin_user:
-#             if obj.sender == admin_user:
-#                 return 'Debit'  # Sender is the admin
-#             elif obj.receiver == admin_user:
-#                 return 'Credit'  # Receiver is the admin
-#         return 'N/A'  # If neither sender nor receiver is admin
-    
-
-# from rest_framework import serializers
-# from .models import Invoice, User
-
+#  GET OTHER TYPE ACCOUNTS TABLE
 # Serializer for get
 class InvoiceOthersGetSerializer(serializers.ModelSerializer):
     sender_username = serializers.CharField(source='sender.username', read_only=True)
@@ -397,6 +319,7 @@ class InvoiceOthersUpdateSerializer(serializers.ModelSerializer):
 
 
 
+
 #----------- USER MANAGEMENT -----------
 # GET TOTAL NUMBER OF CUSTOMERS
 class CustomerCountSerializer(serializers.Serializer):
@@ -404,12 +327,17 @@ class CustomerCountSerializer(serializers.Serializer):
 
 
 # GET TOTAL NUMBER OF ACTIVE CUSTOMERS
-class ActiveCustomerCountSerializer(serializers.Serializer):
-    active_customers_count = serializers.IntegerField()
+class OnlineCustomerCountSerializer(serializers.Serializer):
+    online_customer_count = serializers.IntegerField()
 
 # GET TOTAL SERVICE REQUESTS
 class TotalServiceRequestSerializer(serializers.Serializer):
     total_service_requests = serializers.IntegerField()
+
+# GET LEAD REQUESTS COUNT(ONE TIME LEAD)
+class LeadRequestCountSerializer(serializers.Serializer):
+    lead_request_count = serializers.IntegerField()
+
 
 # # GET TOTAL ACTIVE SERVICES
 class ActiveServiceSerializer(serializers.Serializer):
@@ -419,3 +347,14 @@ class ActiveServiceSerializer(serializers.Serializer):
 # GET TOTAL NUMBER OF COMPLAINTS
 class TotalComplaintSerializer(serializers.Serializer):
     total_complaints = serializers.IntegerField()
+
+
+
+
+
+# # **************************  INCOME MANAGEMENT  ***************************
+# class IncomeManagementSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = IncomeManagement
+#         fields = '__all__'
+

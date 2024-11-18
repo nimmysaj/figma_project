@@ -1,5 +1,5 @@
 from django.urls import include, path
-from .views import UnifiedView, UserCreateView,CustomerListView, SubcategoryViewSet, MonthlyFinanaceReportView, InvoiceOthersAddView, get_or_update_othertype_admin_invoices,get_customer_count, get_active_customer_count, get_total_service_request
+from .views import UnifiedView, UserCreateView,CustomerListView, SubcategoryViewSet, MonthlyFinanaceReportView, InvoiceOthersAddView, get_or_update_othertype_admin_invoices,get_customer_count, get_online_customer_count, get_total_service_request, get_leadrequest_count
 from .views import get_total_complaints_count, get_active_services_count
 # CreateRazorpayOrder, handle_payment_success,get_invoice_ids,get_othertype_admin_invoices,, get_active_services_count
 # from .views import ExpensesView,EarningsView,AdsInvoiceView,ExpenseTableView
@@ -16,8 +16,9 @@ urlpatterns = [
     path('usersview/', CustomerListView.as_view(), name='customer-list'),
     path('', include(router.urls)),
     path('customer_count/', get_customer_count,name='customer_count'),
-    path('online_customer_count/', get_active_customer_count, name = 'active_customer_count'),
+    path('online_customer_count/', get_online_customer_count, name = 'active_customer_count'),
     path('total_service_request/', get_total_service_request, name='total_service_request'),
+    path('lead_request_count/', get_leadrequest_count, name = 'leadrequest_count'),
     path('active_services/', get_active_services_count, name='active_services'),
     path('get_total_complaints_count/', get_total_complaints_count, name = 'get_total_complaints_count'),
     path('adminactions/', UnifiedView.as_view(), name='admin-actions'),          
