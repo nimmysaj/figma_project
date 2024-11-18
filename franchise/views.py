@@ -8,11 +8,17 @@ from rest_framework.response import Response
 from django.db.models import Q
 from rest_framework import serializers
 from rest_framework import generics
-# from .serializers import FranchiseeLoginSerializer
 from Accounts.models import User,Dealer,Franchisee
 from django.utils import timezone
+from rest_framework.pagination import PageNumberPagination
 
 # Create your views here.
+
+# Custom Pagination
+class CustomPagination(PageNumberPagination):
+    page_size = 6 #Default number of dealers per page
+    page_size_query_param = 'page_size' #Allow users to specify page size
+    max_page_size = 6
 
 # Combining the two list and return as serializer response
 class CombinedDetailsSerializer(serializers.Serializer):
@@ -32,16 +38,15 @@ class PercentageCalculator:
         else:
             return percentage_change
         
-class DealerView(APIView):
+class DealerListView(APIView):
     permission_class =[IsAuthenticated]
-
+   
     def get(self, request,*args, **kwargs):
         try:
-            
             franchisee = Franchisee.objects.get(user_id=request.user.id)
             # Find the Dealers for the authenticated user (franchisee)
             query = Q(franchisee_id = franchisee.id)
-            queryset = Dealer.objects.filter(query)
+            queryset = Dealer.objects.filter(query).order_by('id')
             if not queryset.exists():
                 return Response(
                     {"message": "No dealers are added."},
@@ -82,8 +87,11 @@ class DealerView(APIView):
             ]
             
             # Taken the details of the Dealers
+            # Paginate the dealer_users list
+            paginator = CustomPagination()
+            paginated_dealers = paginator.paginate_queryset(queryset, request)
             dealer_details = []
-            for dealers in queryset:
+            for dealers in paginated_dealers:
                 dealer_user = User.objects.get(id=dealers.user_id)
                 dealer_profile = Dealer.objects.get(id = dealers.id)
                 dealer_details.append({
@@ -101,7 +109,7 @@ class DealerView(APIView):
                 })
                 
             return Response(serializer.data, status=200)
-
+            
         except Exception as e:
             # Log the error for debugging
             print(f"Error fetching dealers: {e}")
@@ -112,6 +120,7 @@ class DealerView(APIView):
 
 class DealerSearchView(APIView):
     permission_classes = [IsAuthenticated]  # Ensure only authenticated users can access
+   
     def get(self,request):
         try:
             franchisee = Franchisee.objects.get(user_id=request.user.id)
@@ -122,31 +131,83 @@ class DealerSearchView(APIView):
                         status=status.HTTP_404_NOT_FOUND
                 )
             else:
-                dealers_list = User.objects.filter(Q(full_name__icontains = query) | Q(district__name__icontains = query))     
-                if dealers_list.exists():
-                    dealers_details = []
-                    for rec in dealers_list:
-                        try:
-                            dealers_profile = Dealer.objects.get(Q(user_id = rec.id) & Q(franchisee_id = franchisee.id))
-                            dealer_user = User.objects.get(id = rec.id) 
-                            dealers_details.append({
-                                    'name':dealer_user.full_name,
-                                    'custom_id': dealers_profile.custom_id,
-                                    'service_providers':dealers_profile.service_providers,
-                                    'location': dealer_user.district.name if dealer_user.district else 'Unknown Location',
-                                    'contact':dealer_user.phone_number,
-                                    'email':dealer_user.email,
-                                    'status':dealers_profile.status,
-                            }) 
-                        except Dealer.DoesNotExist:
-                            return Response({"message": "No dealers are added."})
+                dealers_list = User.objects.filter(Q(full_name__icontains = query) | Q(district__name__icontains = query)).order_by('id')
+                paginator = CustomPagination()
+                paginated_dealers = paginator.paginate_queryset(dealers_list, request)   
+                dealers_details = []
+                for rec in paginated_dealers:
+                    try:
+                        dealers_profile = Dealer.objects.get(Q(user_id = rec.id) & Q(franchisee_id = franchisee.id))
+                        dealer_user = User.objects.get(id = rec.id) 
+                        dealers_details.append({
+                                'name':dealer_user.full_name,
+                                'custom_id': dealers_profile.custom_id,
+                                'service_providers':dealers_profile.service_providers,
+                                'location': dealer_user.district.name if dealer_user.district else 'Unknown Location',
+                                'contact':dealer_user.phone_number,
+                                'email':dealer_user.email,
+                                'status':dealers_profile.status,
+                        }) 
+                    except Dealer.DoesNotExist:
+                        return Response({"message": "No dealers are added."})
                    
-                    return Response(dealers_details,status=200)
-                else:
-                    return Response(
-                    {"message": "No dealers are added."},
-                        status=status.HTTP_404_NOT_FOUND
-                    )
+                return Response(dealers_details,status=200)
+        except Exception as e:
+            # Log the error for debugging
+            print(f"Error fetching dealers: {e}")
+            return Response(
+                {"error": "An error occurred while retrieving dealers."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )            
+
+class DealerSortView(APIView):
+    permission_classes = [IsAuthenticated]  # Ensure only authenticated users can access
+    
+    def get(self,request):
+        try:
+            franchisee = Franchisee.objects.get(user_id=request.user.id)
+            query = request.query_params.get('search',None)
+            sort_by = request.query_params.get('sort_by',None) # sort_by = id(Ascending) ,sort_by = -id(Descending)
+            paginator = CustomPagination()
+            dealers_details = []
+            if query:
+                dealers_list = User.objects.filter(Q(full_name__icontains = query) | Q(district__name__icontains = query)).order_by(sort_by) 
+                paginated_dealers = paginator.paginate_queryset(dealers_list, request)   
+                for rec in paginated_dealers:
+                    try:
+                        dealers_profile = Dealer.objects.get(Q(user_id = rec.id) & Q(franchisee_id = franchisee.id))
+                        dealer_user = User.objects.get(id = rec.id) 
+                        dealers_details.append({
+                                'name':dealer_user.full_name,
+                                'custom_id': dealers_profile.custom_id,
+                                'service_providers':dealers_profile.service_providers,
+                                'location': dealer_user.district.name if dealer_user.district else 'Unknown Location',
+                                'contact':dealer_user.phone_number,
+                                'email':dealer_user.email,
+                                'status':dealers_profile.status,
+                        }) 
+                    except Dealer.DoesNotExist:
+                        return Response({"message": "No dealers are added."})
+            else:
+                dealers_list = Dealer.objects.filter(franchisee_id = franchisee.id).order_by(sort_by)
+                paginated_dealers = paginator.paginate_queryset(dealers_list, request)
+                for dealers in paginated_dealers:
+                    try:
+                        dealer_user = User.objects.get(id=dealers.user_id)
+                        dealer_profile = Dealer.objects.get(id = dealers.id)
+                        dealers_details.append({
+                                'name':dealer_user.full_name,
+                                'custom_id': dealer_profile.custom_id,
+                                'service_providers':dealer_profile.service_providers,
+                                'location': dealer_user.district.name if dealer_user.district else 'Unknown Location',
+                                'contact':dealer_user.phone_number,
+                                'email':dealer_user.email,
+                                'status':dealer_profile.status,
+                        })
+                    except Dealer.DoesNotExist:
+                        return Response({"message": "No dealers are added."})
+
+            return Response(dealers_details,status=200) 
         except Exception as e:
             # Log the error for debugging
             print(f"Error fetching dealers: {e}")

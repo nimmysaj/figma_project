@@ -464,24 +464,7 @@ class PaymentRequest(models.Model):
     def __str__(self):
         return f"Request by {self.service_provider.full_name} to {self.dealer.name} for {self.amount}"
 
-class CustomerReview(models.Model):
-    RATING_CHOICES = [
-        (1, '1 Star'),
-        (2, '2 Stars'),
-        (3, '3 Stars'),
-        (4, '4 Stars'),
-        (5, '5 Stars'),
-    ]
 
-    customer = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_review')  # The customer leaving the review
-    service_provider = models.ForeignKey(User, on_delete=models.PROTECT,related_name='to_review')  # The service provider being reviewed
-    rating = models.IntegerField(choices=RATING_CHOICES)  # Rating from 1 to 5 stars
-    image = models.ImageField(upload_to='reviews/', null=True, blank=True, validators=[validate_file_size])
-    comment = models.TextField(blank=True, null=True)  # Optional comment
-    created_at = models.DateTimeField(auto_now_add=True)  # Auto-set the review date
-
-    def __str__(self):
-        return f"{self.customer.full_name} - {self.service_provider.full_name} ({self.rating} stars)"
     
 class ServiceRequest(models.Model):
     STATUS_CHOICES = [
@@ -634,7 +617,26 @@ class Complaint(models.Model):
         self.resolution_notes = rejection_reason
         self.save()
 
-# Added by Greeshma
+class CustomerReview(models.Model):
+    RATING_CHOICES = [
+        (1, '1 Star'),
+        (2, '2 Stars'),
+        (3, '3 Stars'),
+        (4, '4 Stars'),
+        (5, '5 Stars'),
+    ]
+
+    customer = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_review')  # The customer leaving the review
+    service_provider = models.ForeignKey(User, on_delete=models.PROTECT,related_name='to_review')  # The service provider being reviewed
+    service_request = models.ForeignKey(ServiceRequest, on_delete=models.CASCADE,related_name='service_request_review')
+    rating = models.IntegerField(choices=RATING_CHOICES)  # Rating from 1 to 5 stars
+    image = models.ImageField(upload_to='reviews/', null=True, blank=True, validators=[validate_file_size])
+    comment = models.TextField(blank=True, null=True)  # Optional comment
+    created_at = models.DateTimeField(auto_now_add=True)  # Auto-set the review date
+
+    def __str__(self):
+        return f"{self.customer.full_name} - {self.service_provider.full_name} ({self.rating} stars)"
+
 class Notification(models.Model):
     STATUS_CHOICES = [
         ('new', 'New'),
