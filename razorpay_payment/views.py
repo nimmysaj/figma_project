@@ -82,5 +82,4 @@ def razorpay_success(request):
             return JsonResponse({"success": True})
         except Invoice.DoesNotExist:
             return JsonResponse({"error": "Invoice not found"}, status=404)
-
     return JsonResponse({"error": "Invalid request"}, status=400)
