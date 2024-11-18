@@ -7,7 +7,7 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from .serializers import DealerLoginSerializer
 from Accounts.models import ServiceProvider
-from Dealer.serializers import ServiceProviderSerializer,DealerLoginSerializer
+from Dealer.serializers import ServiceProviderSerializer,LoginSerializer
 from rest_framework import generics
 from rest_framework import filters
 
@@ -21,8 +21,8 @@ from Accounts.models import Dealer, Franchisee, PaymentRequest
 from Dealer.serializers import FranchiseeSerializer, PaymentRequestSerializer
 from rest_framework.pagination import PageNumberPagination
 
-class DealerLoginView(generics.GenericAPIView):
-    serializer_class = DealerLoginSerializer
+class LoginView(generics.GenericAPIView):
+    serializer_class = LoginSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -32,13 +32,27 @@ class DealerLoginView(generics.GenericAPIView):
         # Generate a token for the authenticated user
         token, created = Token.objects.get_or_create(user=user)
 
+        user_type = None
+        if user.is_customer:
+            user_type = "Customer"
+        elif user.is_service_provider:
+            user_type = "Service-Provider"
+        elif user.is_dealer:
+            user_type = "Dealer"
+        elif user.is_franchisee:
+            user_type = "Franchisee"  
+        elif user.is_superuser:
+            user_type = "Superuser" 
+        elif user.is_staff:
+            user_type = "Staff"    
+
         return Response({
             'message': 'Login successful',
             'token': token.key,  # Include the token in the response
             'user_id': user.id,
             'email': user.email,
             'full_name': user.full_name,
-            'is_dealer': user.is_dealer,
+            'user_type': user_type,
         }, status=status.HTTP_200_OK)
 
 # List and Create View

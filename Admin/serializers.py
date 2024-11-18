@@ -1,6 +1,6 @@
 # serializers.py
 from rest_framework import serializers
-from Accounts.models import Franchisee, Franchise_Type
+from Accounts.models import Franchisee, Franchise_Type, Category
 
 
 class FranchiseeSerializer(serializers.ModelSerializer):
@@ -20,4 +20,10 @@ class FranchiseeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Franchisee
         fields = '__all__' 
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__'
 

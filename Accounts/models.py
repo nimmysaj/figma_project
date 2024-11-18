@@ -353,6 +353,7 @@ class Category(models.Model):
     image = models.ImageField(upload_to='category-images/', null=True, blank=True, validators=[validate_file_size])  
     description = models.TextField()
     status = models.CharField(max_length=10, choices=[('Active', 'Active'), ('Inactive', 'Inactive')])
+    created_at = models.DateTimeField(auto_now_add=True, null=True )
 
     def __str__(self):
         return self.title 
@@ -461,26 +462,9 @@ class PaymentRequest(models.Model):
 
 
     def __str__(self):
-        return f"Request by {self.service_provider.full_name} to {self.dealer.name} for {self.amount}"
+        return f"Request by {self.service_provider.user} to {self.dealer.user} for {self.amount}"
 
-class CustomerReview(models.Model):
-    RATING_CHOICES = [
-        (1, '1 Star'),
-        (2, '2 Stars'),
-        (3, '3 Stars'),
-        (4, '4 Stars'),
-        (5, '5 Stars'),
-    ]
 
-    customer = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_review')  # The customer leaving the review
-    service_provider = models.ForeignKey(User, on_delete=models.PROTECT,related_name='to_review')  # The service provider being reviewed
-    rating = models.IntegerField(choices=RATING_CHOICES)  # Rating from 1 to 5 stars
-    image = models.ImageField(upload_to='reviews/', null=True, blank=True, validators=[validate_file_size])
-    comment = models.TextField(blank=True, null=True)  # Optional comment
-    created_at = models.DateTimeField(auto_now_add=True)  # Auto-set the review date
-
-    def __str__(self):
-        return f"{self.customer.full_name} - {self.service_provider.full_name} ({self.rating} stars)"
     
 class ServiceRequest(models.Model):
     STATUS_CHOICES = [
@@ -510,6 +494,30 @@ class ServiceRequest(models.Model):
         # Ensure the availability_from is before availability_to
         if self.availability_from >= self.availability_to:
             raise ValidationError('Availability "from" time must be before "to" time.')    
+        
+
+class CustomerReview(models.Model):
+    RATING_CHOICES = [
+        (1, '1 Star'),
+        (2, '2 Stars'),
+        (3, '3 Stars'),
+        (4, '4 Stars'),
+        (5, '5 Stars'),
+    ]
+
+    customer = models.ForeignKey(User, on_delete=models.PROTECT,related_name='from_review')  # The customer leaving the review
+    service_provider = models.ForeignKey(User, on_delete=models.PROTECT,related_name='to_review')  # The service provider being reviewed
+    rating = models.IntegerField(choices=RATING_CHOICES)  # Rating from 1 to 5 stars
+    image = models.ImageField(upload_to='reviews/', null=True, blank=True, validators=[validate_file_size])
+    comment = models.TextField(blank=True, null=True)  # Optional comment
+    created_at = models.DateTimeField(auto_now_add=True)  # Auto-set the review date
+    service_request = models.ForeignKey(ServiceRequest, on_delete=models.CASCADE,related_name='service_request_review')
+    
+    
+    
+
+    def __str__(self):
+        return f"{self.customer.full_name} - {self.service_provider.full_name} ({self.rating} stars)"        
 
 class Invoice(models.Model):
     INVOICE_TYPE_CHOICES = [
@@ -542,6 +550,7 @@ class Invoice(models.Model):
     appointment_date = models.DateTimeField()
     additional_requirements = models.TextField(null=True, blank=True)
     accepted_terms = models.BooleanField(default=False)
+    
 
     def __str__(self):
         if self.service_request:

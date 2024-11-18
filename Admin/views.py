@@ -2,8 +2,8 @@ from rest_framework.response import Response
 from rest_framework import generics
 from rest_framework.filters import SearchFilter
 from django_filters import rest_framework as filters
-from Accounts.models import Franchisee, Franchise_Type
-from .serializers import FranchiseeSerializer
+from Accounts.models import Franchisee, Franchise_Type, Category, Subcategory
+from .serializers import FranchiseeSerializer, CategorySerializer
 from rest_framework.pagination import PageNumberPagination
 from datetime import datetime, timedelta
 from django.db.models import Q
@@ -155,4 +155,63 @@ class FranchiseeListView(generics.ListAPIView):
             'inactive_franchisees_percentage_change': inactive_percentage_change,
 
             'results': serializer.data
+        })
+
+
+
+class CategoryFilter(filters.FilterSet):
+    category = filters.CharFilter(field_name= 'title', lookup_expr="icontains", label="categoryName")
+
+    # Filter by category title
+    category_type = filters.ModelChoiceFilter(queryset=Category.objects.all(), field_name="type", label="category type")
+   
+    # sorting based on cretion date
+    sort_by_date = filters.OrderingFilter(
+        fields = (('created_at', 'Date added'),),
+        field_labels = {'created_at':'Date Added' }
+    )
+    class Meta:
+        model = Category
+        fields = ['title', 'category_type']
+
+class CategoryListView(generics.ListAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    filter_backends = (filters.DjangoFilterBackend, SearchFilter)
+    search_fields = ['title']
+    filterset_class = CategoryFilter
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        search_query = self.request.query_params.get('search', None)
+        if search_query:
+            queryset = queryset.filter(
+                Q(title__icontains=search_query)
+            )
+
+        queryset = self.filter_queryset(queryset)
+
+        # Handle ordering by date (newest first)
+        order_by = self.request.query_params.get('ordering', '-created_at')  # Default to '-created_at' for descending
+        queryset = queryset.order_by(order_by)
+        return queryset
+    
+    def list(self, request, *args, **kwargs):
+        category_queryset = Category.objects.all()
+        subcategory_queryset = Subcategory.objects.all()
+
+        # get the counts of category and subcategory
+
+        category_count = category_queryset.count()
+        subcategory_count = subcategory_queryset.count()
+        queryset = self.get_queryset()
+
+        serializer = self.get_serializer(queryset, many=True )
+        return Response({
+            'total category': category_count,
+            'total subcategory': subcategory_count,
+
+            'results': serializer.data
+
         })
