@@ -2,7 +2,7 @@ from django.shortcuts import render
 
 # Create your views here.
 
-from rest_framework import generics,filters
+from rest_framework import generics,filters,serializers
 from Accounts.models import Dealer,ServiceProvider
 from franchise.serializers import DealerSerializer,FranchiseeLoginSerializer
 from rest_framework.views import APIView
@@ -15,26 +15,46 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from Dealer.serializers import ServiceProviderSerializer
 
-# get the dealer details, also perform edit function
-class DealerDetailView(generics.RetrieveUpdateAPIView):
-    authentication_classes=[TokenAuthentication]
-    permission_classes=[IsAuthenticated]
-    queryset = Dealer.objects.all()
-    serializer_class = DealerSerializer
-    lookup_field = 'pk'
+# get the dealer details, also perform edit function,have search functionality using query params
 
-
-# implemented search functionality in dealer details page
-class DealerSearchView(generics.ListAPIView):
-    authentication_classes=[TokenAuthentication]
-    permission_classes=[IsAuthenticated]
-    serializer_class = DealerSerializer
-    filter_backends = [filters.SearchFilter]
-    search_fields = ['user__full_name']
-
-    def get_queryset(self):
-        user = self.request.user
-        return Dealer.objects.filter(franchisee__user=user)
+class DealerdetailView(APIView):
+    def get(self,request,*args,**kwargs):
+        id=request.data.get("dealer_id")
+        dealer=request.query_params.get('dealer')
+        if id:
+            try:
+                qs=Dealer.objects.get(custom_id=id)
+                serializer_instance=DealerSerializer(qs)
+                return Response(data=serializer_instance.data,status=status.HTTP_200_OK)
+            except:
+                return Response(data={"message":"Dealer Not found"},status=status.HTTP_400_BAD_REQUEST)
+        else:
+            try:
+                qs=Dealer.objects.get(user__full_name=dealer)
+                serializer_instance=DealerSerializer(qs)
+                return Response(data=serializer_instance.data,status=status.HTTP_200_OK)
+            except:
+                return Response(data={"message":"Dealer Not found"},status=status.HTTP_400_BAD_REQUEST)
+            
+    def put(self, request, *args, **kwargs): 
+        id = request.data.get("dealer_id") 
+        dealer = request.query_params.get('dealer') 
+        if id: 
+            try: 
+                qs = Dealer.objects.get(custom_id=id) 
+            except Dealer.DoesNotExist: 
+                return Response(data={"message": "Dealer Not found"}, status=status.HTTP_404_NOT_FOUND) 
+        elif dealer: 
+            try:
+                qs = Dealer.objects.get(user__full_name=dealer) 
+            except Dealer.DoesNotExist: 
+                return Response(data={"message": "Dealer Not found"}, status=status.HTTP_404_NOT_FOUND) 
+            else: return Response(data={"message": "Dealer ID or dealer query parameter is required."}, status=status.HTTP_400_BAD_REQUEST) 
+        serializer_instance = DealerSerializer(qs, data=request.data, partial=True)
+        if serializer_instance.is_valid(): 
+            serializer_instance.save() 
+            return Response(data=serializer_instance.data, status=status.HTTP_200_OK) 
+        else: return Response(data=serializer_instance.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class FranchiseeLoginView(APIView):

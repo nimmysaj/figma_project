@@ -49,16 +49,17 @@ class UserSerializer(serializers.ModelSerializer):
             'country_code',
             'phone_number'
         ]
-        read_only_fields=['id','email']
+        read_only_fields=['id','email','phone_number']
 
 class DealerSerializer(serializers.ModelSerializer):
     user = UserSerializer()
 
     franchise_name = serializers.CharField(source='franchisee.user.full_name', read_only=True)
-
+    dealer_id=serializers.CharField(write_only=True)
     class Meta:
         model = Dealer
         fields = [
+            'dealer_id',
             'user',
             'custom_id',
             'about',

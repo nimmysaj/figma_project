@@ -9,30 +9,10 @@ from rest_framework import filters
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
-# from django.contrib.auth import authenticate,
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 
 
-
-
-# get the list of all non verified service providers under the logged in dealer     
-# class ServiceProviderVerificationListView(generics.ListAPIView):
-    # authentication_classes=[TokenAuthentication]
-    # permission_classes=[IsAuthenticated]
-#     serializer_class=ServiceProviderSerializer
-#     filter_backends=[filters.SearchFilter]
-#     search_fields=['user__full_name','user__district__name']
-    # def get_queryset(self):
-    #     user = self.request.user
-    #     queryset = ServiceProvider.objects.filter(
-    #         verification_by_dealer='PENDING', 
-    #         accepted_terms=True, 
-    #         dealer__user=user)
-            
-    #     return queryset
-
-# queryset = ServiceRegister.objects.annotate(request_count=Count('servicerequest'))
 
 class DealerLoginView(generics.GenericAPIView):
     serializer_class = DealerLoginSerializer
@@ -58,29 +38,6 @@ class DealerLoginView(generics.GenericAPIView):
 
 from rest_framework import viewsets
 from rest_framework.decorators import action
-
-# class ServiceProviderViewSet(viewsets.ReadOnlyModelViewSet):
-#     authentication_classes=[TokenAuthentication]
-#     permission_classes=[IsAuthenticated]
-#     queryset = ServiceProvider.objects.all()
-#     serializer_class = ServiceProviderSerializer
-#     filter_backends=[filters.SearchFilter]
-#     search_fields=['user__full_name','user__district__name']
-
-#     def get_queryset(self):
-#         user = self.request.user
-#         return ServiceProvider.objects.filter( 
-#             accepted_terms=True, 
-#             dealer__user=user)
-
-#     @action(detail=True, methods=['get'])
-#     def services(self, request, pk=None):
-#         service_provider = self.get_object()
-#         serializer = self.get_serializer(service_provider)
-#         return Response(serializer.data)
-
-
-
 
 class ServiceProviderViewSet(viewsets.ReadOnlyModelViewSet):
     authentication_classes = [TokenAuthentication]
