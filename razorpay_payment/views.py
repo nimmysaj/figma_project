@@ -1,13 +1,11 @@
 from django.shortcuts import render
-# Create your views here.
-# key id ="rzp_test_1x02HdARH9XUuW"
-# secret key="DwpkhgA2pUgniXnFjrtal3Rm"
 import razorpay_payment
 import razorpay
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
-from Accounts.models import Invoice
+from Accounts.models import Invoice,Payment
+from django.utils import timezone
 
 # Initialize Razorpay client
 razorpay_client = razorpay.Client(auth=('key_id', 'secret_key'))
@@ -58,12 +56,28 @@ def razorpay_success(request):
         data = json.loads(request.body)
         invoice_id = data.get("invoice_id")
         payment_id = data.get("razorpay_payment_id")
+        order_id = data.get("razorpay_order_id")
+        signature = data.get("razorpay_signature")
 
         try:
             # Update the invoice status to 'paid'
             invoice = Invoice.objects.get(invoice_number=invoice_id)
             invoice.payment_status = 'paid'
             invoice.save()
+
+            # Create a new Payment record
+            Payment.objects.create(
+                invoice=invoice,
+                sender=invoice.sender,
+                receiver=invoice.receiver,
+                transaction_id=payment_id,
+                order_id=order_id,
+                signature=signature,
+                amount_paid=invoice.price,
+                payment_method='razorpay',
+                payment_date=timezone.now(),
+                payment_status='completed'
+            )
 
             return JsonResponse({"success": True})
         except Invoice.DoesNotExist:
