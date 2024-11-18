@@ -11,31 +11,6 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
-
-
-
-class DealerLoginView(generics.GenericAPIView):
-    serializer_class = DealerLoginSerializer
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
-
-        # Generate a token for the authenticated user
-        token, created = Token.objects.get_or_create(user=user)
-
-        return Response({
-            'message': 'Login successful',
-            'token': token.key, # Include the token in the response
-            'user_id': user.id,
-            'email': user.email,
-            'full_name': user.full_name,
-            'is_dealer': user.is_dealer,
-        }, status=status.HTTP_200_OK)
-    
-
-
 from rest_framework import viewsets
 from rest_framework.decorators import action
 

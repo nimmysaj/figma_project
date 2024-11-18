@@ -57,26 +57,6 @@ class DealerdetailView(APIView):
         else: return Response(data=serializer_instance.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class FranchiseeLoginView(APIView):
-    def post(self, request, *args, **kwargs):
-        serializer = FranchiseeLoginSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.validated_data['user']
-            franchisee = serializer.validated_data['franchisee']
-            token,created=Token.objects.get_or_create(user=user)
-            return Response({
-                'token':token.key,
-                'message': 'Login successful',
-                'user_id': user.id,
-                'email': user.email,
-                'full_name': user.full_name,
-                'is_farnchisee': user.is_franchisee,
-                'franchisee':franchisee.custom_id
-            }, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-
 class FranchiseServiceProviderViewSet(viewsets.ReadOnlyModelViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
