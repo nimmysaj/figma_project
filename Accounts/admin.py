@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import OTP, Category, Collar, Customer, CustomerReview, Dealer, District, Franchise_Type, Franchisee, Invoice, Service_Type, ServiceProvider, ServiceRegister, ServiceRequest, State, Subcategory, User, Country_Codes,Notification
+from .models import OTP, Category, Collar, Customer, CustomerReview, Dealer, District, Franchise_Type, Franchisee, Invoice, Service_Type, ServiceProvider, ServiceRegister, ServiceRequest, State, Subcategory, User, Country_Codes,Complaint,Notification
 
 admin.site.register(User)
 admin.site.register(Customer)
@@ -19,4 +19,5 @@ admin.site.register(Category)
 admin.site.register(Subcategory)
 admin.site.register(Invoice)
 admin.site.register(CustomerReview)
+admin.site.register(Complaint)
 admin.site.register(Notification)
