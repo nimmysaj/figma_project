@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'Accounts',
     'customer',
     'service_provider',
+    'admin_app',
 ]
 
 MIDDLEWARE = [
@@ -93,6 +94,7 @@ DATABASES = {
     }
 }
 
+AUTH_USER_MODEL='Accounts.User'
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -127,6 +129,7 @@ USE_I18N = True
 
 USE_TZ = True
 
+import os
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
@@ -140,6 +143,11 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')  # Where the files will be stored 
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+
+# RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "rzp_test_7QecczEWm61LUy")
+# RAZORPAY_SECRET_KEY = os.getenv("RAZORPAY_SECRET_KEY", "B72jPJ9MShY5iRqcbBegSppx")
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -169,3 +177,4 @@ DEFAULT_FROM_EMAIL = ''  # Default from email
 #TWILIO_ACCOUNT_SID = ''
 #TWILIO_AUTH_TOKEN = ''
 #TWILIO_PHONE_NUMBER = ''
+

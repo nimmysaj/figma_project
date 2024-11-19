@@ -1,7 +1,10 @@
 from django.contrib import admin
-from .models import OTP, Category, Collar, Customer, CustomerReview, Dealer, District, Franchise_Type, Franchisee, Invoice, Service_Type, ServiceProvider, ServiceRegister, ServiceRequest, State, Subcategory, User, Country_Codes
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from Accounts.models import *
+from admin_app.models import *
 
 admin.site.register(User)
+admin.site.register(DeclineServiceModel)
 admin.site.register(Customer)
 admin.site.register(ServiceProvider)
 admin.site.register(Franchisee)
@@ -14,8 +17,15 @@ admin.site.register(State)
 admin.site.register(ServiceRegister)
 admin.site.register(ServiceRequest)
 admin.site.register(Collar)
+admin.site.register(Complaint)
 admin.site.register(Service_Type)
 admin.site.register(Category)
 admin.site.register(Subcategory)
 admin.site.register(Invoice)
+admin.site.register(Payment)
 admin.site.register(CustomerReview)
+admin.site.register(Ad_category)
+admin.site.register(Ad_Management)
+admin.site.register(IncomeManagement)
+admin.site.register(AccountDetails)
+admin.site.register(PayoutSchedule)
