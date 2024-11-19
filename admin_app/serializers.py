@@ -168,7 +168,7 @@ class FranchiseeSerializer(serializers.ModelSerializer):
 class InvoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Invoice
-        fields = ['invoice_number', 'invoice_type', 'sender', 'receiver', 'description', 'price', 'total_amount', 'payment_status', 'accepted_terms', 'invoice_date', 'due_date']
+        fields = ['invoice_number', 'invoice_type', 'description', 'price', 'total_amount', 'payment_status', 'accepted_terms', 'invoice_date']
 # TASK 2 Transaction History ////////////////////////////////////////////////////////////////////////////////////
  
     
@@ -217,51 +217,6 @@ class TransactionSerializer(serializers.ModelSerializer):
         representation['receiver'] = instance.receiver.id
 
         return representation
-
-
-    
-# class TransactionSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Payment
-#         fields = ['transaction_id', 'invoice', 'description', 'amount_paid',
-#                   'payment_method', 'payment_date', 'payment_status','sender','receiver']
-
-#     def to_representation(self, instance):
-#         representation = super().to_representation(instance)
-
-#         # Safely get the invoice type
-#         representation['type'] = getattr(instance.invoice, 'invoice_type', None)
-
-#         # Initialize sender to None
-#         sender = None
-#         if instance.sender.is_customer:
-#             try:
-#                 # Fetch the Customer data using sender's user_id
-#                 customerdata = Customer.objects.get(user_id=instance.sender.id)
-#                 sender = customerdata.custom_id
-#             except Customer.DoesNotExist:
-#                 sender = None  # If the customer does not exist, handle it gracefully
-                
-#         elif instance.sender.is_franchisee:
-#             try:
-#                 # Fetch the Franchisee data using sender's user_id
-#                 franchiseedata = Franchisee.objects.get(user_id=instance.sender.id)
-#                 sender = franchiseedata.custom_id
-#             except Franchisee.DoesNotExist:
-#                 sender = None  # If the franchisee does not exist, handle it gracefully
-#         elif instance.sender.is_dealer:
-#             try:
-#                 # Fetch the Dealer data using sender's user_id
-#                 dealerdata = Dealer.objects.get(user_id=instance.sender.id)
-#                 sender = dealerdata.custom_id
-#             except Dealer.DoesNotExist:
-#                 sender = None  # If the dealer does not exist, handle it gracefully
-                
-#         representation['receiver'] = instance.receiver.id
-#         representation['sender'] = sender
-
-#         return representation
-
 
 # TASK 3 SERVICE TYPE CRUD //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -357,12 +312,14 @@ class AddExpensesSerializer(serializers.ModelSerializer):
     description = serializers.CharField(required=True, max_length=255)
     accepted_terms = serializers.BooleanField(required=True)
     invoice_type = serializers.CharField(default="others", read_only=True)  # Fixed to "others"
+    expense_type = serializers.ChoiceField(choices=["Income", "Expense"], required=True, write_only=True)
+
 
     class Meta:
         model = Invoice
         fields = [
             'id', 'invoice_number', 'invoice_type', 'invoice_date', 'sender', 'receiver',
-            'description', 'documents', 'accepted_terms', 'price', 'quantity', 'total_amount', 'payment_status'
+            'description', 'documents', 'accepted_terms', 'price', 'quantity', 'total_amount', 'payment_status','expense_type','external_invoice_number'
         ]
         read_only_fields = ['total_amount']  # Make total_amount read-only
 
@@ -383,19 +340,33 @@ class AddExpensesSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, data):
-        # Check that both sender and receiver are not null
-        if data.get('sender') is None and data.get('receiver') is None:
-            raise serializers.ValidationError("Both sender and receiver cannot be null.")
-        
+        expense_type = data.pop('expense_type')  # Remove from data as it's not a model field
+        admin_user = User.objects.filter(is_superuser=True).first()
+
+        if not admin_user:
+            raise serializers.ValidationError("Admin user not found.")
+
+        if expense_type == 'Expense':
+            
+            if data.get('sender') != admin_user and data.get('sender') != None:
+                raise serializers.ValidationError("If You choose Expense ,Sender Should be super User")
+            
+            data['sender'] = admin_user
+            data['receiver'] = data.get('receiver')
+            
+        elif expense_type == 'Income':
+            data['receiver'] = admin_user
+            data['sender'] = data.get('sender')
+        else:
+            raise serializers.ValidationError("Invalid expense type.")
         return data
+            
 
     def create(self, validated_data):
         validated_data['invoice_type'] = 'others'
-        
         # Calculate total_amount based on price and quantity
         quantity = validated_data.get('quantity') or 1  # Default to 1 if quantity is None
         validated_data['total_amount'] = validated_data['price'] * quantity
-        
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
@@ -404,5 +375,4 @@ class AddExpensesSerializer(serializers.ModelSerializer):
         # Calculate total_amount based on price and quantity
         quantity = validated_data.get('quantity') or instance.quantity or 1
         validated_data['total_amount'] = validated_data.get('price', instance.price) * quantity
-        
         return super().update(instance, validated_data)

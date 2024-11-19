@@ -537,6 +537,8 @@ class Invoice(models.Model):
     ]
     
     invoice_number = models.PositiveIntegerField(unique=True, editable=False)
+    external_invoice_number = models.CharField(max_length=25, null=True,blank=True)
+
 
     #invoice_type: This field determines whether the invoice is related to a Service Request payment (service_request), a Dealer Payment (dealer_payment), or a Service Provider Payment (provider_payment).
     invoice_type = models.CharField(max_length=30, choices=INVOICE_TYPE_CHOICES)
@@ -554,7 +556,7 @@ class Invoice(models.Model):
     description = models.CharField(max_length=200, blank=True,null=True)
     
     quantity = models.IntegerField(null=True, blank=True)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    price = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     partial_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, default=0)  # New field for partial payment
     payment_balance = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, default=0)
@@ -566,7 +568,7 @@ class Invoice(models.Model):
     appointment_date = models.DateTimeField(null=True, blank=True)
     additional_requirements = models.TextField(null=True, blank=True)
     
-    documents = models.FileField(upload_to='invoice-documents/', blank=True, null=True, validators=[validate_file_size])
+    Invoice_document = models.FileField(upload_to='invoice-documents/', blank=True, null=True, validators=[validate_file_size])
     
     accepted_terms = models.BooleanField(default=False)
 
