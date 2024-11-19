@@ -1,4 +1,8 @@
 from rest_framework import serializers
+from Accounts.models import ServiceProviderVerification, Dealer, Franchisee, Franchise_Type, PaymentRequest, Invoice, Payment
+from django.contrib.auth import authenticate
+from Accounts.models import *
+from rest_framework import serializers
 from Accounts.models import ServiceProvider
 from service_provider.serializers import UserSerializer,ServiceRegisterSerializer
 from Accounts.models import User
@@ -73,3 +77,30 @@ class LoginSerializer(serializers.Serializer):
 
         attrs['user'] = user
         return attrs
+    
+
+
+class FranchiseeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Franchisee
+        fields = '__all__'
+
+
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Invoice
+        fields = ['invoice_number', 'total_amount', 'payment_status', 'invoice_date']  
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = ['amount_paid', 'payment_date', 'payment_status', 'transaction_id']  
+
+class PaymentRequestSerializer(serializers.ModelSerializer):
+    invoices = InvoiceSerializer(many=True, read_only=True)  
+    payments = PaymentSerializer(many=True, read_only=True)  
+
+    class Meta:
+        model = PaymentRequest
+        fields = '__all__' 

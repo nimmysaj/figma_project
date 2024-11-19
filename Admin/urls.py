@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import CustomerServiceRequestsView
+from .views import CustomerServiceRequestsView, FranchiseeListView, CategoryListView
 from django.urls import path
 from Admin import views
 
@@ -11,5 +11,7 @@ urlpatterns = [
     path('complaints/',views.ComplaintsView.as_view(),name='complaints'),
     path('ads/',views.AdsManagementDashBoardView.as_view()),
     path('ads-category/',views.AdsCategoryView.as_view()),
-    path('ads-management/',views.AdsManagementView.as_view())
+    path('ads-management/',views.AdsManagementView.as_view()),
+    path('franchisees-list/', FranchiseeListView.as_view(), name='franchisee-list'),
+    path('categories-list/', CategoryListView.as_view(), name='category-list'),
 ]

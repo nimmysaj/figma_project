@@ -11,6 +11,9 @@ from Dealer.views import ServiceProviderViewSet
 
 router = DefaultRouter() 
 router.register(r'service-providers', ServiceProviderViewSet, basename='service-provider')
+from django.urls import path
+from .views import ServiceProviderVerificationListCreate, ServiceProviderVerificationDetail,LoginView, DealerFranchiseeListView, DealerPaymentHistoryView
+from Dealer import views
 
 urlpatterns = [
     path('login/', LoginView.as_view(), name='login'),
@@ -18,4 +21,9 @@ urlpatterns = [
     path('service-providers-search/', ProviderSearchView.as_view(), name='service-provider-search'),
     path('service-providers-sort/', ProviderSortView.as_view(), name='service-provider-sort'),
     path('api/', include(router.urls)),
+    path('service-providers/', ServiceProviderVerificationListCreate.as_view(), name='service-providers-list'),
+    path('service-providers/<int:pk>/', ServiceProviderVerificationDetail.as_view(), name='service-provider-detail'),
+    path('serviceprovider/verification/',views.ServiceProviderVerificationListView.as_view()),
+    path('dealer/franchisee/', DealerFranchiseeListView.as_view(), name='dealer-franchisee-list'),
+    path('dealer/payment-history/', DealerPaymentHistoryView.as_view(), name='dealer-payment-history'),
 ]
