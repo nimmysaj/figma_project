@@ -80,7 +80,7 @@ class PayoutSchedule(models.Model):
         ('paypal', 'PayPal'),
         ('cash', 'Cash'),
     ]
-    manual_payout_schedule = models.DateTimeField(blank=True,null=True)
+    manual_payment_schedule = models.DateTimeField(blank=True,null=True)
     user_id=models.ForeignKey(User,on_delete=models.PROTECT,null=True,blank=True,related_name='payout_schedule')
     auto_payment_amount = models.DecimalField(null=True,max_digits=5,decimal_places=2,blank=True,)
     manual_payment_amount = models.DecimalField(null=True,max_digits=5,decimal_places=2,blank=True,)
@@ -107,7 +107,7 @@ class AccountDetails(models.Model):
 class IncomeManagement(models.Model):
     sl_no = models.AutoField(primary_key=True)
     income_type = models.CharField(max_length=50,choices=[
-            ('Franchisee Registration', 'Franchisee Registration'),
+            ('franchise_registration', 'Franchisee Registration'),
             ('service_registration', 'Service Registration'),
             ('banner_ads', 'Banner Ads'),
             ('card_ads', 'Card Ads'),

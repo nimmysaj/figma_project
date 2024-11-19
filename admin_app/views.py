@@ -263,7 +263,8 @@ class PayoutScheduleView(APIView):
                 # Check for duplicates
                 existing_schedule = PayoutSchedule.objects.filter(user_type=user_type,auto_payment_schedule=auto_payment_schedule).first()
                 if existing_schedule:
-                    return Response({"error": "Duplicate entry for auto_payment_schedule."}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"error": "Duplicate entry for auto_payment_schedule."},status=status.HTTP_400_BAD_REQUEST)
+
                 data = {
                     "user_type": user_type,
                     "auto_payment_schedule": auto_payment_schedule,}
@@ -279,15 +280,30 @@ class PayoutScheduleView(APIView):
         if user_id:
             # Fetch associated account details
             account_details = AccountDetails.objects.filter(user_id=user_id).first()
+            existing_payout_schedule = PayoutSchedule.objects.filter(user_id=user_id).first()
+            
             if not account_details:
                 return Response({"error": "Account details not found for the provided user_id."}, status=status.HTTP_404_NOT_FOUND)
-            
-            payoutserializer = PayoutScheduleSerializer(data=request.data)
+            elif existing_payout_schedule:
+                return Response({"error": "Payout Schedule existing for the same user."},status=status.HTTP_400_BAD_REQUEST)
+            data = {
+                    "user_type": user_type,
+                    "user_id" : user_id,
+                    "manual_payment_schedule" : request.data.get("manual_payment_schedule"),
+                    "manual_payment_amount" : request.data.get("manual_payment_amount"),
+                    "auto_payment_schedule": None}
+
+            payoutserializer = PayoutScheduleSerializer(data=data)
             account_serializer = AccountDetailsSerializer(account_details)
 
+            # Validate and save the payout schedule
             if payoutserializer.is_valid():
                 payoutserializer.save()
-            
+                return Response(payoutserializer.data, status=status.HTTP_201_CREATED)
+            else:
+                print("Validation errors:", payoutserializer.errors)
+                return Response(payoutserializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
             if not account_details.account_number:
                 response_data = {
                     'Scheduled_date': payoutserializer.data,
@@ -305,11 +321,8 @@ class PayoutScheduleView(APIView):
             return Response(payoutserializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def patch(self, request):
-        print(request.data)
-        
         user_id = request.data.get('user_id')
-        print(user_id)
-        
+
         if not user_id:
             return Response({"error": "user_id is required."}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -346,8 +359,14 @@ class PayoutScheduleView(APIView):
 
     def get(self, request, *args, **kwargs):
         user_id = request.data.get('user_id')
-        
+        user_type = request.data.get('user_type')
         # If user_id is not provided, return all payout schedules
+        if user_type:
+            if not user_id:
+                user_schedule = PayoutSchedule.objects.filter(user_type = user_type).first()
+                user_schedule_serializer = PayoutScheduleSerializer(user_schedule)
+                return Response(user_schedule_serializer.data, status=status.HTTP_200_OK)
+
         if not user_id:
             schedules = PayoutSchedule.objects.all()
             payoutserializer = PayoutScheduleSerializer(schedules, many=True)

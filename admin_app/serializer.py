@@ -168,7 +168,7 @@ class PayoutScheduleSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = PayoutSchedule
-        fields = ['user_type', 'user_id','auto_payment_schedule', 'manual_payout_schedule','auto_payment_amount','manual_payment_amount','payment_method','status']
+        fields = ['user_type', 'user_id','auto_payment_schedule', 'manual_payment_schedule','auto_payment_amount','manual_payment_amount','payment_method','status']
                    
 class AccountDetailsSerializer(serializers.ModelSerializer):
     

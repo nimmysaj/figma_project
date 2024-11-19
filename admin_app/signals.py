@@ -3,7 +3,7 @@ from django.dispatch import receiver
 from django.contrib.auth.models import User
 from Accounts.models import Invoice
 from .models import IncomeManagement, AccountDetails
-
+from decimal import InvalidOperation
 
 @receiver(post_save,sender=Invoice)
 def calculate_amount_balance(sender,instance,created,*args,**kwargs): 
@@ -15,23 +15,32 @@ def calculate_amount_balance(sender,instance,created,*args,**kwargs):
         income = IncomeManagement.objects.filter(income_type = instance.invoice_type).first()
         split_type = income.split_type 
 
-        total_invoice_amount = instance.price 
+        total_invoice_amount = instance.price
         reciever =  instance.receiver 
 
         if instance.payment_status == "paid" :
 
-            if income.company > 0:
-                if split_type == "Percentage":
-                    amount = (total_invoice_amount * income.company) / 100
-                else:
-                    amount = income.company 
+            try:
+                total_invoice_amount = instance.price # Ensure it's a valid Decimal
+                income = IncomeManagement.objects.filter(income_type=instance.invoice_type).first()
+                if not income:
+                    return  # No income type found, exit gracefully
 
-                user = AccountDetails.objects.filter(user_id = reciever).first()
-                if user:  
-                    user.account_balance += amount 
-                    user.save()
-                else:
-                    user = AccountDetails.objects.create(user_id = reciever, account_balance = amount)
+                if income.company > 0:
+                    if income.split_type == "Percentage":
+                        amount = (total_invoice_amount * income.company) / 100
+                    else:
+                        amount = income.company
+
+                    # Handle receiver's account
+                    user = AccountDetails.objects.filter(user_id=instance.receiver).first()
+                    if user:
+                        user.account_balance += amount
+                        user.save()
+                    else:
+                        AccountDetails.objects.create(user_id=instance.receiver, account_balance=Decimal(amount))
+            except (InvalidOperation, TypeError, ValueError) as e:
+                print(f"Error in calculate_amount_balance: {e}")
 
             if instance.service_register:
 
