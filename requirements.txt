@@ -15,12 +15,15 @@ filelock==3.16.0
 idna==3.8
 jwcrypto==1.5.6
 oauthlib==3.2.2
+phonenumbers==8.13.45
 pillow==10.4.0
 platformdirs==4.3.3
+pycountry==24.6.1
 pycparser==2.22
 PyJWT==2.9.0
 requests==2.32.3
 sqlparse==0.5.1
+twilio==9.3.1
 typing_extensions==4.12.2
 tzdata==2024.1
 urllib3==2.2.2
