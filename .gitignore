@@ -10,6 +10,52 @@ migrations/
 # Environment variables
 .env
 
+#venv
+figmaenv/
+
 # IDEs
 .vscode/
 .idea/
+
+
+# Ignore image files
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.svg
+*.webp
+
+# Ignore video files
+*.mp4
+*.mkv
+*.avi
+*.mov
+*.wmv
+*.flv
+
+# Ignore audio files
+*.mp3
+*.wav
+*.flac
+*.aac
+*.ogg
+*.m4a
+
+
+# Ignore all media files in the media/ directory
+media/*.jpg
+media/*.png
+media/*.mp4
+media/*.mp3
+media/*
+
+s-profile-images/*
+id-service-pro/*
+id-dealer/*
+f-profile_images/*
+decline/*
+d-profile_images/*
+category-images/*
