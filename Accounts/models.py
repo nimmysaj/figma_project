@@ -9,6 +9,7 @@ import random
 from django.core.validators import RegexValidator
 import phonenumbers
 from figma import settings
+from rest_framework_simplejwt.tokens import RefreshToken
 
 # Create your models here.
 phone_regex = RegexValidator(
@@ -64,6 +65,8 @@ PAYMENT_METHOD_CHOICES = [
     ('cash', 'Cash'),
 ]
 
+AUTH_PROVIDERS = {'facebook': 'facebook', 'google': 'google', 'twitter': 'twitter', 'email': 'email'}
+
 
 class UserManager(BaseUserManager):
     def create_user(self, email=None, phone_number=None, password=None, **extra_fields):
@@ -114,8 +117,6 @@ class User(AbstractBaseUser):
     is_active = models.BooleanField(default=True)
     is_superuser = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
-
-    # Any other fields common to both roles
     full_name = models.CharField(max_length=255)
     address = models.CharField(max_length=30)
     landmark = models.CharField(max_length=255, blank=True, null=True)
@@ -131,6 +132,11 @@ class User(AbstractBaseUser):
         max_length=15, unique=True, null=True, blank=True)
     country_code = models.ForeignKey(
         'Country_Codes', on_delete=models.SET_NULL, null=True, blank=True)
+
+    # socialoauth
+    auth_provider = models.CharField(
+        max_length=255, blank=False, null=False, default=AUTH_PROVIDERS.get('email')
+    )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -164,7 +170,13 @@ class User(AbstractBaseUser):
 
     def has_module_perms(self, app_label):
         return self.is_superuser
-
+   
+    def tokens(self):
+        refresh = RefreshToken.for_user(self)
+        return {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token)
+        }
 
 class Franchise_Type(models.Model):
     name = models.CharField(max_length=255)
@@ -510,6 +522,8 @@ class ServiceRegister(models.Model):
         if self.subcategory and self.subcategory.service_type.name == 'Daily Work':
             # No collar is needed for 'Daily Work' service type
             self.available_lead_balance = 0  # You can adjust logic for infinite leads here
+        if not self.username:
+            self.username = self.email
         super(ServiceRegister, self).save(*args, **kwargs)
 
 

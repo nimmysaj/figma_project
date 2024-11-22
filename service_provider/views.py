@@ -1,4 +1,4 @@
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import generics, viewsets
 from rest_framework.views import APIView
@@ -20,9 +20,15 @@ from .serializers import (
 from django.contrib.auth.models import update_last_login
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status, generics
-from Accounts.models import User
+from Accounts.models import User, ServiceProvider
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.http import JsonResponse
+from drf_social_oauth2.oauth2_grants import SocialTokenGrant
+from drf_social_oauth2.views import ConvertTokenView
+from django.views import View
+from social_django.utils import psa
+from django.contrib.auth import get_user_model
 
 
 User = get_user_model()
@@ -529,7 +535,7 @@ class DeclineServiceView(APIView):
 class DeductLeadBalanceView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, *args, **kwargs):
+    def put(self, request, *args, **kwargs):
         try:
             booking_id = request.data.get('booking_id')
             # Get the logged-in service provider
@@ -564,3 +570,67 @@ class DeductLeadBalanceView(APIView):
             return Response({"error": "Service request not found or access denied."}, status=404)
         except ServiceProvider.DoesNotExist:
             return Response({"error": "Service provider not found."}, status=404)
+
+
+
+class CustomSocialTokenGrant(SocialTokenGrant):
+    def save_user(self, token, user):
+        # Avoid accessing first_name, modify this as per your custom user model
+        user_data = {
+            'email': user.email,
+            'full_name': user.full_name,  # Use your custom field here
+            # Add any other fields you want to return in the response
+        }
+
+        # Continue to save user as normal if needed
+        super().save_user(token, user)
+        return user_data
+
+
+class CustomConvertTokenView(ConvertTokenView):
+    def post(self, request, *args, **kwargs):
+        print("Incoming request data:", request.data)  # Debugging
+        return super().post(request, *args, **kwargs)
+
+    def prepare_response(self, data):
+        """
+        Modify the response data to match the custom user model without using first_name.
+        """
+        # Accessing request and user data
+        user = self.request.user
+        
+        # Ensure the full_name is calculated based on your custom model (if needed)
+        full_name = f"{user.first_name} {user.last_name}" if hasattr(user, 'first_name') else user.full_name
+        
+        return JsonResponse({
+            'user_id': user.id,
+            'email': user.email,
+            'full_name': full_name,  # Use your custom full_name or combine first_name and last_name
+            'access_token': data.get('access_token'),
+            'refresh_token': data.get('refresh_token'),
+            'expires_in': data.get('expires_in'),
+        })
+
+
+class GoogleOAuth2CompleteView(View):
+    @psa('social:complete')
+    def get(self, request, *args, **kwargs):
+        # This will automatically complete the Google OAuth2 flow
+        # It can return a user object, or you can handle additional logic
+        user = request.user
+        
+        if user.is_authenticated:
+            # Set the username if it's not set yet, using email as a fallback
+            if not user.username:
+                user.username = user.email  # You can adjust this if you prefer something else
+                user.save()
+
+            # Return the access and refresh tokens
+            return JsonResponse({
+                'access_token': user.social_auth.get(provider='google').extra_data['access_token'],
+                'refresh_token': user.social_auth.get(provider='google').extra_data['refresh_token'],
+                'username': user.username  # Returning username in the response
+            })
+        else:
+            return JsonResponse({'error': 'Authentication failed'}, status=400)
+

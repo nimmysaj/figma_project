@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import os
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,6 +42,11 @@ INSTALLED_APPS = [
     'Accounts',
     'customer',
     'service_provider',
+    'FEapp',
+    'oauth2_provider',
+    'social_django',
+    'drf_social_oauth2',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -50,6 +57,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'social_django.middleware.SocialAuthExceptionMiddleware',
 ]
 
 ROOT_URLCONF = 'figma.urls'
@@ -57,7 +65,7 @@ ROOT_URLCONF = 'figma.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -65,10 +73,12 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                
             ],
         },
     },
 ]
+
 
 WSGI_APPLICATION = 'figma.wsgi.application'
 
@@ -118,8 +128,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
-
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
@@ -129,11 +139,57 @@ AUTH_USER_MODEL = 'Accounts.User'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
+        'drf_social_oauth2.authentication.SocialAuthentication',
+
     ),
 }
 
 
 AUTHENTICATION_BACKENDS = [
     'service_provider.authentication_backends.EmailOrPhoneBackend',  # Your custom backend
-    'django.contrib.auth.backends.ModelBackend',  # Django's default backend
+    'drf_social_oauth2.backends.DjangoOAuth2',  # DRF Social OAuth2
+    'social_core.backends.google.GoogleOAuth2',  # Google OAuth2
+    'django.contrib.auth.backends.ModelBackend',
+    'service_provider.authentication_backends.CustomGoogleOAuth2',
+    'service_provider.authentication_backends.CustomBackend', 
 ]
+
+
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = config("SOCIAL_AUTH_GOOGLE_OAUTH2_KEY")
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = config("SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET") 
+SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = config("SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET")
+
+
+SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = ['email', 'profile']
+
+# OAuth2 settings
+OAUTH2_PROVIDER = {
+    'ACCESS_TOKEN_EXPIRE_SECONDS': 36000,
+    'GRANT_TYPES': {
+        'convert_token': 'drf_social_oauth2.oauth2_grants.SocialTokenGrant',
+    },
+}
+
+SOCIAL_OAUTH2_GRANT = 'service_provider.oauth2_grants.CustomSocialTokenGrant'
+
+
+# Social auth pipeline
+SOCIAL_AUTH_PIPELINE = (
+    'social_core.pipeline.social_auth.social_details',
+    'social_core.pipeline.social_auth.social_uid',
+    'social_core.pipeline.social_auth.auth_allowed',
+    'social_core.pipeline.social_auth.social_user',
+    'social_core.pipeline.user.get_username',
+    'service_provider.social_auth.custom_user_details',  
+)
+
+
+DJANGO_CLIENT_ID = config("DJANGO_CLIENT_ID")
+DJANGO_CLIENT_SECRET = config("DJANGO_CLIENT_ID")
+DRFSO2_PROPRIETARY_BACKEND_NAME = config("DJANGO_CLIENT_ID")
+# DRFSO2_URL_NAMESPACE = 'drf'
+
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
