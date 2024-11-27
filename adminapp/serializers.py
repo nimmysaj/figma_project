@@ -353,8 +353,7 @@ class TotalComplaintSerializer(serializers.Serializer):
 
 
 # # **************************  INCOME MANAGEMENT  ***************************
-# class IncomeManagementSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = IncomeManagement
-#         fields = '__all__'
-
+class IncomeManagementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IncomeManagement
+        fields = '__all__'

@@ -662,7 +662,7 @@ class IncomeManagement(models.Model):
             ('Banner Ads', 'Banner Ads'),
             ('Card Ads', 'Card Ads'),
             ('Popup Ads', 'Popup Ads'),
-            ('Boost Profile', 'Boost Profile'),
+            ('Boost Service', 'Boost Service'),
             ('Service Commission', 'Service Commission'),
             ('Lead Commission', 'Lead Commission'),
         ]

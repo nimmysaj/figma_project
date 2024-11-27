@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from Accounts.models import Country_Codes, Customer, District, State, User,ServiceRequest,ServiceRegister,ServiceProvider,Dealer,Franchisee,Franchise_Type,Category,Subcategory,Service_Type,Collar,Payment,Invoice,PaymentRequest, Complaint
+from Accounts.models import Country_Codes, Customer, District, State, User,ServiceRequest,ServiceRegister,ServiceProvider,Dealer,Franchisee,Franchise_Type,Category,Subcategory,Service_Type,Collar,Payment,Invoice,PaymentRequest, Complaint, IncomeManagement
 
 
 admin.site.register(District)
@@ -22,3 +22,4 @@ admin.site.register(Payment)
 admin.site.register(Invoice)
 admin.site.register(PaymentRequest)
 admin.site.register(Complaint)
+admin.site.register(IncomeManagement)

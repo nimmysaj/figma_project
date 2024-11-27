@@ -1,4 +1,5 @@
 from datetime import timedelta, timezone
+from random import choice
 from django.utils import timezone 
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
@@ -7,9 +8,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 # from figma_project.Accounts import models
-from Accounts.models import Customer, Subcategory, ServiceRegister, ServiceRequest, Payment, User, Invoice, Complaint
+from Accounts.models import Customer, Subcategory, ServiceRegister, ServiceRequest, Payment, User, Invoice, Complaint, IncomeManagement
 from .serializers import CustomerSerializer, LeadRequestCountSerializer, UnifiedResponseSerializer, MonthlyFinanceReportSerializer,InvoiceOthersAddSerializer,InvoiceOthersGetSerializer, InvoiceOthersUpdateSerializer, CustomerCountSerializer, OnlineCustomerCountSerializer 
-from .serializers import Customerview_Serializer, SubcategorySerializer,ExpensesSerializer,AdsInvoiceSerializer,ExpenseTableSerializer,EarningsSerializer, TotalServiceRequestSerializer,ActiveServiceSerializer, TotalComplaintSerializer #, IncomeManagementSerializer
+from .serializers import Customerview_Serializer, SubcategorySerializer,ExpensesSerializer,AdsInvoiceSerializer,ExpenseTableSerializer,EarningsSerializer, TotalServiceRequestSerializer,ActiveServiceSerializer, TotalComplaintSerializer, IncomeManagementSerializer
 from rest_framework.decorators import action,api_view
 from .pagination import CustomerViewPagination
 # from .pagination import AdsInvoicePagination,ExpensePagination, ActiveServiceSerializer,
@@ -20,6 +21,7 @@ from rest_framework.pagination import PageNumberPagination
 from django.conf import settings
 import razorpay
 from datetime import datetime
+from rest_framework.exceptions import ValidationError
 
 
 # Create your views here.
@@ -563,6 +565,9 @@ def get_or_update_othertype_admin_invoices(request, invoice_id=None):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
  
 
 
@@ -668,5 +673,110 @@ def get_total_complaints_count(request):
 
 
 # # **********************  INCOME MANAGEMENT- ADD DATA(POST) ***********************
-# class IncomeManagementPostView(APIView):
-#     def post()
+class IncomeManagementPostView(APIView):
+    def post(self, request):
+        data = request.data
+        income_type = data.get('income_type')
+
+         # Validate income_type is one of the allowed choices
+        allowed_income_types = dict(IncomeManagement._meta.get_field('income_type').choices)
+        if income_type not in allowed_income_types:
+            allowed_values = ','.join(allowed_income_types)
+            raise ValidationError(f"Invalid Incometype. Allowed values are: {allowed_values}")
+
+
+        # Check if the income type already exists
+        existing_income_type = IncomeManagement.objects.filter(income_type=income_type).first()
+
+        # If the income type already exists, return an error message
+        if existing_income_type:
+            raise ValidationError(f"An income management entry with income type'{income_type}' already exists.")
+        
+
+        # Check if the sum of company, franchisee, dealer, and service_provider equals 100
+        total = data.get('company', 0) + data.get('franchisee', 0) + data.get('dealer', 0) + data.get('service_provider', 0)
+
+        if total != 100:
+            raise ValidationError("Kindly check the values you provided. The sum of company, ddealaer, sp, and franchisee should be 100")
+        
+        # If no existing income type, create a new record
+        serializer = IncomeManagementSerializer(data=request.data)
+        if serializer.is_valid():
+
+            # save the data(create the object)
+            serializer.save()
+            # Return a success response with the serialized data
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+
+#GET INCOME MANAGEMENT TABLE
+class IncomeMgmtGetView(APIView):
+    def get(self, request):
+        income_mgmt_objects = IncomeManagement.objects.all()
+
+        serializer = IncomeManagementSerializer(income_mgmt_objects, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# UPDATE INCOME MANAGEMENT OBJECT
+class IncomeMgmtUpdateView(APIView):
+
+    def put(self, request, *args, **kwargs):
+         # Retrieve the 'id' from the body of the request
+        obj_id = request.data.get('sl_no')
+
+        # Check if the 'id' is provided
+        if not obj_id:
+            return Response({"Error" : "ID is required to update the object"})
+        
+        try:
+            inc_mgmt_instance = IncomeManagement.objects.get(sl_no=obj_id)
+        except IncomeManagement.DoesNotExist:
+            return Response({"Income Management object not found"},status=status.HTTP_404_NOT_FOUND)
+
+        # Check if 'income_type' is being updated and if it is unique
+        income_type = request.data.get('income_type')
+        if income_type:
+            # Check if any other record already has the same income_type (excluding the current instance)
+            if IncomeManagement.objects.filter(income_type=income_type).exists():
+                return Response({"Error":"This income type is already taken please choose a different one"}, status=status.HTTP_400_BAD_REQUEST)
+              
+        # Initialize the serializer with the instance and the incoming data
+        serializer = IncomeManagementSerializer(inc_mgmt_instance, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    # PATCH method  
+    def patch(self, request, *args, **kwargs):
+        obj_id = request.data.get('sl_no')
+        if not obj_id:
+            return Response({"Error:Please provide object Id"})
+        try:
+            inc_mgmt_instance = IncomeManagement.objects.get(sl_no=obj_id)
+        except IncomeManagement.DoesNotExist:
+            return Response({"Error: ID is required to update the field"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if 'income_type' is being updated and if it is unique
+        income_type = request.data.get('income_type')
+        if income_type:
+            # Check if any other record already has the same income_type (excluding the current instance)
+            if IncomeManagement.objects.filter(income_type=income_type).exists():
+                return Response({"Error":"This income type is already taken please choose a different one"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Initialize the serializer with the instance and the incoming data
+        serializer = IncomeManagementSerializer(inc_mgmt_instance, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+            return Response({"Error: Income Management object not found"})
+
+        
+
+
