@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Success</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="card">
+            <div class="card-header text-center">
+                <h2>Payment Receipt</h2>
+            </div>
+            <div class="card-body">
+                <p><strong>Date:</strong> {{ payment.payment_date }}</p>
+                <p><strong>Name:</strong> {{ payment.invoice.sender.full_name }}</p>
+                <p><strong>Email ID:</strong> {{ payment.invoice.sender.email }}</p>
+                <p><strong>Transaction ID:</strong> {{ payment.transaction_id }}</p>
+                <p><strong>Invoice Type:</strong> {{ payment.invoice.invoice_type }}</p>
+                <p><strong>Amount Paid:</strong> ₹{{ payment.amount_paid }}</p>
+                <p><strong>Status:</strong> {{ payment.invoice.payment_status }}</p>
+
+            </div>
+            <div class="card-footer text-center">
+                <button class="btn btn-primary" onclick="window.print()">Download Receipt</button>
+                <a href="/" class="btn btn-secondary">Go Home</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

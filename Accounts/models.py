@@ -568,7 +568,7 @@ class Invoice(models.Model):
     appointment_date = models.DateTimeField(null=True, blank=True)
     additional_requirements = models.TextField(null=True, blank=True)
     
-    Invoice_document = models.FileField(upload_to='invoice-documents/', blank=True, null=True, validators=[validate_file_size])
+    invoice_document = models.FileField(upload_to='invoice-documents/', blank=True, null=True, validators=[validate_file_size])
     
     accepted_terms = models.BooleanField(default=False)
 

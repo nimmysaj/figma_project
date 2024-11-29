@@ -1,0 +1,221 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f0f0f0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+}
+.main-container {
+  margin-top: 20px;
+  background-color: rgb(211, 211, 211);
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  width: 350px;
+  height:    fit-content ;
+  padding: 20px;
+  overflow: hidden;
+}
+.header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.header img {
+  width: 80px;
+  height: 80px;
+  background-color: black;
+  border-radius: 5px;
+  margin-right: 10px;
+}
+.header .title {
+  font-size: 14px;
+  font-weight: bold;
+
+  color: orange;
+}
+.header .subtitle {
+  font-size: 16px;
+}
+.payment-methods {
+  margin-bottom: 20px;
+}
+
+
+
+.radio-input {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.radio-input * {
+  
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+.radio-input label {
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.489);
+
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background-color: rgba(255, 255, 255, 0.667);
+  border-radius: 10px;
+  padding: 0px 20px;
+  width: 100%;
+  cursor: pointer;
+  height: 60px;
+  position: relative;
+}
+
+.radio-input label::before {
+  position: absolute;
+  content: "";
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 220px;
+  height: 45px;
+  z-index: -1;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  border-radius: 10px;
+  border: 2px solid transparent;
+}
+.radio-input label:hover::before {
+  transition: all 0.2s ease;
+  background-color: #2a2e3c;
+}
+
+.radio-input .label:has(input:checked)::before {
+  background-color: #2d3750;
+  border-color: #435dd8;
+  height: 50px;
+}
+
+.radio-input .label .text {
+  color: #000000;
+
+}
+.radio-input .label img{
+  border-radius: 5px;
+  margin-right: 10px;
+ 
+
+}
+
+.radio-input .label input[type="radio"] {
+  background-color: #89898b;
+  appearance: none;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.radio-input .label input[type="radio"]:checked {
+  background-color: #435dd8;
+  -webkit-animation: puls 0.7s forwards;
+  animation: pulse 0.7s forwards;
+}
+
+.radio-input .label input[type="radio"]:before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  transition: all 0.1s cubic-bezier(0.165, 0.84, 0.44, 1);
+  background-color: #fff;
+  transform: scale(0);
+}
+
+.radio-input .label input[type="radio"]:checked::before {
+  transform: scale(1);
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
+.button {
+  margin: auto; /* Pushes it to the bottom when using flexbox */
+
+  position: relative;
+  transition: all 0.3s ease-in-out;
+  box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
+  padding-block: 0.5rem;
+  padding-inline: 1.25rem;
+  background-color: rgb(11, 11, 11);
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: left;
+  cursor: pointer;
+  color: #ffff;
+  gap: 10px;
+  font-weight: bold;
+  border: 3px solid #ffffff4d;
+  outline: none;
+  overflow: hidden;
+  font-size: 15px;
+}
+
+.icon {
+  width: 24px;
+  height: 24px;
+  transition: all 0.3s ease-in-out;
+}
+
+.button:hover {
+  transform: scale(1.05);
+  border-color: #fff9;
+}
+
+.button:hover .icon {
+  transform: translate(4px);
+}
+
+.button:hover::before {
+  animation: shine 1.5s ease-out infinite;
+}
+
+.button::before {
+  content: "";
+  position: absolute;
+  width: 100px;
+  height: 100%;
+  background-image: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0) 30%,
+    rgba(255, 255, 255, 0.8),
+    rgba(255, 255, 255, 0) 70%
+  );
+  top: 0;
+  left: -100px;
+  opacity: 0.6;
+}
+
+@keyframes shine {
+  0% {
+    left: -100px;
+  }
+
+  60% {
+    left: 100%;
+  }
+
+  to {
+    left: 100%;
+  }
+}

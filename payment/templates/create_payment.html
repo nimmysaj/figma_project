@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'create_payment.css' %}">
 </head>
-<body>
+<!-- <body>
     <h1>    
         Create Payment  
     </h1>
@@ -14,5 +16,16 @@
         Enter Invoice ID :<input type="text" id="invoice_id" name="invoice_id">
         <button>Create</button>
     </form>
-</body>
+</body> -->
+
+
+<div class="container">
+    <div class="heading">Enter Invoice ID</div>
+    <form action="{% url 'create_payment_post' %}" method="POST" class="form">
+        {% csrf_token %}
+      <input required="" class="input" type="text" id="invoice_id" name="invoice_id" placeholder="Invoice Id">
+      <input class="login-button" type="submit" value="Create Payment">
+    
+    </form>
+  </div>
 </html>

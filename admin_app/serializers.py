@@ -312,67 +312,68 @@ class AddExpensesSerializer(serializers.ModelSerializer):
     description = serializers.CharField(required=True, max_length=255)
     accepted_terms = serializers.BooleanField(required=True)
     invoice_type = serializers.CharField(default="others", read_only=True)  # Fixed to "others"
-    expense_type = serializers.ChoiceField(choices=["Income", "Expense"], required=True, write_only=True)
+    income = serializers.DecimalField(max_digits=10, decimal_places=2,required= False, write_only=True)
+    expense = serializers.DecimalField(max_digits=10, decimal_places=2,required=False, write_only=True)
+    
+    total_amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+
 
 
     class Meta:
         model = Invoice
         fields = [
             'id', 'invoice_number', 'invoice_type', 'invoice_date', 'sender', 'receiver',
-            'description', 'documents', 'accepted_terms', 'price', 'quantity', 'total_amount', 'payment_status','expense_type','external_invoice_number'
+            'description', 'invoice_document', 'accepted_terms','total_amount', 'payment_status','external_invoice_number',
+            'income','expense'
         ]
-        read_only_fields = ['total_amount']  # Make total_amount read-only
 
     def validate_accepted_terms(self, value):
         if not value:
             raise serializers.ValidationError("You must accept the terms to proceed.")
         return value
-
-
-    def validate_quantity(self, value):
-        if value > 1:
-            raise serializers.ValidationError("Quantity cannot be greater than 1.")
-        return value
-
-    def validate_price(self, value):
-        if value < 0:
-            raise serializers.ValidationError("Price cannot be a negative value.")
-        return value
+    
 
     def validate(self, data):
-        expense_type = data.pop('expense_type')  # Remove from data as it's not a model field
+        
         admin_user = User.objects.filter(is_superuser=True).first()
-
+        expense = data.pop('expense', None)
+        income = data.pop('income', None)
+        receiver = data.pop('receiver', None)
+        sender = data.pop('sender', None)
+        
+        
         if not admin_user:
             raise serializers.ValidationError("Admin user not found.")
-
-        if expense_type == 'Expense':
-            
-            if data.get('sender') != admin_user and data.get('sender') != None:
-                raise serializers.ValidationError("If You choose Expense ,Sender Should be super User")
-            
-            data['sender'] = admin_user
-            data['receiver'] = data.get('receiver')
-            
-        elif expense_type == 'Income':
-            data['receiver'] = admin_user
-            data['sender'] = data.get('sender')
+        
+        if expense and income:
+            raise serializers.ValidationError("Only one of Income or Expense should be provided.")
+        
+        if income :
+            if income <= 0:
+                raise serializers.ValidationError("Must be a positive value.")
+            elif income >= 1:
+                    data['receiver'] = admin_user 
+                    data['sender'] = None 
+                    data['total_amount'] = income
+                
+        elif expense:
+            if expense <= 0:
+                raise serializers.ValidationError("Must be a positive value.")
+            elif expense >= 1:
+                    data['sender'] = admin_user 
+                    data['receiver'] = None
+                    data['total_amount'] = expense
+                    
         else:
-            raise serializers.ValidationError("Invalid expense type.")
+            raise serializers.ValidationError("Either Income or Expense should be provided.")
+                 
         return data
-            
+               
 
     def create(self, validated_data):
         validated_data['invoice_type'] = 'others'
-        # Calculate total_amount based on price and quantity
-        quantity = validated_data.get('quantity') or 1  # Default to 1 if quantity is None
-        validated_data['total_amount'] = validated_data['price'] * quantity
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        validated_data['invoice_type'] = 'others'
-        
-        # Calculate total_amount based on price and quantity
-        quantity = validated_data.get('quantity') or instance.quantity or 1
-        validated_data['total_amount'] = validated_data.get('price', instance.price) * quantity
+        validated_data['invoice_type'] = 'others' 
         return super().update(instance, validated_data)

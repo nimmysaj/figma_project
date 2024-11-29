@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -11,6 +11,12 @@
     <form action="" method="POST" name="razorpayform">
         Invoice ID: <input type="text" id="invoice_id" value="{{ invoice_id }}" readonly><br><br>
         Amount: <input type="text" id="amount" value="{{ amount }}" readonly><br><br>
+        <p>Pay with</p>
+        <select name="" id="">
+            <option value="">Card</option>
+            <option value="">Razor Pay</option>
+            <option value="">UPI</option>
+        </select>
         <button type="button" id="payBtn">Pay</button>
     </form>
 
@@ -82,4 +88,186 @@
         };
     </script>
 </body>
+</html> -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Make Payment</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'make_payment.css' %}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+
+</head>
+<body>
+    <!-- <h1>Make Payment</h1>
+    <form action="" method="POST" name="razorpayform">
+        <label for="invoice_id">Invoice ID:</label>
+        <input type="text" id="invoice_id" value="{{ invoice_id }}" readonly><br><br>
+
+        <label for="amount">Amount:</label>
+        <input type="text" id="amount" value="{{ amount }}" readonly><br><br>
+
+        <p>Pay with:</p>
+        <input type="radio" id="card" name="payment_method" value="card">
+        <label for="card">Card</label><br>
+        <input type="radio" id="razorpay" name="payment_method" value="razorpay">
+        <label for="razorpay">Razorpay</label><br>
+        <input type="radio" id="upi" name="payment_method" value="upi">
+        <label for="upi">UPI</label><br><br>
+
+        <button type="button" id="payBtn">Pay</button> -->
+
+        <form action="" method="POST" name="razorpayform">
+            {% csrf_token %}
+        <div class="main-container">
+            <div class="header">
+              <img src="#" alt="Graphic Design" />
+              <div>
+                <div class="title">{{ invoice.invoice_type }}</div>
+                <div class="subtitle">{{ invoice.description }}</div>
+                <div class="subtitle">Amount :{{ invoice.total_amount }}</div>
+              </div>
+            </div>
+            <h6>Payment Methods</h6>
+            <div class="payment-methods">
+              <div class="radio-input">
+
+
+                  
+                  <label class="label">
+                    <input type="radio" id="razorpay" name="payment_method" value="razorpay" />
+                    <p class="text">
+                        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTnA99TABOEvVDdjInRpcHjvKZIhgCnv0z9zg&s" alt="" width="90px">
+                        Razorpay
+                    </p>
+                  </label>
+                  
+                  <label class="label">
+                    <input type="radio" id="googlepay" name="payment_method" value="Google Pay" />
+                    <p class="text">
+                        <img src="https://lh3.googleusercontent.com/CBDhGDth7rqSnLcRPjOdfw_HwgKS8Gu-KMIJKQQIXym3J32lqSrrBFTFRjIbKcFR7LNli8O-ChWEzL_Jz94G64jayZIgv5C2Bq3G" alt="" width="90px">
+                        Google Pay
+                    </p>
+                  </label>
+
+                  <label class="label">
+                    <input type="radio" id="applepay" name="payment_method" value="Apple Pay" />
+                    <p class="text">
+                        <img src="https://i.pcmag.com/imagery/reviews/02RJy7OTtPnQQjh37yQDNqx-15..v1598973550.png" alt="" width="90px">
+                        Apple Pay
+                    </p>
+                  </label>
+
+
+
+
+
+                </div>
+            </div>
+            <button class="button" id="payBtn">
+                Pay Rs {{ invoice.total_amount }} 
+              <svg fill="currentColor" viewBox="0 0 24 24" class="icon">
+                <path
+                  clip-rule="evenodd"
+                  d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm4.28 10.28a.75.75 0 000-1.06l-3-3a.75.75 0 10-1.06 1.06l1.72 1.72H8.25a.75.75 0 000 1.5h5.69l-1.72 1.72a.75.75 0 101.06 1.06l3-3z"
+                  fill-rule="evenodd"
+                ></path>
+              </svg>
+            </button>
+            
+          </div>
+
+          </form>
+
+
+    <script>
+        // Razorpay payment options
+        var options = {
+            "key": "{{ razorpay_key }}",  // Razorpay key ID
+            "amount": "{{ amount }}",  // Amount in paise
+            "currency": "INR",
+            "name": "Your Company Name",  // Optional: Change it to your company name
+            "description": "{{ invoice.description }}",
+            "order_id": "{{ order_id }}",  // Razorpay order ID
+            "handler": function (response) {
+                var transaction_id = response.razorpay_payment_id;
+                var order_id = response.razorpay_order_id;
+                var signature = response.razorpay_signature;
+
+                var data = {
+                    'transaction_id': transaction_id,
+                    'order_id': order_id,
+                    'signature': signature,
+                    'invoice_id': "{{ invoice.id }}",  // Pass the invoice ID here
+                    'amount_paid': "{{ amount }}",
+                };
+
+                // Send payment details to the server for verification
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "{% url 'verify_payment' %}", true);
+                xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+
+                xhr.onload = function() {
+                    var response = JSON.parse(xhr.responseText);
+                    if (response.status === "success") {
+                        window.location.href = response.redirect_url; 
+                    } else {
+                        alert("Payment failed! " + response.message);
+                        window.location.href = "{% url 'create_payment_view' %}";
+                    }
+                };
+
+                xhr.onerror = function() {
+                    alert("There was an error while processing your payment.");
+                };
+
+                xhr.send(JSON.stringify(data));
+            },
+            "prefill": {
+                "name": "{{invoice.sender.full_name}}",
+                "email": "{{invoice.sender.email}}",
+                "contact": "{{invoice.sender.phone_number}}"
+            },
+            "theme": {
+                "color": "#F37254"
+            }
+        };
+
+        document.getElementById('payBtn').onclick = function(e) {
+    e.preventDefault();
+
+    // Get selected payment method
+    var paymentMethod = document.querySelector('input[name="payment_method"]:checked');
+
+    if (!paymentMethod) {
+        // Show a message if no payment method is selected
+        alert("Please select a payment method to proceed.");
+        return;
+    }
+
+    // Perform actions based on the selected payment method
+    if (paymentMethod.value === "razorpay") {
+        // Trigger Razorpay payment dialog
+        var rzp1 = new Razorpay(options);
+        rzp1.open();
+    } else if (paymentMethod.value === "Google Pay") {
+        // Handle Google Pay logic here
+        alert("Google Pay payment flow is under construction.");
+    } else if (paymentMethod.value === "Apple Pay") {
+        // Handle Apple Pay logic here
+        alert("Apple Pay payment flow is under construction.");
+    } else {
+        // Handle any other payment methods
+        alert("The selected payment method is not supported.");
+    }
+};
+    </script>
+</body>
 </html>
+
+
